@@ -77,8 +77,23 @@ export default function RepackingProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Parse integration data from URL parameters
+  // Parse integration data from localStorage
   const [integrationData, setIntegrationData] = useState<any>(null);
+  
+  // Load integration data from localStorage on component mount
+  useEffect(() => {
+    const storedData = localStorage.getItem('repackingIntegrationData');
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        setIntegrationData(parsedData);
+        // Clear the data after loading to prevent reuse
+        localStorage.removeItem('repackingIntegrationData');
+      } catch (error) {
+        console.error('Error parsing integration data:', error);
+      }
+    }
+  }, []);
   
   // Bulk product search functionality
   const [productSearchTerm, setProductSearchTerm] = useState("");

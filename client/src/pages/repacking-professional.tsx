@@ -77,8 +77,27 @@ export default function RepackingProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Parse integration data from URL parameters
+  // Parse integration data from localStorage
   const [integrationData, setIntegrationData] = useState<any>(null);
+  
+  // Load integration data from localStorage on component mount
+  useEffect(() => {
+    const storedData = localStorage.getItem('repackingIntegrationData');
+    console.log('🔍 Checking for integration data:', storedData);
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        console.log('✅ Integration data loaded:', parsedData);
+        setIntegrationData(parsedData);
+        // Clear the data after loading to prevent reuse
+        localStorage.removeItem('repackingIntegrationData');
+      } catch (error) {
+        console.error('❌ Error parsing integration data:', error);
+      }
+    } else {
+      console.log('❌ No integration data found in localStorage');
+    }
+  }, []);
   
   // Bulk product search functionality
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -217,19 +236,38 @@ export default function RepackingProfessional() {
 
   // Auto-populate form when integration data is available
   useEffect(() => {
+    console.log('🔄 Auto-populate effect triggered:', { 
+      hasIntegrationData: !!integrationData, 
+      productsCount: products?.length || 0 
+    });
+    
     if (integrationData && products.length > 0) {
       const bulkProduct = integrationData.bulkProduct;
       const newProduct = integrationData.newProduct;
+      
+      console.log('💰 Pricing data from integration:', {
+        costPrice: bulkProduct.costPrice,
+        sellingPrice: bulkProduct.sellingPrice,
+        mrp: bulkProduct.mrp,
+        fullBulkProduct: bulkProduct
+      });
       
       // Find the bulk product in the loaded products
       const foundProduct = products.find((p: Product) => p.id === bulkProduct.id);
       
       if (foundProduct) {
+        console.log('✅ Found product, setting form values...');
         // Pre-fill form with integration data
         form.setValue("bulkProductId", foundProduct.id);
         form.setValue("costPrice", parseFloat(bulkProduct.costPrice || "0"));
         form.setValue("sellingPrice", parseFloat(bulkProduct.sellingPrice || "0"));
         form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
+        
+        console.log('💰 Form values set to:', {
+          costPrice: parseFloat(bulkProduct.costPrice || "0"),
+          sellingPrice: parseFloat(bulkProduct.sellingPrice || "0"),
+          mrp: parseFloat(bulkProduct.mrp || "0")
+        });
         
         if (newProduct.itemName) {
           form.setValue("newProductName", newProduct.itemName);
@@ -243,6 +281,8 @@ export default function RepackingProfessional() {
           title: "Integration Successful",
           description: `Pre-filled repacking details for ${bulkProduct.name}`,
         });
+      } else {
+        console.log('❌ Product not found in loaded products list');
       }
     }
   }, [integrationData, products, form, toast]);
