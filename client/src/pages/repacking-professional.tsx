@@ -162,18 +162,37 @@ export default function RepackingProfessional() {
     if (integrationData?.bulkProduct) {
       const bulkProduct = integrationData.bulkProduct;
       console.log('🔄 Populating form with integration data:', bulkProduct);
+      console.log('📊 Data types debug:', {
+        costPrice: typeof bulkProduct.costPrice,
+        sellingPrice: typeof bulkProduct.sellingPrice, 
+        mrp: typeof bulkProduct.mrp,
+        values: {
+          cost: bulkProduct.costPrice,
+          selling: bulkProduct.sellingPrice,
+          mrp: bulkProduct.mrp
+        }
+      });
       
-      // Update form values with integration data
-      form.setValue('costPrice', bulkProduct.costPrice || 0);
-      form.setValue('sellingPrice', bulkProduct.sellingPrice || 0);
-      form.setValue('mrp', bulkProduct.mrp || 0);
+      // Convert to numbers and update form values with integration data
+      const costPriceNum = Number(bulkProduct.costPrice) || 0;
+      const sellingPriceNum = Number(bulkProduct.sellingPrice) || 0;
+      const mrpNum = Number(bulkProduct.mrp) || 0;
+      
+      form.setValue('costPrice', costPriceNum);
+      form.setValue('sellingPrice', sellingPriceNum);
+      form.setValue('mrp', mrpNum);
       form.setValue('newProductName', integrationData.newProduct?.itemName || '');
       form.setValue('newProductSku', integrationData.newProduct?.itemCode || '');
       
-      console.log('💰 Form updated with pricing:', {
-        costPrice: bulkProduct.costPrice,
-        sellingPrice: bulkProduct.sellingPrice,
-        mrp: bulkProduct.mrp
+      console.log('💰 Form updated with converted pricing:', {
+        costPrice: costPriceNum,
+        sellingPrice: sellingPriceNum,
+        mrp: mrpNum,
+        formValues: {
+          costPrice: form.getValues('costPrice'),
+          sellingPrice: form.getValues('sellingPrice'),
+          mrp: form.getValues('mrp')
+        }
       });
     }
   }, [integrationData, form]);

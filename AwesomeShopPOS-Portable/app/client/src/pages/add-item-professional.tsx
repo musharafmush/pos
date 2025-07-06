@@ -2558,9 +2558,9 @@ export default function AddItemProfessional() {
                                                           id: selectedBulkItem.id,
                                                           name: selectedBulkItem.name,
                                                           sku: selectedBulkItem.sku,
-                                                          costPrice: selectedBulkItem.cost, // Cost Price (₹100)
-                                                          sellingPrice: selectedBulkItem.price, // Selling Price (₹120)
-                                                          mrp: selectedBulkItem.mrp,
+                                                          costPrice: parseFloat(selectedBulkItem.cost || "0"), // Cost Price
+                                                          sellingPrice: parseFloat(selectedBulkItem.price || "0"), // Selling Price
+                                                          mrp: parseFloat(selectedBulkItem.mrp || "0"), // MRP
                                                           weight: selectedBulkItem.weight,
                                                           weightUnit: selectedBulkItem.weightUnit,
                                                           stockQuantity: selectedBulkItem.stockQuantity,
