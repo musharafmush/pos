@@ -153,6 +153,27 @@ export default function RepackingProfessional() {
     },
   });
 
+  // Populate form when integration data is loaded
+  useEffect(() => {
+    if (integrationData?.bulkProduct) {
+      const bulkProduct = integrationData.bulkProduct;
+      console.log('🔄 Populating form with integration data:', bulkProduct);
+      
+      // Update form values with integration data
+      form.setValue('costPrice', bulkProduct.costPrice || 0);
+      form.setValue('sellingPrice', bulkProduct.sellingPrice || 0);
+      form.setValue('mrp', bulkProduct.mrp || 0);
+      form.setValue('newProductName', integrationData.newProduct?.itemName || '');
+      form.setValue('newProductSku', integrationData.newProduct?.itemCode || '');
+      
+      console.log('💰 Form updated with pricing:', {
+        costPrice: bulkProduct.costPrice,
+        sellingPrice: bulkProduct.sellingPrice,
+        mrp: bulkProduct.mrp
+      });
+    }
+  }, [integrationData, form]);
+
   // Fetch products
   const { data: products = [] } = useQuery({
     queryKey: ["/api/products"],
