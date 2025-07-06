@@ -2558,9 +2558,10 @@ export default function AddItemProfessional() {
                                                           id: selectedBulkItem.id,
                                                           name: selectedBulkItem.name,
                                                           sku: selectedBulkItem.sku,
-                                                          costPrice: parseFloat(selectedBulkItem.cost || "0"), // Cost Price
-                                                          sellingPrice: parseFloat(selectedBulkItem.price || "0"), // Selling Price
-                                                          mrp: parseFloat(selectedBulkItem.mrp || "0"), // MRP
+                                                          // Fixed field mapping to match actual database fields
+                                                          costPrice: parseFloat(selectedBulkItem.cost || "0"), // Cost field = Cost Price ₹40
+                                                          sellingPrice: parseFloat(selectedBulkItem.price || "0"), // Price field = Selling Price ₹50  
+                                                          mrp: parseFloat(selectedBulkItem.mrp || "0"), // MRP field = MRP ₹100
                                                           weight: selectedBulkItem.weight,
                                                           weightUnit: selectedBulkItem.weightUnit,
                                                           stockQuantity: selectedBulkItem.stockQuantity,

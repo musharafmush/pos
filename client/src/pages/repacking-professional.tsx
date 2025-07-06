@@ -200,10 +200,10 @@ export default function RepackingProfessional() {
         console.log('🆔 Set bulkProductId:', bulkProduct.id);
       }
       
-      // Set pricing values
-      form.setValue('costPrice', costPriceNum);
-      form.setValue('sellingPrice', sellingPriceNum);
-      form.setValue('mrp', mrpNum);
+      // Set pricing values - convert to strings for form
+      form.setValue('costPrice', costPriceNum.toString());
+      form.setValue('sellingPrice', sellingPriceNum.toString());
+      form.setValue('mrp', mrpNum.toString());
       
       // Set product details
       form.setValue('newProductName', integrationData.newProduct?.itemName || '');
@@ -398,9 +398,9 @@ export default function RepackingProfessional() {
         const childMRP = parseFloat(selectedBulkProduct.mrp || "0") * weightRatio;
         const childSellingPrice = childCostPrice * 1.2; // 20% markup
         
-        form.setValue("costPrice", Math.round(childCostPrice * 100) / 100);
-        form.setValue("sellingPrice", Math.round(childSellingPrice * 100) / 100);
-        form.setValue("mrp", Math.round(childMRP * 100) / 100);
+        form.setValue("costPrice", (Math.round(childCostPrice * 100) / 100).toString());
+        form.setValue("sellingPrice", (Math.round(childSellingPrice * 100) / 100).toString());
+        form.setValue("mrp", (Math.round(childMRP * 100) / 100).toString());
       }
     }
   }, [form.watch("bulkProductId"), form.watch("unitWeight"), form.watch("weightUnit"), products, form]);
