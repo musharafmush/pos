@@ -82,16 +82,30 @@ export default function RepackingProfessional() {
   
   // Load integration data from localStorage on component mount
   useEffect(() => {
+    console.log('🔄 Component mounted, checking for integration data...');
     const storedData = localStorage.getItem('repackingIntegrationData');
+    console.log('🔍 Raw localStorage data:', storedData);
+    
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
+        console.log('✅ Parsed integration data:', parsedData);
+        console.log('🔍 Bulk product data:', parsedData.bulkProduct);
+        
         setIntegrationData(parsedData);
-        // Clear the data after loading to prevent reuse
-        localStorage.removeItem('repackingIntegrationData');
+        
+        // Don't clear immediately, wait for form population
+        setTimeout(() => {
+          localStorage.removeItem('repackingIntegrationData');
+          console.log('🗑️ Integration data cleared from localStorage after form population');
+        }, 1000);
+        
       } catch (error) {
-        console.error('Error parsing integration data:', error);
+        console.error('❌ Error parsing integration data:', error);
+        localStorage.removeItem('repackingIntegrationData');
       }
+    } else {
+      console.log('❌ No integration data found in localStorage');
     }
   }, []);
   
@@ -174,22 +188,36 @@ export default function RepackingProfessional() {
       const sellingPriceNum = Number(bulkProduct.sellingPrice) || 0;
       const mrpNum = Number(bulkProduct.mrp) || 0;
       
-      form.setValue('costPrice', costPriceNum.toString());
-      form.setValue('sellingPrice', sellingPriceNum.toString());
-      form.setValue('mrp', mrpNum.toString());
+      console.log('🔢 Converted numbers:', {
+        costPriceNum,
+        sellingPriceNum,
+        mrpNum
+      });
+      
+      // Set the bulk product ID first
+      if (bulkProduct.id) {
+        form.setValue('bulkProductId', bulkProduct.id);
+        console.log('🆔 Set bulkProductId:', bulkProduct.id);
+      }
+      
+      // Set pricing values (portable version uses numbers)
+      form.setValue('costPrice', costPriceNum);
+      form.setValue('sellingPrice', sellingPriceNum);
+      form.setValue('mrp', mrpNum);
+      
+      // Set product details
       form.setValue('newProductName', integrationData.newProduct?.itemName || '');
       form.setValue('newProductSku', integrationData.newProduct?.itemCode || '');
       
-      console.log('💰 Form updated with converted pricing:', {
-        costPrice: costPriceNum,
-        sellingPrice: sellingPriceNum,
-        mrp: mrpNum,
-        formValues: {
+      // Trigger form re-render
+      setTimeout(() => {
+        console.log('🔄 Final form values after integration:', {
           costPrice: form.getValues('costPrice'),
           sellingPrice: form.getValues('sellingPrice'),
-          mrp: form.getValues('mrp')
-        }
-      });
+          mrp: form.getValues('mrp'),
+          bulkProductId: form.getValues('bulkProductId')
+        });
+      }, 100);
     }
   }, [integrationData, form]);
 
