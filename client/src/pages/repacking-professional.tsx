@@ -902,11 +902,11 @@ export default function RepackingProfessional() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <span className="text-orange-600 font-medium">Cost Price:</span>
-                          <div className="font-semibold text-orange-900">₹{form.watch("costPrice")?.toFixed(2) || "0.00"}</div>
+                          <div className="font-semibold text-orange-900">₹{parseFloat(form.watch("costPrice") || "0").toFixed(2)}</div>
                         </div>
                         <div>
                           <span className="text-orange-600 font-medium">MRP:</span>
-                          <div className="font-semibold text-orange-900">₹{form.watch("mrp")?.toFixed(2) || "0.00"}</div>
+                          <div className="font-semibold text-orange-900">₹{parseFloat(form.watch("mrp") || "0").toFixed(2)}</div>
                         </div>
                       </div>
                     </div>
@@ -1003,15 +1003,15 @@ export default function RepackingProfessional() {
                 <div className="grid grid-cols-3 gap-3 text-xs">
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">Cost Price</div>
-                    <div className="text-lg font-bold text-purple-900">₹{form.watch("costPrice")?.toFixed(2) || "0.00"}</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("costPrice") || "0").toFixed(2)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">Selling Price</div>
-                    <div className="text-lg font-bold text-purple-900">₹{form.watch("sellingPrice")?.toFixed(2) || "0.00"}</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("sellingPrice") || "0").toFixed(2)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">MRP</div>
-                    <div className="text-lg font-bold text-purple-900">₹{form.watch("mrp")?.toFixed(2) || "0.00"}</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("mrp") || "0").toFixed(2)}</div>
                   </div>
                 </div>
                 
@@ -1021,7 +1021,7 @@ export default function RepackingProfessional() {
                     <div className="text-center">
                       <div className="text-purple-600 font-medium text-xs">Profit Margin</div>
                       <div className="text-lg font-bold text-green-700">
-                        {((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("costPrice") * 100).toFixed(1)}%
+                        {((parseFloat(form.watch("sellingPrice") || "0") - parseFloat(form.watch("costPrice") || "0")) / parseFloat(form.watch("costPrice") || "1") * 100).toFixed(1)}%
                       </div>
                     </div>
                   </div>
