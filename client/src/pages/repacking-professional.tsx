@@ -941,7 +941,7 @@ export default function RepackingProfessional() {
                             min="0"
                             step="0.01"
                             {...field}
-                            value={field.value || 0}
+                            value={field.value || ""}
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             className="h-9 bg-white border-purple-300 font-semibold"
                           />
@@ -963,7 +963,7 @@ export default function RepackingProfessional() {
                             min="0"
                             step="0.01"
                             {...field}
-                            value={field.value || 0}
+                            value={field.value || ""}
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             className="h-9 bg-white border-purple-300 font-semibold"
                           />
@@ -986,7 +986,7 @@ export default function RepackingProfessional() {
                           min="0"
                           step="0.01"
                           {...field}
-                          value={field.value || 0}
+                          value={field.value || ""}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           className="h-9 bg-white border-purple-300 font-semibold"
                         />
