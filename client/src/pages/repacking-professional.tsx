@@ -200,10 +200,10 @@ export default function RepackingProfessional() {
         console.log('🆔 Set bulkProductId:', bulkProduct.id);
       }
       
-      // Set pricing values - convert to strings for form
-      form.setValue('costPrice', costPriceNum.toString());
-      form.setValue('sellingPrice', sellingPriceNum.toString());
-      form.setValue('mrp', mrpNum.toString());
+      // Set pricing values as numbers (form expects numeric values)
+      form.setValue('costPrice', costPriceNum);
+      form.setValue('sellingPrice', sellingPriceNum);
+      form.setValue('mrp', mrpNum);
       
       // Set product details
       form.setValue('newProductName', integrationData.newProduct?.itemName || '');
