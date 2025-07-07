@@ -134,11 +134,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: UserInsert): Promise<User> {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    
     const [newUser] = await db.insert(users).values({
       ...user,
-      password: hashedPassword,
       username: user.username || user.email.split('@')[0] + '_' + Math.floor(Math.random() * 1000),
       role: user.role || 'cashier',
       active: user.active !== undefined ? user.active : true
