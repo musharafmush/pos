@@ -209,6 +209,9 @@ export default function RepackingProfessional() {
       form.setValue('newProductName', integrationData.newProduct?.itemName || '');
       form.setValue('newProductSku', integrationData.newProduct?.itemCode || '');
       
+      // Force form re-render and ensure values are persisted
+      form.trigger(['costPrice', 'sellingPrice', 'mrp']);
+      
       // Trigger form re-render
       setTimeout(() => {
         console.log('🔄 Final form values after integration:', {
@@ -392,18 +395,20 @@ export default function RepackingProfessional() {
           childWeightInGrams = unitWeight * 1000;
         }
         
-        // Calculate proportional pricing
-        const weightRatio = childWeightInGrams / bulkWeightInGrams;
-        const childCostPrice = parseFloat(selectedBulkProduct.price || "0") * weightRatio;
-        const childMRP = parseFloat(selectedBulkProduct.mrp || "0") * weightRatio;
-        const childSellingPrice = childCostPrice * 1.2; // 20% markup
+        // Calculate proportional pricing (skip if integration data is available)
+        if (!integrationData?.bulkProduct) {
+          const weightRatio = childWeightInGrams / bulkWeightInGrams;
+          const childCostPrice = parseFloat(selectedBulkProduct.cost || "0") * weightRatio; // Use cost field, not price
+          const childSellingPrice = parseFloat(selectedBulkProduct.price || "0") * weightRatio; // Use price field for selling price
+          const childMRP = parseFloat(selectedBulkProduct.mrp || "0") * weightRatio;
         
-        form.setValue("costPrice", (Math.round(childCostPrice * 100) / 100).toString());
-        form.setValue("sellingPrice", (Math.round(childSellingPrice * 100) / 100).toString());
-        form.setValue("mrp", (Math.round(childMRP * 100) / 100).toString());
+          form.setValue("costPrice", Math.round(childCostPrice * 100) / 100);
+          form.setValue("sellingPrice", Math.round(childSellingPrice * 100) / 100);
+          form.setValue("mrp", Math.round(childMRP * 100) / 100);
+        }
       }
     }
-  }, [form.watch("bulkProductId"), form.watch("unitWeight"), form.watch("weightUnit"), products, form]);
+  }, [form.watch("bulkProductId"), form.watch("unitWeight"), form.watch("weightUnit"), products, form, integrationData]);
 
   // Calculate values for conversion summary
   const selectedProduct = bulkProducts.find((p: Product) => p.id === form.watch("bulkProductId"));
