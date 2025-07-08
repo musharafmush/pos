@@ -1000,7 +1000,7 @@ export default function RepackingProfessional() {
                     <div className="text-center">
                       <div className="text-purple-600 font-medium text-xs">Profit Margin</div>
                       <div className="text-lg font-bold text-green-700">
-                        {((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("costPrice") * 100).toFixed(1)}%
+                        {((form.watch("sellingPrice") - form.watch("costPrice")) / form.watch("sellingPrice") * 100).toFixed(1)}%
                       </div>
                     </div>
                   </div>

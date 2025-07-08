@@ -137,15 +137,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
-### Pricing Integration Fix for Repacking Professional Complete (July 7, 2025)
+### Pricing Integration and Profit Margin Calculation Fix Complete (July 7, 2025)
 - Fixed critical pricing data transfer issue between add-item-dashboard and repacking-professional pages
 - Updated form.setValue calls to use numeric values instead of strings for pricing fields (costPrice, sellingPrice, mrp)
 - Resolved issue where Cost Price (₹40), Selling Price (₹50), and MRP (₹100) from product details were not properly populating in Pricing Configuration section
 - Enhanced form population logic to correctly handle numeric data types from localStorage integration
 - Applied final MRP field display fix to prevent "0" showing when field is empty - now displays actual values properly
+- Fixed profit margin calculation inconsistency between pages - standardized to retail formula: ((sellingPrice - costPrice) / sellingPrice) * 100
+- Resolved profit margin showing 25.0% on add-item-dashboard vs 20.0% on repacking-professional - now both show consistent 20.0%
+- Updated profit margin calculations across all repacking pages in both main and portable versions
 - Fixed all form field value displays in both main application and AwesomeShopPOS-Portable versions
 - Verified pricing data flow from product selection to repacking interface works correctly across all form fields
-- Complete integration workflow now functional with proper form value display including final MRP field corrections
+- Complete integration workflow now functional with proper form value display and consistent profit calculations
 - Applied comprehensive fixes as part of Replit Agent to Replit migration process
 
 ### Replit Agent to Replit Migration (July 7, 2025)

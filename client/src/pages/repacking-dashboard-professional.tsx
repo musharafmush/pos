@@ -1423,7 +1423,7 @@ export default function RepackingDashboardProfessional() {
                       <p>• Cost per unit: ₹{repackFormData.costPrice}</p>
                       <p>• Selling price: ₹{repackFormData.sellingPrice}</p>
                       <p>• Profit margin: {repackFormData.sellingPrice && repackFormData.costPrice ? 
-                        `₹${(parseFloat(repackFormData.sellingPrice) - parseFloat(repackFormData.costPrice)).toFixed(2)} (${((parseFloat(repackFormData.sellingPrice) - parseFloat(repackFormData.costPrice)) / parseFloat(repackFormData.costPrice) * 100).toFixed(1)}%)` : 
+                        `₹${(parseFloat(repackFormData.sellingPrice) - parseFloat(repackFormData.costPrice)).toFixed(2)} (${((parseFloat(repackFormData.sellingPrice) - parseFloat(repackFormData.costPrice)) / parseFloat(repackFormData.sellingPrice) * 100).toFixed(1)}%)` : 
                         'Calculating...'
                       }</p>
                     </div>
