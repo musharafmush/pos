@@ -2307,7 +2307,7 @@ export default function AddItemDashboard() {
                         <label className="text-sm font-medium text-purple-700">Profit Margin</label>
                         <p className="text-xl font-bold text-purple-800">
                           {selectedProduct.cost ? 
-                            `${(((parseFloat(selectedProduct.price.toString()) - parseFloat(selectedProduct.cost.toString())) / parseFloat(selectedProduct.cost.toString())) * 100).toFixed(1)}%` 
+                            `${(((parseFloat(selectedProduct.price.toString()) - parseFloat(selectedProduct.cost.toString())) / parseFloat(selectedProduct.price.toString())) * 100).toFixed(1)}%` 
                             : "N/A"
                           }
                         </p>
