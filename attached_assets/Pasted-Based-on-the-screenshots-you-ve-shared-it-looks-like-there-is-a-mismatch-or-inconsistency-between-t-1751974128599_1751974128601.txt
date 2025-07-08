@@ -1,0 +1,60 @@
+Based on the screenshots you've shared, it looks like there is a mismatch or inconsistency between the "Add Item Dashboard" and "Repacking Professional" pricing configurations, specifically with the fields:
+
+Cost Price
+
+Selling Price
+
+MRP
+
+🔍 Observed Issues
+Field	Add Item Dashboard	Repacking Professional
+Cost Price	₹40	₹50
+Selling Price	₹50	₹60
+MRP	₹100	₹100
+
+❗ Problem:
+The cost price, selling price, and MRP are not synced between the "Add Item" and "Repacking" modules.
+
+This creates confusion and potential accounting errors.
+
+✅ Suggested Fix
+You should read and sync the pricing details from the Add Item Dashboard into the Repacking Professional form automatically when:
+
+A source product is selected.
+
+Repacking is configured.
+
+🛠️ Implementation Steps (Developer Notes)
+Update the Repacking Professional module:
+
+Fetch Pricing Details (Cost, MRP, Selling Price) from the original product (from Add Item Dashboard) using the selected source product ID.
+
+Pre-fill those values in the pricing configuration form.
+
+Disable manual edits if not allowed, or enable an "Override" option with a toggle.
+
+Example (Pseudocode / JavaScript):
+js
+Copy
+Edit
+function fetchProductPricingDetails(productId) {
+    // Call your API to get product pricing details
+    const product = getProductById(productId);
+    
+    // Set the values
+    document.querySelector("#costPriceInput").value = product.costPrice;
+    document.querySelector("#sellingPriceInput").value = product.sellingPrice;
+    document.querySelector("#mrpInput").value = product.mrp;
+}
+Use this during the repack screen load or when the source product is selected.
+
+🧪 Final Check
+Once implemented:
+
+Selecting a source product like "Rice Bulk" should auto-fill its cost, selling price, and MRP into the repack screen.
+
+Any manual override (if needed) should be allowed through a checkbox or toggle.
+
+Ensure pricing in both modules matches unless intentionally changed.
+
+Let me know if you’d like help writing the exact backend or frontend code for this.
