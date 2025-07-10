@@ -1,0 +1,34 @@
+
+# Quick cPanel Deployment Instructions
+
+## 1. Upload to cPanel
+Upload ALL files from this folder to your public_html directory.
+
+## 2. Install Dependencies
+In cPanel terminal or file manager:
+```bash
+cd public_html
+npm install
+```
+
+## 3. Configure Node.js App
+- Application Root: public_html
+- Startup File: app.js
+- Node.js Version: 16+ 
+
+## 4. Start Application
+Click "Start App" in cPanel Node.js section.
+
+## 5. Access Your POS
+Visit your domain - login with admin/admin123
+
+## Files Included:
+- .htaccess
+- CPANEL-DEPLOYMENT-GUIDE.md
+- app.js
+- cpanel-setup.md
+- dist
+- package.json
+- pos-data.db
+
+Your professional POS system is ready for deployment!
