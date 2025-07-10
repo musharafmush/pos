@@ -163,15 +163,17 @@
                     body: JSON.stringify({ username, password })
                 });
                 
-                if (response.ok) {
-                    alert('Login successful! POS system is loading...');
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alert('Login successful! Welcome to POS System');
                     window.location.href = '/dashboard';
                 } else {
-                    const error = await response.json();
-                    alert('Login failed: ' + error.message);
+                    alert('Login failed: ' + (data.message || 'Invalid credentials'));
                 }
             } catch (error) {
-                alert('Connection error: ' + error.message);
+                console.error('Login error:', error);
+                alert('Connection error. Please check your internet connection.');
             }
         });
         

@@ -1,17 +1,13 @@
 {
-  "name": "awesome-shop-pos-cpanel",
+  "name": "pos-system-cpanel",
   "version": "1.0.0",
-  "description": "Professional POS System for cPanel Hosting",
-  "main": "app.js",
+  "description": "POS System for cPanel Hosting",
+  "main": "app-simple.js",
   "dependencies": {
-    "express": "^4.18.2",
-    "express-session": "^1.17.3",
-    "passport": "^0.7.0",
-    "passport-local": "^1.0.0",
-    "bcryptjs": "^2.4.3"
+    "express": "^4.18.2"
   },
   "scripts": {
-    "start": "node app.js"
+    "start": "node app-simple.js"
   },
   "engines": {
     "node": ">=16.0.0"

@@ -1,12 +1,13 @@
-# cPanel Installation Instructions
+# cPanel Installation Instructions - ERROR FIX
 
-## Quick Setup (5 minutes)
+## IMPORTANT: Use app-simple.js to fix cPanel errors
 
 ### Step 1: Upload Files
 Upload all files from this cpanel-build folder to your cPanel public_html directory:
-- app.js (main server file)
-- package.json (dependencies)
+- **app-simple.js** (simplified server file - USE THIS)
+- package.json (updated dependencies)
 - index.html (login page)
+- dashboard.html (dashboard page)
 - .htaccess (URL routing)
 - 503.html (error page)
 
@@ -17,12 +18,13 @@ cd public_html
 npm install
 ```
 
-### Step 3: Configure Node.js App
+### Step 3: Configure Node.js App (FIXED SETTINGS)
 In cPanel Node.js section:
-- Application Root: /public_html  
-- Application URL: Your domain
-- Application Startup File: app.js
+- Application Root: `/public_html`
+- Application URL: Your domain (e.g., pos.fastflyingsoft.com)
+- Application Startup File: **app-simple.js** (NOT app.js)
 - Node.js Version: 16 or higher
+- Environment: Production
 
 ### Step 4: Start the Application
 Click "Start" in cPanel Node.js section
