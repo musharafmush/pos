@@ -7,9 +7,9 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !^/api/
 RewriteRule ^(.*)$ /index.html [L]
 
-# Handle API requests to Node.js app
+# Handle API requests to Node.js
 RewriteCond %{REQUEST_URI} ^/api/
-RewriteRule ^(.*)$ /app.js/$1 [L,QSA]
+RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
 
 # Add error handling
 ErrorDocument 503 /503.html
