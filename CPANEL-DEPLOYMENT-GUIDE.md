@@ -17,23 +17,22 @@ node build-for-cpanel.js
 Upload these files to your **public_html** directory:
 
 **Required Files:**
-- `app.js` (main server file)
+- `app.cjs` (main server file - CommonJS for cPanel compatibility)
 - `.htaccess` (URL rewriting rules)
 - All contents from `dist/` folder (built application)
-- `package.json` (will be created with dependencies)
+- `package.json` (configured for cPanel hosting)
 
 **File Structure in cPanel:**
 ```
 public_html/
-├── app.js                  # Main server file
+├── app.cjs                # Main server file (CommonJS)
 ├── .htaccess              # URL rewriting
 ├── package.json           # Dependencies
-├── index.html             # React app entry
-├── assets/                # Built CSS, JS, images
-│   ├── index.css
-│   ├── index.js
-│   └── other assets...
-└── pos-data.db           # SQLite database (auto-created)
+├── dist/                  # Built React application
+│   ├── index.html         # React app entry
+│   └── assets/            # Built CSS, JS, images
+├── pos-data.db           # SQLite database (auto-created)
+└── node_modules/          # Dependencies (after npm install)
 ```
 
 ### Step 3: Install Dependencies in cPanel
@@ -52,7 +51,7 @@ npm install
    - **Application Mode:** Production
    - **Application Root:** public_html
    - **Application URL:** your-domain.com
-   - **Application Startup File:** app.js
+   - **Application Startup File:** app.cjs
 
 ### Step 5: Set Environment Variables (Optional)
 In cPanel Node.js section, add:

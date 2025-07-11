@@ -1,6 +1,11 @@
 
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -38,7 +43,6 @@ const staticPath = path.join(__dirname, 'dist');
 console.log('📂 Static files path:', staticPath);
 
 // Check if dist directory exists
-const fs = require('fs');
 if (fs.existsSync(staticPath)) {
   console.log('✅ Static files directory found');
   app.use(express.static(staticPath));
@@ -57,8 +61,9 @@ app.get('/api/test', (req, res) => {
 });
 
 // Try to import and use your API routes
-try {
-  console.log('🔌 Loading API routes...');
+async function loadRoutes() {
+  try {
+    console.log('🔌 Loading API routes...');
   
   // Check for compiled server files
   const routesPath = path.join(__dirname, 'dist', 'server', 'routes.js');
@@ -67,10 +72,10 @@ try {
   let routes;
   if (fs.existsSync(routesPath)) {
     console.log('📍 Loading routes from:', routesPath);
-    routes = require(routesPath);
+    routes = await import(routesPath);
   } else if (fs.existsSync(serverPath)) {
     console.log('📍 Loading routes from:', serverPath);
-    routes = require(serverPath);
+    routes = await import(serverPath);
   } else {
     console.log('⚠️ No compiled routes found, running in static mode');
   }
@@ -78,7 +83,7 @@ try {
   if (routes && routes.registerRoutes) {
     console.log('✅ Registering API routes...');
     // Create a simple HTTP server for the routes
-    const http = require('http');
+    const http = await import('http');
     const server = http.createServer(app);
     routes.registerRoutes(app).then(() => {
       console.log('✅ API routes registered successfully');
@@ -86,10 +91,14 @@ try {
       console.error('❌ Error registering routes:', err);
     });
   }
-} catch (error) {
-  console.log('⚠️ Routes not available, serving in static mode only');
-  console.log('Error details:', error.message);
+  } catch (error) {
+    console.log('⚠️ Routes not available, serving in static mode only');
+    console.log('Error details:', error.message);
+  }
 }
+
+// Load routes asynchronously
+loadRoutes();
 
 // Handle React routing - serve index.html for all non-API routes
 app.get('*', (req, res) => {
