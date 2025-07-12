@@ -985,20 +985,37 @@ export default function AddItemDashboard() {
     const productSku = product.sku || '';
     const productDescription = product.description || '';
     
+    // Debug logging
+    if (searchTerm === "GREEN PAASI") {
+      console.log('DEBUG: Checking product for search "GREEN PAASI":', {
+        name: productName,
+        sku: productSku,
+        description: productDescription,
+        active: product.active,
+        nameMatch: productName.toLowerCase().includes(searchTerm.toLowerCase()),
+        skuMatch: productSku.toLowerCase().includes(searchTerm.toLowerCase()),
+        descMatch: productDescription.toLowerCase().includes(searchTerm.toLowerCase())
+      });
+    }
+    
     const matchesSearch = !searchTerm || 
       productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       productSku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       productDescription.toLowerCase().includes(searchTerm.toLowerCase());
 
+    let tabResult = false;
     switch (activeTab) {
       case "active":
-        return matchesSearch && product.active !== false;
+        tabResult = matchesSearch && product.active !== false;
+        break;
       case "inactive":
-        return matchesSearch && product.active === false;
+        tabResult = matchesSearch && product.active === false;
+        break;
       case "low-stock":
-        return matchesSearch && (product.stockQuantity || 0) <= (product.alertThreshold || 5);
+        tabResult = matchesSearch && (product.stockQuantity || 0) <= (product.alertThreshold || 5);
+        break;
       case "bulk":
-        return matchesSearch && (
+        tabResult = matchesSearch && (
           productName.toLowerCase().includes('bulk') ||
           productName.toLowerCase().includes('bag') ||
           productName.toLowerCase().includes('container') ||
@@ -1009,15 +1026,29 @@ export default function AddItemDashboard() {
           (parseFloat(product.weight || "0") >= 1 && product.weightUnit === 'kg') ||
           (product.stockQuantity || 0) > 10
         );
+        break;
       case "repackaged":
-        return matchesSearch && (
+        tabResult = matchesSearch && (
           productSku.includes('REPACK') ||
           productName.toLowerCase().includes('pack') ||
           productDescription.toLowerCase().includes('repacked')
         );
+        break;
       default:
-        return matchesSearch;
+        tabResult = matchesSearch;
     }
+    
+    // Debug logging for active tab with search
+    if (searchTerm === "GREEN PAASI" && activeTab === "active") {
+      console.log('DEBUG: Active tab filter result:', {
+        product: productName,
+        matchesSearch,
+        active: product.active,
+        tabResult
+      });
+    }
+    
+    return tabResult;
   }).sort((a, b) => {
     // Apply sorting based on selected criteria
     let aValue, bValue;
@@ -1052,6 +1083,15 @@ export default function AddItemDashboard() {
       return 0;
     }
   }) : [];
+
+  // Debug logging for filtering results
+  console.log('DEBUG: Filter results:', {
+    totalProducts: products?.length || 0,
+    filteredProducts: filteredProducts.length,
+    activeTab,
+    searchTerm,
+    firstFewProducts: products?.slice(0, 3).map(p => ({ name: p.name, active: p.active })) || []
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
