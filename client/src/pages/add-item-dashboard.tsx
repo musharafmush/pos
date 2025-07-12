@@ -41,6 +41,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   PackageIcon, 
   PlusIcon, 
@@ -67,7 +77,13 @@ import {
   QrCodeIcon,
   XIcon,
   InfoIcon,
-  SettingsIcon
+  SettingsIcon,
+  MoreHorizontalIcon,
+  CheckIcon,
+  CopyIcon,
+  PrinterIcon,
+  ArchiveIcon,
+  ChevronDownIcon
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -117,6 +133,12 @@ export default function AddItemDashboard() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [currentEditSection, setCurrentEditSection] = useState("item-information");
   const [, setLocation] = useLocation();
+  
+  // Bulk actions state
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'sku' | 'price' | 'stock'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -607,6 +629,99 @@ export default function AddItemDashboard() {
     },
   });
 
+  // Bulk action handler functions
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } else {
+      setSelectedItems(new Set(filteredProducts.map(p => p.id)));
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectItem = (productId: number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedItems(newSelected);
+    setSelectAll(newSelected.size === filteredProducts.length);
+  };
+
+  const handleBulkAction = (action: string) => {
+    if (selectedItems.size === 0) {
+      toast({
+        title: "No items selected",
+        description: "Please select items to perform bulk actions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    switch (action) {
+      case 'activate':
+        toast({
+          title: "Bulk Activate",
+          description: `Activating ${selectedItems.size} items...`,
+        });
+        break;
+      case 'deactivate':
+        toast({
+          title: "Bulk Deactivate", 
+          description: `Deactivating ${selectedItems.size} items...`,
+        });
+        break;
+      case 'duplicate':
+        toast({
+          title: "Bulk Duplicate",
+          description: `Duplicating ${selectedItems.size} items...`,
+        });
+        break;
+      case 'export':
+        const selectedProducts = products.filter(p => selectedItems.has(p.id));
+        const csvContent = selectedProducts.map(p => 
+          `"${p.name}","${p.sku}","${p.price}","${p.stockQuantity}","${p.active ? 'Active' : 'Inactive'}"`
+        ).join('\n');
+        const blob = new Blob([`Name,SKU,Price,Stock,Status\n${csvContent}`], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selected-products-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        toast({
+          title: "Export Complete",
+          description: `Exported ${selectedItems.size} items to CSV`,
+        });
+        break;
+      case 'print':
+        toast({
+          title: "Print Labels",
+          description: `Generating labels for ${selectedItems.size} items...`,
+        });
+        break;
+      case 'archive':
+        toast({
+          title: "Archive Items",
+          description: `Archiving ${selectedItems.size} items...`,
+        });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSort = (field: 'name' | 'sku' | 'price' | 'stock') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
   // Handler functions
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -858,7 +973,7 @@ export default function AddItemDashboard() {
     return sum + (parseFloat(p.price.toString()) * p.stockQuantity);
   }, 0);
 
-  // Enhanced product filtering to include bulk and repackaged items
+  // Enhanced product filtering to include bulk and repackaged items with sorting
   const filteredProducts = Array.isArray(products) ? products.filter((product: Product) => {
     // Ensure product object has required properties
     if (!product || typeof product !== 'object') {
@@ -902,6 +1017,39 @@ export default function AddItemDashboard() {
         );
       default:
         return matchesSearch;
+    }
+  }).sort((a, b) => {
+    // Apply sorting based on selected criteria
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'name':
+        aValue = (a.name || '').toLowerCase();
+        bValue = (b.name || '').toLowerCase();
+        break;
+      case 'sku':
+        aValue = (a.sku || '').toLowerCase();
+        bValue = (b.sku || '').toLowerCase();
+        break;
+      case 'price':
+        aValue = parseFloat(a.price?.toString() || '0');
+        bValue = parseFloat(b.price?.toString() || '0');
+        break;
+      case 'stock':
+        aValue = a.stockQuantity || 0;
+        bValue = b.stockQuantity || 0;
+        break;
+      default:
+        aValue = (a.name || '').toLowerCase();
+        bValue = (b.name || '').toLowerCase();
+    }
+    
+    if (sortBy === 'price' || sortBy === 'stock') {
+      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+    } else {
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
     }
   }) : [];
 
@@ -1830,15 +1978,146 @@ export default function AddItemDashboard() {
                   </div>
                 ) : (
                   <>
+                    {/* Actions Toolbar */}
+                    <div className="flex items-center justify-between mb-4 bg-gray-50 p-4 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            checked={selectAll}
+                            onCheckedChange={handleSelectAll}
+                            id="select-all"
+                          />
+                          <label htmlFor="select-all" className="text-sm font-medium">
+                            Select All ({filteredProducts.length} items)
+                          </label>
+                        </div>
+                        
+                        {selectedItems.size > 0 && (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              {selectedItems.size} selected
+                            </Badge>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <MoreHorizontalIcon className="w-4 h-4 mr-2" />
+                                  Actions
+                                  <ChevronDownIcon className="w-4 h-4 ml-2" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-48">
+                                <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                  <DropdownMenuItem onClick={() => handleBulkAction('activate')}>
+                                    <CheckIcon className="w-4 h-4 mr-2" />
+                                    Activate Items
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleBulkAction('deactivate')}>
+                                    <XIcon className="w-4 h-4 mr-2" />
+                                    Deactivate Items
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleBulkAction('duplicate')}>
+                                    <CopyIcon className="w-4 h-4 mr-2" />
+                                    Duplicate Items
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleBulkAction('export')}>
+                                    <DownloadIcon className="w-4 h-4 mr-2" />
+                                    Export Selected
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleBulkAction('print')}>
+                                    <PrinterIcon className="w-4 h-4 mr-2" />
+                                    Print Labels
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleBulkAction('archive')} className="text-red-600">
+                                    <ArchiveIcon className="w-4 h-4 mr-2" />
+                                    Archive Items
+                                  </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10 per page</SelectItem>
+                            <SelectItem value="20">20 per page</SelectItem>
+                            <SelectItem value="50">50 per page</SelectItem>
+                            <SelectItem value="100">100 per page</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <ArrowUpDownIcon className="w-4 h-4 mr-2" />
+                              Sort by {sortBy}
+                              <ChevronDownIcon className="w-4 h-4 ml-2" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleSort('name')}>
+                              Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSort('sku')}>
+                              SKU {sortBy === 'sku' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSort('price')}>
+                              Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSort('stock')}>
+                              Stock {sortBy === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead>SKU</TableHead>
+                          <TableHead className="w-12">
+                            <Checkbox 
+                              checked={selectAll}
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead>
+                            <Button variant="ghost" size="sm" onClick={() => handleSort('name')} className="h-auto p-0 font-medium">
+                              Product {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </Button>
+                          </TableHead>
+                          <TableHead>
+                            <Button variant="ghost" size="sm" onClick={() => handleSort('sku')} className="h-auto p-0 font-medium">
+                              SKU {sortBy === 'sku' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </Button>
+                          </TableHead>
                           <TableHead>Barcode</TableHead>
-                          <TableHead>Price</TableHead>
+                          <TableHead>
+                            <Button variant="ghost" size="sm" onClick={() => handleSort('price')} className="h-auto p-0 font-medium">
+                              Price {sortBy === 'price' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </Button>
+                          </TableHead>
                           <TableHead>MRP</TableHead>
-                          <TableHead>Stock</TableHead>
+                          <TableHead>
+                            <Button variant="ghost" size="sm" onClick={() => handleSort('stock')} className="h-auto p-0 font-medium">
+                              Stock {sortBy === 'stock' && (sortOrder === 'asc' ? '↑' : '↓')}
+                            </Button>
+                          </TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -1846,6 +2125,12 @@ export default function AddItemDashboard() {
                       <TableBody>
                         {paginatedProducts.map((product: Product) => (
                           <TableRow key={product.id} className="hover:bg-gray-50">
+                            <TableCell>
+                              <Checkbox 
+                                checked={selectedItems.has(product.id)}
+                                onCheckedChange={() => handleSelectItem(product.id)}
+                              />
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
