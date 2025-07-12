@@ -985,18 +985,7 @@ export default function AddItemDashboard() {
     const productSku = product.sku || '';
     const productDescription = product.description || '';
     
-    // Debug logging
-    if (searchTerm === "GREEN PAASI") {
-      console.log('DEBUG: Checking product for search "GREEN PAASI":', {
-        name: productName,
-        sku: productSku,
-        description: productDescription,
-        active: product.active,
-        nameMatch: productName.toLowerCase().includes(searchTerm.toLowerCase()),
-        skuMatch: productSku.toLowerCase().includes(searchTerm.toLowerCase()),
-        descMatch: productDescription.toLowerCase().includes(searchTerm.toLowerCase())
-      });
-    }
+
     
     const matchesSearch = !searchTerm || 
       productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1038,15 +1027,7 @@ export default function AddItemDashboard() {
         tabResult = matchesSearch;
     }
     
-    // Debug logging for active tab with search
-    if (searchTerm === "GREEN PAASI" && activeTab === "active") {
-      console.log('DEBUG: Active tab filter result:', {
-        product: productName,
-        matchesSearch,
-        active: product.active,
-        tabResult
-      });
-    }
+
     
     return tabResult;
   }).sort((a, b) => {
@@ -1084,14 +1065,7 @@ export default function AddItemDashboard() {
     }
   }) : [];
 
-  // Debug logging for filtering results
-  console.log('DEBUG: Filter results:', {
-    totalProducts: products?.length || 0,
-    filteredProducts: filteredProducts.length,
-    activeTab,
-    searchTerm,
-    firstFewProducts: products?.slice(0, 3).map(p => ({ name: p.name, active: p.active })) || []
-  });
+
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);

@@ -641,14 +641,22 @@ export const storage = {
 
   async listProducts(limit?: number, offset?: number): Promise<Product[]> {
     try {
-      return await db.query.products.findMany({
-        limit: limit || 50,
-        offset: offset || 0,
+      const queryOptions: any = {
         orderBy: desc(products.createdAt),
         with: {
           category: true
         }
-      });
+      };
+      
+      // Only add limit/offset if explicitly provided
+      if (limit !== undefined) {
+        queryOptions.limit = limit;
+      }
+      if (offset !== undefined) {
+        queryOptions.offset = offset;
+      }
+      
+      return await db.query.products.findMany(queryOptions);
     } catch (error) {
       console.error('Error listing products:', error);
       throw error;
