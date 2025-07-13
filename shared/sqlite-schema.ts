@@ -328,3 +328,68 @@ export type Purchase = typeof purchases.$inferSelect;
 export type InsertPurchase = z.infer<typeof insertPurchaseSchema>;
 export type PurchaseItem = typeof purchaseItems.$inferSelect;
 export type InsertPurchaseItem = z.infer<typeof insertPurchaseItemSchema>;
+
+// Expense Categories table
+export const expenseCategories = sqliteTable('expense_categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  description: text('description'),
+  icon: text('icon'),
+  color: text('color'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Expenses table
+export const expenses = sqliteTable('expenses', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  expenseNumber: text('expense_number').notNull(),
+  categoryId: integer('category_id').references(() => expenseCategories.id),
+  supplierId: integer('supplier_id').references(() => suppliers.id),
+  userId: integer('user_id').references(() => users.id),
+  amount: real('amount').notNull(),
+  description: text('description'),
+  expenseDate: text('expense_date').notNull(),
+  paymentMethod: text('payment_method').default('cash'),
+  reference: text('reference'),
+  notes: text('notes'),
+  attachments: text('attachments'),
+  isRecurring: integer('is_recurring', { mode: 'boolean' }).default(false),
+  recurringInterval: text('recurring_interval'),
+  tags: text('tags'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Expense relations
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+  expenses: many(expenses)
+}));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  category: one(expenseCategories, {
+    fields: [expenses.categoryId],
+    references: [expenseCategories.id]
+  }),
+  supplier: one(suppliers, {
+    fields: [expenses.supplierId],
+    references: [suppliers.id]
+  }),
+  user: one(users, {
+    fields: [expenses.userId],
+    references: [users.id]
+  })
+}));
+
+// Expense schemas
+export const insertExpenseCategorySchema = createInsertSchema(expenseCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectExpenseCategorySchema = createSelectSchema(expenseCategories);
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectExpenseSchema = createSelectSchema(expenses);
+
+// Expense types
+export type ExpenseCategory = typeof expenseCategories.$inferSelect;
+export type ExpenseCategoryInsert = z.infer<typeof insertExpenseCategorySchema>;
+export type Expense = typeof expenses.$inferSelect;
+export type ExpenseInsert = z.infer<typeof insertExpenseSchema>;

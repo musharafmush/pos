@@ -9,6 +9,8 @@ import {
   saleItems,
   purchases,
   purchaseItems,
+  expenseCategories,
+  expenses,
   User,
   Product,
   Category,
@@ -18,6 +20,8 @@ import {
   SaleItem,
   Purchase,
   PurchaseItem,
+  ExpenseCategory,
+  Expense,
   InsertUser,
   InsertProduct,
   InsertCategory,
@@ -26,7 +30,9 @@ import {
   InsertSale,
   InsertSaleItem,
   InsertPurchase,
-  InsertPurchaseItem
+  InsertPurchaseItem,
+  ExpenseCategoryInsert,
+  ExpenseInsert
 } from "../shared/sqlite-schema.js";
 import { eq, and, desc, sql, gt, lt, lte, gte, or, like } from "drizzle-orm";
 import { randomUUID } from "crypto";
