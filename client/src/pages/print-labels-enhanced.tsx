@@ -1487,8 +1487,27 @@ export default function PrintLabelsEnhanced() {
       // Create a temporary canvas element
       const canvas = document.createElement('canvas');
       
-      // Clean the text for barcode generation
-      const barcodeText = text.replace(/[^a-zA-Z0-9]/g, '').padEnd(12, '0').substring(0, 12);
+      // Improved barcode text cleaning - preserve original text better
+      let barcodeText = text || '';
+      
+      // Only clean if the text contains problematic characters for CODE128
+      // CODE128 supports letters, numbers, and some special characters
+      if (barcodeText.length > 0) {
+        // Remove only truly problematic characters while preserving alphanumeric and common symbols
+        barcodeText = barcodeText.replace(/[^\w\-\.]/g, '');
+        
+        // Ensure we have a valid length for display (minimum 1, max 48 for CODE128)
+        if (barcodeText.length === 0) {
+          barcodeText = text.replace(/[^a-zA-Z0-9]/g, '').padEnd(12, '0').substring(0, 12);
+        }
+        
+        // Limit to reasonable barcode length
+        if (barcodeText.length > 48) {
+          barcodeText = barcodeText.substring(0, 48);
+        }
+      } else {
+        barcodeText = '000000000000'; // Fallback
+      }
       
       // Calculate barcode dimensions from template settings if available
       let barcodeWidth = width;
@@ -1506,6 +1525,14 @@ export default function PrintLabelsEnhanced() {
         barcodeWidth = Math.max(barcodeWidth, 100);
         barcodeHeight = Math.max(barcodeHeight, 40);
       }
+      
+      // Debug logging for barcode generation
+      console.log('🔍 Barcode generation debug:', {
+        originalText: text,
+        cleanedBarcodeText: barcodeText,
+        barcodeWidth,
+        barcodeHeight
+      });
       
       // Generate barcode using JsBarcode
       JsBarcode(canvas, barcodeText, {
