@@ -4522,7 +4522,7 @@ app.post("/api/customers", async (req, res) => {
       // Get all receipt-related settings
       const receiptKeys = [
         'businessName', 'businessAddress', 'phoneNumber', 'taxId', 'receiptFooter',
-        'paperWidth', 'showLogo', 'autoPrint', 'showCustomerDetails', 'showItemSKU',
+        'paperWidth', 'showLogo', 'logoUrl', 'autoPrint', 'showCustomerDetails', 'showItemSKU',
         'showMRP', 'showSavings', 'headerStyle', 'boldTotals', 'separatorStyle',
         'thermalOptimized', 'fontSize', 'fontFamily'
       ];

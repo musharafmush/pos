@@ -196,15 +196,19 @@ export default function UnifiedPrinterSettings() {
   };
 
   const saveSettings = async () => {
+    return await saveSettingsWithData(settings);
+  };
+
+  const saveSettingsWithData = async (settingsData: PrinterSettings) => {
     setIsSaving(true);
     try {
-      console.log('💾 Saving printer settings:', settings);
+      console.log('💾 Saving printer settings:', settingsData);
 
       // Save receipt settings to backend
       const receiptResponse = await fetch('/api/settings/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(settingsData)
       });
 
       console.log('📊 Receipt settings save response:', receiptResponse.status, receiptResponse.statusText);
@@ -212,15 +216,15 @@ export default function UnifiedPrinterSettings() {
       if (receiptResponse.ok) {
         // Save auto-printer settings to localStorage
         localStorage.setItem('autoPrinterSettings', JSON.stringify({
-          enableAutoPrint: settings.enableAutoPrint,
-          printDelay: settings.printDelay,
-          retryAttempts: settings.retryAttempts,
-          printCustomerCopy: settings.printCustomerCopy,
-          printMerchantCopy: settings.printMerchantCopy,
-          autoOpenCashDrawer: settings.autoOpenCashDrawer,
-          quietMode: settings.quietMode,
-          printOnSale: settings.printOnSale,
-          printOnReturn: settings.printOnReturn
+          enableAutoPrint: settingsData.enableAutoPrint,
+          printDelay: settingsData.printDelay,
+          retryAttempts: settingsData.retryAttempts,
+          printCustomerCopy: settingsData.printCustomerCopy,
+          printMerchantCopy: settingsData.printMerchantCopy,
+          autoOpenCashDrawer: settingsData.autoOpenCashDrawer,
+          quietMode: settingsData.quietMode,
+          printOnSale: settingsData.printOnSale,
+          printOnReturn: settingsData.printOnReturn
         }));
 
         toast({
@@ -369,8 +373,15 @@ export default function UnifiedPrinterSettings() {
     });
   };
 
-  const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const updateSetting = async (key: string, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    
+    // Auto-save for certain critical settings like logo
+    if (key === 'logoUrl' || key === 'businessName' || key === 'showLogo') {
+      // Save immediately with the new settings
+      await saveSettingsWithData(newSettings);
+    }
   };
 
   const activateAutoPrinter = () => {
