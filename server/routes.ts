@@ -7396,7 +7396,7 @@ app.post("/api/customers", async (req, res) => {
       const expenseData = {
         ...req.body,
         userId: user.id,
-        expenseDate: new Date(req.body.expenseDate || new Date())
+        expenseDate: req.body.expenseDate || new Date().toISOString()
       };
 
       const expense = await storage.createExpense(expenseData);

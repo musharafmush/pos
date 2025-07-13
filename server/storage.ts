@@ -2921,11 +2921,14 @@ export const storage = {
   // Expense Operations
   async createExpense(expenseData: ExpenseInsert): Promise<Expense> {
     const expenseNumber = `EXP-${Date.now()}`;
+    const now = new Date().toISOString();
+    
     const [expense] = await db.insert(expenses).values({
       ...expenseData,
       expenseNumber,
-      expenseDate: expenseData.expenseDate || new Date(),
-      updatedAt: new Date()
+      expenseDate: expenseData.expenseDate || now,
+      createdAt: now,
+      updatedAt: now
     }).returning();
     return expense;
   },
@@ -2973,7 +2976,7 @@ export const storage = {
 
   async updateExpense(id: number, updates: Partial<ExpenseInsert>): Promise<Expense | null> {
     const [expense] = await db.update(expenses)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...updates, updatedAt: new Date().toISOString() })
       .where(eq(expenses.id, id))
       .returning();
     return expense || null;
