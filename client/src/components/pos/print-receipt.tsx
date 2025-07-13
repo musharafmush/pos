@@ -50,6 +50,7 @@ export interface ReceiptCustomization {
   taxId: string;
   receiptFooter: string;
   showLogo: boolean;
+  logoUrl?: string;
   autoPrint: boolean;
 
   // Layout Customization
@@ -612,6 +613,12 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     };
 
     return `
+      ${settings.showLogo && settings.logoUrl ? `
+        <div style="text-align: center; margin-bottom: 2mm;">
+          <img src="${settings.logoUrl}" alt="Business Logo" style="max-width: ${settings.paperWidth === 'thermal58' ? '50mm' : settings.paperWidth === 'thermal72' ? '60mm' : settings.paperWidth === 'thermal77' ? '65mm' : '70mm'}; max-height: 20mm; object-fit: contain; margin: 0 auto; display: block;">
+        </div>
+      ` : ''}
+
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
         ${settings.businessName || 'M MART'}
       </div>
