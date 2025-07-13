@@ -42,6 +42,7 @@ interface PrinterSettings {
   businessAddress: string;
   phoneNumber: string;
   taxId: string;
+  logoUrl: string;
 
   // Receipt Settings
   receiptFooter: string;
@@ -93,6 +94,7 @@ export default function UnifiedPrinterSettings() {
     businessAddress: '123 Business Street, City, State',
     phoneNumber: '+91-9876543210',
     taxId: '33GSPDB3311F1ZZ',
+    logoUrl: '',
 
     // Receipt Settings
     receiptFooter: 'Thank you for shopping with us!',
@@ -163,6 +165,7 @@ export default function UnifiedPrinterSettings() {
           businessAddress: backendSettings.businessAddress || prev.businessAddress,
           phoneNumber: backendSettings.phoneNumber || prev.phoneNumber,
           taxId: backendSettings.taxId || prev.taxId,
+          logoUrl: backendSettings.logoUrl || prev.logoUrl,
           receiptFooter: backendSettings.receiptFooter || prev.receiptFooter,
           paperWidth: backendSettings.paperWidth || prev.paperWidth,
           showLogo: backendSettings.showLogo !== undefined ? backendSettings.showLogo : prev.showLogo,
@@ -238,6 +241,52 @@ export default function UnifiedPrinterSettings() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (PNG, JPG, GIF, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        updateSetting('logoUrl', dataUrl);
+        toast({
+          title: "Logo uploaded",
+          description: "Business logo has been updated successfully"
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload logo. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -912,6 +961,67 @@ export default function UnifiedPrinterSettings() {
                         onChange={(e) => updateSetting('businessAddress', e.target.value)}
                         rows={3}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="logoUpload">Business Logo</Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-4">
+                          <Input
+                            id="logoUpload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById('logoUpload')?.click()}
+                          >
+                            Choose Image
+                          </Button>
+                        </div>
+                        
+                        {settings.logoUrl && (
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <img
+                              src={settings.logoUrl}
+                              alt="Business Logo"
+                              className="w-12 h-12 object-contain border rounded"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-700">Logo Preview</p>
+                              <p className="text-xs text-gray-500">This logo will appear on receipts</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                updateSetting('logoUrl', '');
+                                toast({
+                                  title: "Logo removed",
+                                  description: "Business logo has been cleared"
+                                });
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {!settings.logoUrl && (
+                          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                            <div className="w-12 h-12 bg-blue-100 rounded border-2 border-dashed border-blue-300 flex items-center justify-center">
+                              <Store className="w-6 h-6 text-blue-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-700">No logo uploaded</p>
+                              <p className="text-xs text-blue-600">Upload a logo to display on receipts</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
