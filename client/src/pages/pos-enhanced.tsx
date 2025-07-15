@@ -4520,7 +4520,10 @@ export default function POSEnhanced() {
                                 {item.isWeightBased && (
                                   <div className="flex items-center gap-1 mt-1">
                                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                      Weight-based: {item.actualWeight}kg @ ₹{item.pricePerKg}/kg
+                                      Weight-based Item
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                      {item.actualWeight}kg @ ₹{item.pricePerKg}/kg
                                     </Badge>
                                   </div>
                                 )}
@@ -4537,8 +4540,13 @@ export default function POSEnhanced() {
                             
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <Label className="text-xs text-gray-600">
+                                <Label className="text-xs text-gray-600 flex items-center gap-1">
                                   {item.isWeightBased ? 'Weight (kg)' : 'Quantity'}
+                                  {item.isWeightBased && (
+                                    <span className="text-xs text-green-600 font-medium">
+                                      (0.25kg steps)
+                                    </span>
+                                  )}
                                 </Label>
                                 <div className="flex items-center gap-1 mt-1">
                                   <Button
@@ -4546,7 +4554,9 @@ export default function POSEnhanced() {
                                     variant="outline"
                                     onClick={() => {
                                       if (item.isWeightBased) {
-                                        const newWeight = Math.max(0.1, (item.actualWeight || 1) - 0.1);
+                                        const currentWeight = item.actualWeight || 1;
+                                        const decrement = currentWeight >= 1 ? 0.25 : 0.1;
+                                        const newWeight = Math.max(0.1, currentWeight - decrement);
                                         updateCartItemWeight(item.id, newWeight);
                                       } else {
                                         updateCartItemQuantity(item.id, Math.max(1, item.quantity - 1));
@@ -4568,7 +4578,7 @@ export default function POSEnhanced() {
                                       }
                                     }}
                                     className="h-8 text-center text-sm"
-                                    step={item.isWeightBased ? "0.1" : "1"}
+                                    step={item.isWeightBased ? "0.25" : "1"}
                                     min={item.isWeightBased ? "0.1" : "1"}
                                   />
                                   <Button
@@ -4576,7 +4586,9 @@ export default function POSEnhanced() {
                                     variant="outline"
                                     onClick={() => {
                                       if (item.isWeightBased) {
-                                        const newWeight = (item.actualWeight || 1) + 0.1;
+                                        const currentWeight = item.actualWeight || 1;
+                                        const increment = currentWeight >= 1 ? 0.25 : 0.1;
+                                        const newWeight = currentWeight + increment;
                                         updateCartItemWeight(item.id, newWeight);
                                       } else {
                                         updateCartItemQuantity(item.id, item.quantity + 1);
@@ -4874,28 +4886,54 @@ export default function POSEnhanced() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEnteredWeight("0.5")}
-                    className="text-sm"
-                  >
-                    0.5 kg
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEnteredWeight("1")}
-                    className="text-sm"
-                  >
-                    1 kg
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEnteredWeight("2")}
-                    className="text-sm"
-                  >
-                    2 kg
-                  </Button>
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-gray-700">Quick Weight Selection:</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("0.25")}
+                      className="text-sm"
+                    >
+                      0.25 kg
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("0.5")}
+                      className="text-sm"
+                    >
+                      0.5 kg
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("1")}
+                      className="text-sm bg-green-50 border-green-200 text-green-700"
+                    >
+                      1 kg
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("1.5")}
+                      className="text-sm"
+                    >
+                      1.5 kg
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("2")}
+                      className="text-sm"
+                    >
+                      2 kg
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEnteredWeight("5")}
+                      className="text-sm"
+                    >
+                      5 kg
+                    </Button>
+                  </div>
                 </div>
               </div>
 
