@@ -16,7 +16,8 @@ import {
   ArrowDownIcon,
   PlusIcon,
   Loader2,
-  Calculator
+  Calculator,
+  Scale
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -157,7 +158,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       items: [
         { href: "/inventory", icon: <ArrowRightLeft className="h-5 w-5" />, label: "Stock Transfers" },
         { href: "/inventory-forecasting", icon: <BarChart4Icon className="h-5 w-5" />, label: "Inventory Forecasting" },
-        { href: "/inventory-adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" }
+        { href: "/inventory-adjustments", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Stock Adjustment" },
+        { href: "/weight-based-items", icon: <Scale className="h-5 w-5" />, label: "Weight-Based Items" }
       ]
     },
     {

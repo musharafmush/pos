@@ -45,6 +45,7 @@ import PrintLabelsEnhanced from "@/pages/print-labels-enhanced";
 import CustomLabelPrinting from "@/pages/custom-label-printing";
 import InventoryForecasting from "@/pages/inventory-forecasting";
 import Repacking from "@/pages/repacking";
+import WeightBasedItems from "@/pages/weight-based-items";
 import RepackingDashboard from "@/pages/repacking-dashboard";
 import CurrencySettings from "@/pages/currency-settings";
 import BusinessSettings from "@/pages/business-settings";
@@ -100,6 +101,7 @@ function Router() {
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/inventory-adjustments" component={InventoryAdjustments} />
       <ProtectedRoute path="/inventory-forecasting" component={InventoryForecasting} />
+      <ProtectedRoute path="/weight-based-items" component={WeightBasedItems} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
