@@ -3366,10 +3366,17 @@ export default function POSEnhanced() {
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-gray-900">{product.name}</h4>
                         {isWeightBasedProduct(product) && (
-                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
-                            <Package className="w-3 h-3 mr-1" />
-                            Per KG
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                              <Package className="w-3 h-3 mr-1" />
+                              Weight-based Item
+                            </Badge>
+                            {product.weight && (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-xs">
+                                {product.weight} {product.weightUnit || 'kg'}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
                       <p className="text-sm text-gray-500 font-mono">{product.sku}</p>
@@ -3377,9 +3384,16 @@ export default function POSEnhanced() {
                         <p className="text-xs text-blue-600 font-mono">📷 {product.barcode}</p>
                       )}
                       {isWeightBasedProduct(product) && (
-                        <p className="text-xs text-green-600 font-medium mt-1">
-                          Click to enter weight for loose selling
-                        </p>
+                        <div className="mt-1">
+                          {product.weight && (
+                            <p className="text-sm font-semibold text-green-700">
+                              {product.weight} {product.weightUnit || 'kg'}
+                            </p>
+                          )}
+                          <p className="text-xs text-green-600 font-medium">
+                            Click to enter weight for loose selling
+                          </p>
+                        </div>
                       )}
                       {product.category && (
                         <Badge variant="outline" className="mt-1 text-xs">
