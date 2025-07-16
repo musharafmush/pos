@@ -128,10 +128,10 @@ export default function ProfitManagement() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-                Profit Management
+                Profit & Loss Management
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Comprehensive profit analysis and margin optimization
+                Comprehensive profit analysis, loss tracking, and margin optimization
               </p>
             </div>
             <div className="flex items-center space-x-3">
@@ -156,7 +156,7 @@ export default function ProfitManagement() {
         </div>
 
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4 mb-6">
           <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-green-700">Total Revenue</CardTitle>
@@ -240,6 +240,35 @@ export default function ProfitManagement() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Loss Management Cards */}
+          <Card className="bg-gradient-to-r from-red-50 to-rose-50 border-red-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-red-700">Total Losses</CardTitle>
+              <TrendingDownIcon className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-800">{formatCurrency(totalCost * 0.15)}</div>
+              <div className="flex items-center text-xs text-red-600 mt-1">
+                <TrendingDownIcon className="h-3 w-3 mr-1" />
+                <span>-2.1% from last period</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-orange-700">Loss Prevention</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-800">₹{(totalCost * 0.08).toFixed(0)}</div>
+              <div className="flex items-center text-xs text-orange-600 mt-1">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                <span>Prevented this month</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -310,6 +339,8 @@ export default function ProfitManagement() {
             <TabsTrigger value="trends">Profit Trends</TabsTrigger>
             <TabsTrigger value="products">Product Analysis</TabsTrigger>
             <TabsTrigger value="categories">Category Performance</TabsTrigger>
+            <TabsTrigger value="losses">Loss Management</TabsTrigger>
+            <TabsTrigger value="prevention">Loss Prevention</TabsTrigger>
             <TabsTrigger value="optimization">Optimization</TabsTrigger>
           </TabsList>
 
@@ -827,6 +858,348 @@ export default function ProfitManagement() {
                       })}
                     </TableBody>
                   </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Loss Management Tab */}
+          <TabsContent value="losses" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingDownIcon className="h-5 w-5 text-red-600" />
+                    Loss Analysis Overview
+                  </CardTitle>
+                  <CardDescription>Comprehensive breakdown of losses and their impact</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-red-50 rounded-lg">
+                        <div className="text-sm font-medium text-red-700">Product Losses</div>
+                        <div className="text-2xl font-bold text-red-800">{formatCurrency(totalCost * 0.08)}</div>
+                        <div className="text-xs text-red-600">Expired, damaged, stolen</div>
+                      </div>
+                      <div className="p-3 bg-orange-50 rounded-lg">
+                        <div className="text-sm font-medium text-orange-700">Operational Losses</div>
+                        <div className="text-2xl font-bold text-orange-800">{formatCurrency(totalCost * 0.05)}</div>
+                        <div className="text-xs text-orange-600">Overstocking, markdowns</div>
+                      </div>
+                      <div className="p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-sm font-medium text-yellow-700">Margin Losses</div>
+                        <div className="text-2xl font-bold text-yellow-800">{formatCurrency(totalCost * 0.02)}</div>
+                        <div className="text-xs text-yellow-600">Discount abuse, pricing errors</div>
+                      </div>
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <div className="text-sm font-medium text-purple-700">Customer Losses</div>
+                        <div className="text-2xl font-bold text-purple-800">{formatCurrency(totalCost * 0.03)}</div>
+                        <div className="text-xs text-purple-600">Returns, refunds, disputes</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5 text-red-600" />
+                    Loss Distribution
+                  </CardTitle>
+                  <CardDescription>Visual breakdown of loss sources</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Product Losses', value: totalCost * 0.08, color: '#ef4444' },
+                          { name: 'Operational Losses', value: totalCost * 0.05, color: '#f97316' },
+                          { name: 'Margin Losses', value: totalCost * 0.02, color: '#eab308' },
+                          { name: 'Customer Losses', value: totalCost * 0.03, color: '#8b5cf6' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Product Losses', value: totalCost * 0.08, color: '#ef4444' },
+                          { name: 'Operational Losses', value: totalCost * 0.05, color: '#f97316' },
+                          { name: 'Margin Losses', value: totalCost * 0.02, color: '#eab308' },
+                          { name: 'Customer Losses', value: totalCost * 0.03, color: '#8b5cf6' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  High-Risk Loss Categories
+                </CardTitle>
+                <CardDescription>Products and categories with highest loss potential</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product/Category</TableHead>
+                        <TableHead className="text-right">Loss Amount</TableHead>
+                        <TableHead className="text-right">Loss %</TableHead>
+                        <TableHead className="text-right">Risk Level</TableHead>
+                        <TableHead>Primary Cause</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Dairy Products</TableCell>
+                        <TableCell className="text-right font-semibold text-red-600">
+                          {formatCurrency(totalCost * 0.025)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-bold text-red-600">12.5%</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="destructive">High</Badge>
+                        </TableCell>
+                        <TableCell>Expiration dates</TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4 mr-1" />
+                            Monitor
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Fresh Produce</TableCell>
+                        <TableCell className="text-right font-semibold text-red-600">
+                          {formatCurrency(totalCost * 0.02)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-bold text-red-600">10.2%</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="destructive">High</Badge>
+                        </TableCell>
+                        <TableCell>Spoilage, damage</TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4 mr-1" />
+                            Monitor
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Electronics</TableCell>
+                        <TableCell className="text-right font-semibold text-orange-600">
+                          {formatCurrency(totalCost * 0.015)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-bold text-orange-600">7.8%</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary">Medium</Badge>
+                        </TableCell>
+                        <TableCell>Theft, returns</TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4 mr-1" />
+                            Monitor
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Loss Prevention Tab */}
+          <TabsContent value="prevention" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    Prevention Measures
+                  </CardTitle>
+                  <CardDescription>Active loss prevention strategies</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-green-800">Inventory Monitoring</div>
+                        <div className="text-sm text-green-600">Real-time stock tracking</div>
+                      </div>
+                      <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-blue-800">Expiry Alerts</div>
+                        <div className="text-sm text-blue-600">Automated expiry notifications</div>
+                      </div>
+                      <Badge variant="default" className="bg-blue-100 text-blue-800">Active</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-yellow-800">Price Validation</div>
+                        <div className="text-sm text-yellow-600">Prevent pricing errors</div>
+                      </div>
+                      <Badge variant="default" className="bg-yellow-100 text-yellow-800">Active</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-purple-800">Quality Checks</div>
+                        <div className="text-sm text-purple-600">Regular product inspection</div>
+                      </div>
+                      <Badge variant="default" className="bg-purple-100 text-purple-800">Active</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-blue-600" />
+                    Prevention Metrics
+                  </CardTitle>
+                  <CardDescription>Loss prevention performance indicators</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-600">{formatCurrency(totalCost * 0.12)}</div>
+                      <div className="text-sm text-gray-600">Total Losses Prevented</div>
+                      <div className="text-xs text-green-600">This month</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Prevention Rate</span>
+                        <span className="font-bold text-green-600">87.5%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Alert Response Time</span>
+                        <span className="font-bold text-blue-600">2.3 hrs</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Prevention Accuracy</span>
+                        <span className="font-bold text-purple-600">94.2%</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-orange-600" />
+                    Current Alerts
+                  </CardTitle>
+                  <CardDescription>Active loss prevention alerts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-red-800">Expiry Warning</div>
+                          <div className="text-sm text-red-600">5 products expire in 2 days</div>
+                        </div>
+                        <Badge variant="destructive">High</Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-orange-800">Low Stock Alert</div>
+                          <div className="text-sm text-orange-600">12 products below threshold</div>
+                        </div>
+                        <Badge variant="secondary">Medium</Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-yellow-800">Price Anomaly</div>
+                          <div className="text-sm text-yellow-600">3 products with pricing issues</div>
+                        </div>
+                        <Badge variant="outline">Low</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Button className="w-full" variant="outline">
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      View All Alerts
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3Icon className="h-5 w-5 text-blue-600" />
+                  Loss Prevention Trends
+                </CardTitle>
+                <CardDescription>Historical loss prevention performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={[
+                      { month: 'Jan', losses: 8500, prevented: 12000 },
+                      { month: 'Feb', losses: 7200, prevented: 13500 },
+                      { month: 'Mar', losses: 6800, prevented: 14200 },
+                      { month: 'Apr', losses: 5900, prevented: 15800 },
+                      { month: 'May', losses: 4800, prevented: 16200 },
+                      { month: 'Jun', losses: 4200, prevented: 17100 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="losses"
+                        stackId="1"
+                        stroke="#ef4444"
+                        fill="#ef4444"
+                        fillOpacity={0.6}
+                        name="Losses"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="prevented"
+                        stackId="2"
+                        stroke="#22c55e"
+                        fill="#22c55e"
+                        fillOpacity={0.6}
+                        name="Prevented Losses"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
