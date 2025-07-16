@@ -35,6 +35,7 @@ import ProductHistory from "./pages/product-history";
 import SaleReturn from "./pages/sale-return";
 import SalesDashboard from "./pages/sales-dashboard";
 import Users from "@/pages/users";
+import Roles from "@/pages/roles";
 import Settings from "@/pages/settings";
 import Suppliers from "@/pages/suppliers";
 import Customers from "@/pages/customers";
@@ -120,6 +121,7 @@ function Router() {
       <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
       <ProtectedRoute path="/profit-management" component={ProfitManagement} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
+      <ProtectedRoute path="/roles" component={Roles} adminOnly />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/suppliers" component={Suppliers} />
       <ProtectedRoute path="/customers" component={CustomersCRUD} />
