@@ -50050,6 +50050,73 @@
       "severity": "WARNING"
     },
     {
+      "id": "vendored-rules.typescript.react.security.react-markdown-insecure-html",
+      "languages": [
+        "js",
+        "ts"
+      ],
+      "message": "Overwriting `transformLinkUri` or `transformImageUri` to something insecure, or turning `allowDangerousHtml` on, or turning `escapeHtml` off, will open the code up to XSS vectors.",
+      "metadata": {
+        "category": "security",
+        "confidence": "LOW",
+        "cwe": [
+          "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+        ],
+        "cwe2021-top25": true,
+        "cwe2022-top25": true,
+        "impact": "LOW",
+        "likelihood": "LOW",
+        "owasp": [
+          "A07:2017 - Cross-Site Scripting (XSS)",
+          "A03:2021 - Injection"
+        ],
+        "references": [
+          "https://www.npmjs.com/package/react-markdown#security"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "react"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-either": [
+            {
+              "pattern-inside": "$X = require('react-markdown/with-html');\n...\n"
+            },
+            {
+              "pattern-inside": "$X = require('react-markdown');\n...\n"
+            },
+            {
+              "pattern-inside": "import 'react-markdown/with-html';\n...\n"
+            },
+            {
+              "pattern-inside": "import 'react-markdown';\n...\n"
+            }
+          ]
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern": "<$EL allowDangerousHtml />\n"
+            },
+            {
+              "pattern": "<$EL escapeHtml={false} />\n"
+            },
+            {
+              "pattern": "<$EL transformLinkUri=... />\n"
+            },
+            {
+              "pattern": "<$EL transformImageUri=... />\n"
+            }
+          ]
+        }
+      ],
+      "severity": "WARNING"
+    },
+    {
       "id": "vendored-rules.typescript.react.security.react-insecure-request",
       "languages": [
         "js",
@@ -50137,78 +50204,11 @@
         {
           "metavariable-regex": {
             "metavariable": "$URL",
-            "regex": "^([Hh][Tt][Tt][Pp]:\\/\\/(?!localhost).*)"
+            "regex": "^([Hh][Tt][Tt][Pp]:\\/\\/(?!localhost|127\\.0\\.0\\.1).*)"
           }
         }
       ],
       "severity": "ERROR"
-    },
-    {
-      "id": "vendored-rules.typescript.react.security.react-markdown-insecure-html",
-      "languages": [
-        "js",
-        "ts"
-      ],
-      "message": "Overwriting `transformLinkUri` or `transformImageUri` to something insecure, or turning `allowDangerousHtml` on, or turning `escapeHtml` off, will open the code up to XSS vectors.",
-      "metadata": {
-        "category": "security",
-        "confidence": "LOW",
-        "cwe": [
-          "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
-        ],
-        "cwe2021-top25": true,
-        "cwe2022-top25": true,
-        "impact": "LOW",
-        "likelihood": "LOW",
-        "owasp": [
-          "A07:2017 - Cross-Site Scripting (XSS)",
-          "A03:2021 - Injection"
-        ],
-        "references": [
-          "https://www.npmjs.com/package/react-markdown#security"
-        ],
-        "subcategory": [
-          "audit"
-        ],
-        "technology": [
-          "react"
-        ]
-      },
-      "patterns": [
-        {
-          "pattern-either": [
-            {
-              "pattern-inside": "$X = require('react-markdown/with-html');\n...\n"
-            },
-            {
-              "pattern-inside": "$X = require('react-markdown');\n...\n"
-            },
-            {
-              "pattern-inside": "import 'react-markdown/with-html';\n...\n"
-            },
-            {
-              "pattern-inside": "import 'react-markdown';\n...\n"
-            }
-          ]
-        },
-        {
-          "pattern-either": [
-            {
-              "pattern": "<$EL allowDangerousHtml />\n"
-            },
-            {
-              "pattern": "<$EL escapeHtml={false} />\n"
-            },
-            {
-              "pattern": "<$EL transformLinkUri=... />\n"
-            },
-            {
-              "pattern": "<$EL transformImageUri=... />\n"
-            }
-          ]
-        }
-      ],
-      "severity": "WARNING"
     },
     {
       "id": "vendored-rules.typescript.react.security.audit.react-dangerouslysetinnerhtml",
@@ -51366,6 +51366,175 @@
       "severity": "ERROR"
     },
     {
+      "id": "replit-rules.javascript.vite.security.audit.vite-vulnerability-check",
+      "languages": [
+        "json"
+      ],
+      "message": "Vite version detected is vulnerable to CVE-2025-30208. The vulnerability is patched in versions:\n6.2.3, 6.1.2, 6.0.12, 5.4.15, and 4.5.10. Please upgrade to a patched version.\n",
+      "metadata": {
+        "category": "security",
+        "confidence": "HIGH",
+        "cwe": [
+          "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+        ],
+        "impact": "HIGH",
+        "likelihood": "HIGH",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2025-30208"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "vite",
+          "javascript",
+          "nodejs"
+        ]
+      },
+      "paths": {
+        "include": [
+          "*package.json"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-either": [
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"[\\^~]?4\\.([0-4]\\.\\d+|5\\.[0-9])\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"[\\^~]?5\\.([0-3]\\.\\d+|4\\.(1[0-4]|[0-9]))\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"[\\^~]?6\\.0\\.(1[01]|[0-9])\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"[\\^~]?6\\.1\\.[01]\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"[\\^~]?6\\.2\\.[0-2]\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"(latest|>=\\s*[0-6]\\.\\d+\\.\\d+)\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"\\^([0-4]\\.\\d+\\.\\d+|5\\.[0-3]\\.\\d+|5\\.4\\.(1[0-4]|[0-9])|6\\.0\\.(1[01]|[0-9])|6\\.1\\.[01]|6\\.2\\.[0-2])\""
+            },
+            {
+              "pattern-regex": "\"vite\"\\s*:\\s*\"~([0-4]\\.\\d+\\.\\d+|5\\.[0-3]\\.\\d+|5\\.4\\.(1[0-4]|[0-9])|6\\.0\\.(1[01]|[0-9])|6\\.1\\.[01]|6\\.2\\.[0-2])\""
+            }
+          ]
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern-inside": "\"dependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"devDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"optionalDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"peerDependencies\": {\n  ...\n}\n"
+            }
+          ]
+        },
+        {
+          "pattern-not-inside": "\"_shrinkwrap\": {\n  ...\n}"
+        }
+      ],
+      "severity": "ERROR"
+    },
+    {
+      "id": "replit-rules.javascript.multer.security.audit.multer-vulnerable-version-check",
+      "languages": [
+        "json"
+      ],
+      "message": "Multer version detected is not the latest secure version. \nCVE-2025-48997 (GHSA-g5hg-p3ph-g8qg) affects versions >=1.4.4-lts.1 and <2.0.1, \nallowing attackers to trigger Denial of Service by sending upload requests with empty string field names. \nPlease upgrade to version 2.0.1 or later for the latest security fixes.\nNote: Upgrading from 1.x to 2.x is a breaking change - the minimum supported Node version is now 10.16.0.\n",
+      "metadata": {
+        "category": "security",
+        "confidence": "HIGH",
+        "cwe": [
+          "CWE-248: Uncaught Exception"
+        ],
+        "impact": "HIGH",
+        "likelihood": "HIGH",
+        "owasp": [
+          "A06:2021 - Vulnerable and Outdated Components"
+        ],
+        "references": [
+          "https://github.com/advisories/GHSA-g5hg-p3ph-g8qg",
+          "https://nvd.nist.gov/vuln/detail/CVE-2025-48997",
+          "https://github.com/expressjs/multer/issues/1233",
+          "https://github.com/expressjs/multer/pull/1256",
+          "https://osv.dev/vulnerability/GHSA-g5hg-p3ph-g8qg"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "multer",
+          "javascript",
+          "nodejs",
+          "express"
+        ]
+      },
+      "paths": {
+        "include": [
+          "*package.json"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-either": [
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]?[01]\\.\\d+\\.\\d+(-\\w+\\.\\d+)?\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]?2\\.0\\.0\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"(latest|\\*)\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\">=?\\s*[01]\\.\\d+\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\">=?\\s*2\\.0\\.0\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~][01]\\.\\d+\\.\\d+\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]2\\.0\\.0\""
+            }
+          ]
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern-inside": "\"dependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"devDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"optionalDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"peerDependencies\": {\n  ...\n}\n"
+            }
+          ]
+        },
+        {
+          "pattern-not-inside": "\"_shrinkwrap\": {\n  ...\n}\n"
+        }
+      ],
+      "severity": "ERROR"
+    },
+    {
       "id": "replit-rules.python.django.security.audit.django-replit-cors-csrf-hosts",
       "languages": [
         "python"
@@ -51432,6 +51601,77 @@
                   ]
                 }
               ]
+            }
+          ]
+        }
+      ],
+      "severity": "ERROR"
+    },
+    {
+      "id": "replit-rules.generic.replit.security.audit.replit-deployment-dev-check",
+      "languages": [
+        "generic"
+      ],
+      "message": "The .replit deployment section contains 'npm run dev' which runs a development server.\nFor production deployments, use the production build command instead (e.g., 'npm run start').\nDevelopment servers are not optimized for production and may expose sensitive information.\n",
+      "metadata": {
+        "category": "security",
+        "confidence": "HIGH",
+        "cwe": [
+          "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+        ],
+        "impact": "HIGH",
+        "likelihood": "HIGH",
+        "references": [
+          "https://docs.replit.com/category/replit-deployments"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "replit",
+          "nodejs"
+        ]
+      },
+      "paths": {
+        "include": [
+          "**/.replit"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-inside": "[deployment]\n...\n"
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern": "run = \"$PACKAGE_MANAGER run dev\"\n"
+            },
+            {
+              "pattern": "run = \"$PACKAGE_MANAGER dev\"\n"
+            },
+            {
+              "pattern": "run = [\"$PACKAGE_MANAGER\", \"run\", \"dev\"]\n"
+            },
+            {
+              "pattern": "run = [\"$PACKAGE_MANAGER\", \"dev\"]\n"
+            },
+            {
+              "pattern": "run = [..., \"$PACKAGE_MANAGER\", \"run\", \"dev\"]\n"
+            },
+            {
+              "pattern": "run = [..., \"$PACKAGE_MANAGER\", \"dev\"]\n"
+            },
+            {
+              "pattern": "run = [\"$PACKAGE_MANAGER run dev\"]\n"
+            },
+            {
+              "pattern": "run = [\"$PACKAGE_MANAGER dev\"]\n"
+            },
+            {
+              "pattern": "run = [..., \"$PACKAGE_MANAGER run dev\"]\n"
+            },
+            {
+              "pattern": "run = [..., \"$PACKAGE_MANAGER dev\"]\n"
             }
           ]
         }
