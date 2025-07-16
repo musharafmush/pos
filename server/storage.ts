@@ -4344,5 +4344,398 @@ export const storage = {
       console.error('Error updating print job status:', error);
       return false;
     }
+  },
+
+  // Manufacturing Operations
+  async getManufacturingStats(): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const totalOrders = sqlite.prepare('SELECT COUNT(*) as count FROM manufacturing_orders').get()?.count || 0;
+      const ordersInProgress = sqlite.prepare('SELECT COUNT(*) as count FROM manufacturing_orders WHERE status = "in_progress"').get()?.count || 0;
+      const completedToday = sqlite.prepare('SELECT COUNT(*) as count FROM manufacturing_orders WHERE status = "completed" AND DATE(created_at) = DATE("now")').get()?.count || 0;
+      const qualityIssues = sqlite.prepare('SELECT COUNT(*) as count FROM quality_control_checks WHERE check_result = "fail"').get()?.count || 0;
+      const rawMaterialsLow = sqlite.prepare('SELECT COUNT(*) as count FROM raw_materials WHERE current_stock <= min_stock_level').get()?.count || 0;
+      const totalBatches = sqlite.prepare('SELECT COUNT(*) as count FROM manufacturing_batches').get()?.count || 0;
+      const qualityPassRate = sqlite.prepare('SELECT (COUNT(CASE WHEN check_result = "pass" THEN 1 END) * 100.0 / COUNT(*)) as rate FROM quality_control_checks').get()?.rate || 0;
+
+      return {
+        totalOrders,
+        ordersInProgress,
+        completedToday,
+        qualityIssues,
+        rawMaterialsLow,
+        totalBatches,
+        avgProductionTime: 120, // Mock value
+        qualityPassRate: Math.round(qualityPassRate)
+      };
+    } catch (error) {
+      console.error('Error in getManufacturingStats:', error);
+      return {
+        totalOrders: 0,
+        ordersInProgress: 0,
+        completedToday: 0,
+        qualityIssues: 0,
+        rawMaterialsLow: 0,
+        totalBatches: 0,
+        avgProductionTime: 0,
+        qualityPassRate: 0
+      };
+    }
+  },
+
+  async getManufacturingOrders(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_orders ORDER BY created_at DESC');
+      return query.all();
+    } catch (error) {
+      console.error('Error in getManufacturingOrders:', error);
+      return [];
+    }
+  },
+
+  async createManufacturingOrder(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertOrder = sqlite.prepare(`
+        INSERT INTO manufacturing_orders (
+          order_number, product_id, target_quantity, current_quantity, 
+          batch_number, manufacturing_date, expiry_date, status, priority, 
+          estimated_cost, notes, assigned_user_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertOrder.run(
+        data.orderNumber,
+        data.productId,
+        data.targetQuantity,
+        data.currentQuantity || 0,
+        data.batchNumber,
+        data.manufacturingDate,
+        data.expiryDate,
+        data.status || 'planned',
+        data.priority || 'medium',
+        data.estimatedCost || null,
+        data.notes || null,
+        data.assignedUserId || null
+      );
+
+      const getOrder = sqlite.prepare('SELECT * FROM manufacturing_orders WHERE id = ?');
+      return getOrder.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating manufacturing order:', error);
+      throw error;
+    }
+  },
+
+  async getManufacturingOrderById(id: number): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_orders WHERE id = ?');
+      return query.get(id);
+    } catch (error) {
+      console.error('Error in getManufacturingOrderById:', error);
+      return null;
+    }
+  },
+
+  async updateManufacturingOrder(id: number, updates: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const updateOrder = sqlite.prepare(`UPDATE manufacturing_orders SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+      
+      const values = [...Object.values(updates), id];
+      updateOrder.run(...values);
+
+      const getOrder = sqlite.prepare('SELECT * FROM manufacturing_orders WHERE id = ?');
+      return getOrder.get(id);
+    } catch (error) {
+      console.error('Error updating manufacturing order:', error);
+      throw error;
+    }
+  },
+
+  async updateManufacturingOrderStatus(id: number, status: string): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const updateOrder = sqlite.prepare('UPDATE manufacturing_orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+      updateOrder.run(status, id);
+
+      const getOrder = sqlite.prepare('SELECT * FROM manufacturing_orders WHERE id = ?');
+      return getOrder.get(id);
+    } catch (error) {
+      console.error('Error updating manufacturing order status:', error);
+      throw error;
+    }
+  },
+
+  async getManufacturingBatches(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_batches ORDER BY manufacturing_date DESC');
+      return query.all();
+    } catch (error) {
+      console.error('Error in getManufacturingBatches:', error);
+      return [];
+    }
+  },
+
+  async createManufacturingBatch(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertBatch = sqlite.prepare(`
+        INSERT INTO manufacturing_batches (
+          batch_number, product_id, manufacturing_order_id, quantity, 
+          manufacturing_date, expiry_date, cost_per_unit, total_cost, 
+          quality_grade, storage_location, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertBatch.run(
+        data.batchNumber,
+        data.productId,
+        data.manufacturingOrderId || null,
+        data.quantity,
+        data.manufacturingDate,
+        data.expiryDate,
+        data.costPerUnit || null,
+        data.totalCost || null,
+        data.qualityGrade || 'A',
+        data.storageLocation || null,
+        data.status || 'active'
+      );
+
+      const getBatch = sqlite.prepare('SELECT * FROM manufacturing_batches WHERE id = ?');
+      return getBatch.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating manufacturing batch:', error);
+      throw error;
+    }
+  },
+
+  async getManufacturingBatchById(id: number): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_batches WHERE id = ?');
+      return query.get(id);
+    } catch (error) {
+      console.error('Error in getManufacturingBatchById:', error);
+      return null;
+    }
+  },
+
+  async getQualityControlChecks(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM quality_control_checks ORDER BY check_date DESC');
+      return query.all();
+    } catch (error) {
+      console.error('Error in getQualityControlChecks:', error);
+      return [];
+    }
+  },
+
+  async createQualityControlCheck(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertCheck = sqlite.prepare(`
+        INSERT INTO quality_control_checks (
+          manufacturing_order_id, batch_id, check_type, check_date, 
+          check_result, inspector_user_id, notes, corrective_action, 
+          re_check_required, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertCheck.run(
+        data.manufacturingOrderId || null,
+        data.batchId || null,
+        data.checkType,
+        data.checkDate,
+        data.checkResult,
+        data.inspectorUserId,
+        data.notes || null,
+        data.correctiveAction || null,
+        data.reCheckRequired || false
+      );
+
+      const getCheck = sqlite.prepare('SELECT * FROM quality_control_checks WHERE id = ?');
+      return getCheck.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating quality control check:', error);
+      throw error;
+    }
+  },
+
+  async getRawMaterials(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM raw_materials WHERE active = 1 ORDER BY name');
+      return query.all();
+    } catch (error) {
+      console.error('Error in getRawMaterials:', error);
+      return [];
+    }
+  },
+
+  async createRawMaterial(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertMaterial = sqlite.prepare(`
+        INSERT INTO raw_materials (
+          name, description, unit, current_stock, min_stock_level, 
+          unit_cost, supplier_id, storage_location, expiry_tracking, 
+          active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertMaterial.run(
+        data.name,
+        data.description || null,
+        data.unit,
+        data.currentStock || '0',
+        data.minStockLevel || '0',
+        data.unitCost,
+        data.supplierId || null,
+        data.storageLocation || null,
+        data.expiryTracking || false,
+        data.active !== false
+      );
+
+      const getMaterial = sqlite.prepare('SELECT * FROM raw_materials WHERE id = ?');
+      return getMaterial.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating raw material:', error);
+      throw error;
+    }
+  },
+
+  async updateRawMaterial(id: number, updates: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const updateMaterial = sqlite.prepare(`UPDATE raw_materials SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+      
+      const values = [...Object.values(updates), id];
+      updateMaterial.run(...values);
+
+      const getMaterial = sqlite.prepare('SELECT * FROM raw_materials WHERE id = ?');
+      return getMaterial.get(id);
+    } catch (error) {
+      console.error('Error updating raw material:', error);
+      throw error;
+    }
+  },
+
+  async getManufacturingRecipes(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_recipes WHERE active = 1 ORDER BY name');
+      return query.all();
+    } catch (error) {
+      console.error('Error in getManufacturingRecipes:', error);
+      return [];
+    }
+  },
+
+  async createManufacturingRecipe(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertRecipe = sqlite.prepare(`
+        INSERT INTO manufacturing_recipes (
+          product_id, name, description, output_quantity, 
+          estimated_time, instructions, active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertRecipe.run(
+        data.productId,
+        data.name,
+        data.description || null,
+        data.outputQuantity || 1,
+        data.estimatedTime || null,
+        data.instructions || null,
+        data.active !== false
+      );
+
+      const getRecipe = sqlite.prepare('SELECT * FROM manufacturing_recipes WHERE id = ?');
+      return getRecipe.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating manufacturing recipe:', error);
+      throw error;
+    }
+  },
+
+  async getManufacturingRecipeById(id: number): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare('SELECT * FROM manufacturing_recipes WHERE id = ?');
+      return query.get(id);
+    } catch (error) {
+      console.error('Error in getManufacturingRecipeById:', error);
+      return null;
+    }
+  },
+
+  async updateManufacturingRecipe(id: number, updates: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const updateRecipe = sqlite.prepare(`UPDATE manufacturing_recipes SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+      
+      const values = [...Object.values(updates), id];
+      updateRecipe.run(...values);
+
+      const getRecipe = sqlite.prepare('SELECT * FROM manufacturing_recipes WHERE id = ?');
+      return getRecipe.get(id);
+    } catch (error) {
+      console.error('Error updating manufacturing recipe:', error);
+      throw error;
+    }
+  },
+
+  async getRecipeIngredients(recipeId: number): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare(`
+        SELECT ri.*, rm.name as raw_material_name 
+        FROM recipe_ingredients ri
+        JOIN raw_materials rm ON ri.raw_material_id = rm.id
+        WHERE ri.recipe_id = ?
+        ORDER BY ri.created_at
+      `);
+      return query.all(recipeId);
+    } catch (error) {
+      console.error('Error in getRecipeIngredients:', error);
+      return [];
+    }
+  },
+
+  async createRecipeIngredient(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertIngredient = sqlite.prepare(`
+        INSERT INTO recipe_ingredients (
+          recipe_id, raw_material_id, quantity, unit, 
+          wastage_percentage, notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertIngredient.run(
+        data.recipeId,
+        data.rawMaterialId,
+        data.quantity,
+        data.unit,
+        data.wastagePercentage || '0',
+        data.notes || null
+      );
+
+      const getIngredient = sqlite.prepare('SELECT * FROM recipe_ingredients WHERE id = ?');
+      return getIngredient.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating recipe ingredient:', error);
+      throw error;
+    }
   }
 };

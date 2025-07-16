@@ -322,6 +322,104 @@ export const printJobs = pgTable('print_jobs', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Manufacturing Orders table for production planning
+export const manufacturingOrders = pgTable('manufacturing_orders', {
+  id: serial('id').primaryKey(),
+  orderNumber: text('order_number').notNull().unique(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  targetQuantity: integer('target_quantity').notNull(),
+  currentQuantity: integer('current_quantity').default(0),
+  rawMaterialsUsed: text('raw_materials_used'), // JSON array of materials
+  batchNumber: text('batch_number').notNull(),
+  manufacturingDate: timestamp('manufacturing_date').notNull(),
+  expiryDate: timestamp('expiry_date'),
+  qualityCheckStatus: text('quality_check_status').default('pending'), // pending, passed, failed
+  status: text('status').default('planned'), // planned, in_progress, completed, cancelled
+  priority: text('priority').default('medium'), // low, medium, high, urgent
+  estimatedCost: decimal('estimated_cost', { precision: 10, scale: 2 }),
+  actualCost: decimal('actual_cost', { precision: 10, scale: 2 }),
+  notes: text('notes'),
+  assignedUserId: integer('assigned_user_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Manufacturing Batches table for tracking production batches
+export const manufacturingBatches = pgTable('manufacturing_batches', {
+  id: serial('id').primaryKey(),
+  batchNumber: text('batch_number').notNull().unique(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  manufacturingOrderId: integer('manufacturing_order_id').references(() => manufacturingOrders.id),
+  quantity: integer('quantity').notNull(),
+  manufacturingDate: timestamp('manufacturing_date').notNull(),
+  expiryDate: timestamp('expiry_date'),
+  costPerUnit: decimal('cost_per_unit', { precision: 10, scale: 2 }),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }),
+  qualityGrade: text('quality_grade').default('A'), // A, B, C, Reject
+  storageLocation: text('storage_location'),
+  status: text('status').default('active'), // active, consumed, expired, damaged
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Quality Control Checks table
+export const qualityControlChecks = pgTable('quality_control_checks', {
+  id: serial('id').primaryKey(),
+  manufacturingOrderId: integer('manufacturing_order_id').references(() => manufacturingOrders.id),
+  batchId: integer('batch_id').references(() => manufacturingBatches.id),
+  checkType: text('check_type').notNull(), // visual, weight, packaging, contamination
+  checkDate: timestamp('check_date').defaultNow().notNull(),
+  checkResult: text('check_result').notNull(), // pass, fail, conditional_pass
+  inspectorUserId: integer('inspector_user_id').references(() => users.id).notNull(),
+  notes: text('notes'),
+  correctiveAction: text('corrective_action'),
+  reCheckRequired: boolean('re_check_required').default(false),
+  reCheckDate: timestamp('re_check_date'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Raw Materials table for manufacturing inputs
+export const rawMaterials = pgTable('raw_materials', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  unit: text('unit').notNull(), // kg, g, liters, pieces
+  currentStock: decimal('current_stock', { precision: 10, scale: 3 }).default('0'),
+  minStockLevel: decimal('min_stock_level', { precision: 10, scale: 3 }).default('0'),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  supplierId: integer('supplier_id').references(() => suppliers.id),
+  storageLocation: text('storage_location'),
+  expiryTracking: boolean('expiry_tracking').default(false),
+  active: boolean('active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Manufacturing Recipes table (BOM - Bill of Materials)
+export const manufacturingRecipes = pgTable('manufacturing_recipes', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  outputQuantity: integer('output_quantity').notNull().default(1),
+  estimatedTime: integer('estimated_time_minutes'),
+  instructions: text('instructions'),
+  active: boolean('active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Recipe Ingredients table (BOM items)
+export const recipeIngredients = pgTable('recipe_ingredients', {
+  id: serial('id').primaryKey(),
+  recipeId: integer('recipe_id').references(() => manufacturingRecipes.id).notNull(),
+  rawMaterialId: integer('raw_material_id').references(() => rawMaterials.id).notNull(),
+  quantity: decimal('quantity', { precision: 10, scale: 3 }).notNull(),
+  unit: text('unit').notNull(),
+  wastagePercentage: decimal('wastage_percentage', { precision: 5, scale: 2 }).default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
@@ -366,6 +464,40 @@ export const purchasesRelations = relations(purchases, ({ one, many }) => ({
 export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
   purchase: one(purchases, { fields: [purchaseItems.purchaseId], references: [purchases.id] }),
   product: one(products, { fields: [purchaseItems.productId], references: [products.id] })
+}));
+
+// Manufacturing Relations
+export const manufacturingOrdersRelations = relations(manufacturingOrders, ({ one, many }) => ({
+  product: one(products, { fields: [manufacturingOrders.productId], references: [products.id] }),
+  assignedUser: one(users, { fields: [manufacturingOrders.assignedUserId], references: [users.id] }),
+  batches: many(manufacturingBatches),
+  qualityChecks: many(qualityControlChecks)
+}));
+
+export const manufacturingBatchesRelations = relations(manufacturingBatches, ({ one }) => ({
+  product: one(products, { fields: [manufacturingBatches.productId], references: [products.id] }),
+  manufacturingOrder: one(manufacturingOrders, { fields: [manufacturingBatches.manufacturingOrderId], references: [manufacturingOrders.id] })
+}));
+
+export const qualityControlChecksRelations = relations(qualityControlChecks, ({ one }) => ({
+  manufacturingOrder: one(manufacturingOrders, { fields: [qualityControlChecks.manufacturingOrderId], references: [manufacturingOrders.id] }),
+  batch: one(manufacturingBatches, { fields: [qualityControlChecks.batchId], references: [manufacturingBatches.id] }),
+  inspector: one(users, { fields: [qualityControlChecks.inspectorUserId], references: [users.id] })
+}));
+
+export const rawMaterialsRelations = relations(rawMaterials, ({ one, many }) => ({
+  supplier: one(suppliers, { fields: [rawMaterials.supplierId], references: [suppliers.id] }),
+  recipeIngredients: many(recipeIngredients)
+}));
+
+export const manufacturingRecipesRelations = relations(manufacturingRecipes, ({ one, many }) => ({
+  product: one(products, { fields: [manufacturingRecipes.productId], references: [products.id] }),
+  ingredients: many(recipeIngredients)
+}));
+
+export const recipeIngredientsRelations = relations(recipeIngredients, ({ one }) => ({
+  recipe: one(manufacturingRecipes, { fields: [recipeIngredients.recipeId], references: [manufacturingRecipes.id] }),
+  rawMaterial: one(rawMaterials, { fields: [recipeIngredients.rawMaterialId], references: [rawMaterials.id] })
 }));
 
 // Tax Categories relations
@@ -595,6 +727,88 @@ export const returnItemsRelations = relations(returnItems, ({ one }) => ({
   return: one(returns, { fields: [returnItems.returnId], references: [returns.id] }),
   product: one(products, { fields: [returnItems.productId], references: [products.id] })
 }));
+
+// Manufacturing validation schemas
+export const manufacturingOrderInsertSchema = createInsertSchema(manufacturingOrders, {
+  orderNumber: (schema) => schema.min(3, "Order number must be at least 3 characters"),
+  targetQuantity: (schema) => schema.min(1, "Target quantity must be at least 1"),
+  currentQuantity: (schema) => schema.optional(),
+  batchNumber: (schema) => schema.min(3, "Batch number must be at least 3 characters"),
+  estimatedCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  actualCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  status: (schema) => schema.optional(),
+  priority: (schema) => schema.optional(),
+  notes: (schema) => schema.optional(),
+  assignedUserId: (schema) => schema.optional()
+});
+export type ManufacturingOrderInsert = z.infer<typeof manufacturingOrderInsertSchema>;
+export const manufacturingOrderSelectSchema = createSelectSchema(manufacturingOrders);
+export type ManufacturingOrder = z.infer<typeof manufacturingOrderSelectSchema>;
+
+export const manufacturingBatchInsertSchema = createInsertSchema(manufacturingBatches, {
+  batchNumber: (schema) => schema.min(3, "Batch number must be at least 3 characters"),
+  quantity: (schema) => schema.min(1, "Quantity must be at least 1"),
+  costPerUnit: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  totalCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  qualityGrade: (schema) => schema.optional(),
+  storageLocation: (schema) => schema.optional(),
+  status: (schema) => schema.optional(),
+  manufacturingOrderId: (schema) => schema.optional()
+});
+export type ManufacturingBatchInsert = z.infer<typeof manufacturingBatchInsertSchema>;
+export const manufacturingBatchSelectSchema = createSelectSchema(manufacturingBatches);
+export type ManufacturingBatch = z.infer<typeof manufacturingBatchSelectSchema>;
+
+export const qualityControlCheckInsertSchema = createInsertSchema(qualityControlChecks, {
+  checkType: (schema) => schema.min(3, "Check type must be at least 3 characters"),
+  checkResult: (schema) => schema.min(3, "Check result must be at least 3 characters"),
+  notes: (schema) => schema.optional(),
+  correctiveAction: (schema) => schema.optional(),
+  reCheckRequired: (schema) => schema.optional(),
+  manufacturingOrderId: (schema) => schema.optional(),
+  batchId: (schema) => schema.optional()
+});
+export type QualityControlCheckInsert = z.infer<typeof qualityControlCheckInsertSchema>;
+export const qualityControlCheckSelectSchema = createSelectSchema(qualityControlChecks);
+export type QualityControlCheck = z.infer<typeof qualityControlCheckSelectSchema>;
+
+export const rawMaterialInsertSchema = createInsertSchema(rawMaterials, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.optional(),
+  unit: (schema) => schema.min(1, "Unit must be at least 1 character"),
+  currentStock: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  minStockLevel: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  unitCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
+  supplierId: (schema) => schema.optional(),
+  storageLocation: (schema) => schema.optional(),
+  expiryTracking: (schema) => schema.optional(),
+  active: (schema) => schema.optional()
+});
+export type RawMaterialInsert = z.infer<typeof rawMaterialInsertSchema>;
+export const rawMaterialSelectSchema = createSelectSchema(rawMaterials);
+export type RawMaterial = z.infer<typeof rawMaterialSelectSchema>;
+
+export const manufacturingRecipeInsertSchema = createInsertSchema(manufacturingRecipes, {
+  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
+  description: (schema) => schema.optional(),
+  outputQuantity: (schema) => schema.min(1, "Output quantity must be at least 1"),
+  estimatedTime: (schema) => schema.optional(),
+  instructions: (schema) => schema.optional(),
+  active: (schema) => schema.optional()
+});
+export type ManufacturingRecipeInsert = z.infer<typeof manufacturingRecipeInsertSchema>;
+export const manufacturingRecipeSelectSchema = createSelectSchema(manufacturingRecipes);
+export type ManufacturingRecipe = z.infer<typeof manufacturingRecipeSelectSchema>;
+
+export const recipeIngredientInsertSchema = createInsertSchema(recipeIngredients, {
+  quantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()),
+  unit: (schema) => schema.min(1, "Unit must be at least 1 character"),
+  wastagePercentage: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  notes: (schema) => schema.optional()
+});
+export type RecipeIngredientInsert = z.infer<typeof recipeIngredientInsertSchema>;
+export const recipeIngredientSelectSchema = createSelectSchema(recipeIngredients);
+export type RecipeIngredient = z.infer<typeof recipeIngredientSelectSchema>;
 
 // Return validation schemas
 export const returnInsertSchema = createInsertSchema(returns, {

@@ -7437,6 +7437,282 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Manufacturing API Routes
+  
+  // Manufacturing Statistics
+  app.get('/api/manufacturing/stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getManufacturingStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching manufacturing stats:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing stats' });
+    }
+  });
+
+  // Manufacturing Orders Routes
+  app.get('/api/manufacturing/orders', isAuthenticated, async (req, res) => {
+    try {
+      const orders = await storage.getManufacturingOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching manufacturing orders:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing orders' });
+    }
+  });
+
+  app.post('/api/manufacturing/orders', isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const orderData = {
+        ...req.body,
+        manufacturingDate: req.body.manufacturingDate || new Date().toISOString(),
+        expiryDate: req.body.expiryDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        assignedUserId: req.body.assignedUserId || user.id
+      };
+
+      const order = await storage.createManufacturingOrder(orderData);
+      res.status(201).json(order);
+    } catch (error) {
+      console.error('Error creating manufacturing order:', error);
+      res.status(500).json({ message: 'Failed to create manufacturing order' });
+    }
+  });
+
+  app.get('/api/manufacturing/orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const order = await storage.getManufacturingOrderById(id);
+      if (!order) {
+        return res.status(404).json({ message: 'Manufacturing order not found' });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error('Error fetching manufacturing order:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing order' });
+    }
+  });
+
+  app.put('/api/manufacturing/orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const order = await storage.updateManufacturingOrder(id, updates);
+      if (!order) {
+        return res.status(404).json({ message: 'Manufacturing order not found' });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error('Error updating manufacturing order:', error);
+      res.status(500).json({ message: 'Failed to update manufacturing order' });
+    }
+  });
+
+  app.patch('/api/manufacturing/orders/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      const order = await storage.updateManufacturingOrderStatus(id, status);
+      if (!order) {
+        return res.status(404).json({ message: 'Manufacturing order not found' });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error('Error updating manufacturing order status:', error);
+      res.status(500).json({ message: 'Failed to update manufacturing order status' });
+    }
+  });
+
+  // Manufacturing Batches Routes
+  app.get('/api/manufacturing/batches', isAuthenticated, async (req, res) => {
+    try {
+      const batches = await storage.getManufacturingBatches();
+      res.json(batches);
+    } catch (error) {
+      console.error('Error fetching manufacturing batches:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing batches' });
+    }
+  });
+
+  app.post('/api/manufacturing/batches', isAuthenticated, async (req, res) => {
+    try {
+      const batchData = {
+        ...req.body,
+        manufacturingDate: req.body.manufacturingDate || new Date().toISOString(),
+        expiryDate: req.body.expiryDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      };
+
+      const batch = await storage.createManufacturingBatch(batchData);
+      res.status(201).json(batch);
+    } catch (error) {
+      console.error('Error creating manufacturing batch:', error);
+      res.status(500).json({ message: 'Failed to create manufacturing batch' });
+    }
+  });
+
+  app.get('/api/manufacturing/batches/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const batch = await storage.getManufacturingBatchById(id);
+      if (!batch) {
+        return res.status(404).json({ message: 'Manufacturing batch not found' });
+      }
+      res.json(batch);
+    } catch (error) {
+      console.error('Error fetching manufacturing batch:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing batch' });
+    }
+  });
+
+  // Quality Control Routes
+  app.get('/api/manufacturing/quality-checks', isAuthenticated, async (req, res) => {
+    try {
+      const checks = await storage.getQualityControlChecks();
+      res.json(checks);
+    } catch (error) {
+      console.error('Error fetching quality checks:', error);
+      res.status(500).json({ message: 'Failed to fetch quality checks' });
+    }
+  });
+
+  app.post('/api/manufacturing/quality-checks', isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      const checkData = {
+        ...req.body,
+        inspectorUserId: user.id,
+        checkDate: req.body.checkDate || new Date().toISOString()
+      };
+
+      const check = await storage.createQualityControlCheck(checkData);
+      res.status(201).json(check);
+    } catch (error) {
+      console.error('Error creating quality check:', error);
+      res.status(500).json({ message: 'Failed to create quality check' });
+    }
+  });
+
+  // Raw Materials Routes
+  app.get('/api/manufacturing/raw-materials', isAuthenticated, async (req, res) => {
+    try {
+      const materials = await storage.getRawMaterials();
+      res.json(materials);
+    } catch (error) {
+      console.error('Error fetching raw materials:', error);
+      res.status(500).json({ message: 'Failed to fetch raw materials' });
+    }
+  });
+
+  app.post('/api/manufacturing/raw-materials', isAuthenticated, async (req, res) => {
+    try {
+      const material = await storage.createRawMaterial(req.body);
+      res.status(201).json(material);
+    } catch (error) {
+      console.error('Error creating raw material:', error);
+      res.status(500).json({ message: 'Failed to create raw material' });
+    }
+  });
+
+  app.put('/api/manufacturing/raw-materials/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const material = await storage.updateRawMaterial(id, updates);
+      if (!material) {
+        return res.status(404).json({ message: 'Raw material not found' });
+      }
+      res.json(material);
+    } catch (error) {
+      console.error('Error updating raw material:', error);
+      res.status(500).json({ message: 'Failed to update raw material' });
+    }
+  });
+
+  // Manufacturing Recipes Routes
+  app.get('/api/manufacturing/recipes', isAuthenticated, async (req, res) => {
+    try {
+      const recipes = await storage.getManufacturingRecipes();
+      res.json(recipes);
+    } catch (error) {
+      console.error('Error fetching manufacturing recipes:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing recipes' });
+    }
+  });
+
+  app.post('/api/manufacturing/recipes', isAuthenticated, async (req, res) => {
+    try {
+      const recipe = await storage.createManufacturingRecipe(req.body);
+      res.status(201).json(recipe);
+    } catch (error) {
+      console.error('Error creating manufacturing recipe:', error);
+      res.status(500).json({ message: 'Failed to create manufacturing recipe' });
+    }
+  });
+
+  app.get('/api/manufacturing/recipes/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const recipe = await storage.getManufacturingRecipeById(id);
+      if (!recipe) {
+        return res.status(404).json({ message: 'Manufacturing recipe not found' });
+      }
+      res.json(recipe);
+    } catch (error) {
+      console.error('Error fetching manufacturing recipe:', error);
+      res.status(500).json({ message: 'Failed to fetch manufacturing recipe' });
+    }
+  });
+
+  app.put('/api/manufacturing/recipes/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const recipe = await storage.updateManufacturingRecipe(id, updates);
+      if (!recipe) {
+        return res.status(404).json({ message: 'Manufacturing recipe not found' });
+      }
+      res.json(recipe);
+    } catch (error) {
+      console.error('Error updating manufacturing recipe:', error);
+      res.status(500).json({ message: 'Failed to update manufacturing recipe' });
+    }
+  });
+
+  // Recipe Ingredients Routes
+  app.get('/api/manufacturing/recipes/:id/ingredients', isAuthenticated, async (req, res) => {
+    try {
+      const recipeId = parseInt(req.params.id);
+      const ingredients = await storage.getRecipeIngredients(recipeId);
+      res.json(ingredients);
+    } catch (error) {
+      console.error('Error fetching recipe ingredients:', error);
+      res.status(500).json({ message: 'Failed to fetch recipe ingredients' });
+    }
+  });
+
+  app.post('/api/manufacturing/recipes/:id/ingredients', isAuthenticated, async (req, res) => {
+    try {
+      const recipeId = parseInt(req.params.id);
+      const ingredientData = {
+        ...req.body,
+        recipeId
+      };
+      const ingredient = await storage.createRecipeIngredient(ingredientData);
+      res.status(201).json(ingredient);
+    } catch (error) {
+      console.error('Error creating recipe ingredient:', error);
+      res.status(500).json({ message: 'Failed to create recipe ingredient' });
+    }
+  });
+
   app.get('/api/expenses/by-date-range', async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
