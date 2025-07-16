@@ -89,6 +89,15 @@ export default function AccountsDashboard() {
     accountNumber: ""
   });
 
+  const [newTransaction, setNewTransaction] = useState({
+    type: "income",
+    category: "",
+    account: "",
+    amount: "",
+    description: "",
+    reference: ""
+  });
+
   const formatCurrency = useFormatCurrency();
 
   // Fetch real-time data from POS system
@@ -256,6 +265,19 @@ export default function AccountsDashboard() {
 
   const handleAddTransaction = () => {
     setShowTransactionDialog(true);
+  };
+
+  const handleCreateTransaction = () => {
+    console.log("Creating transaction:", newTransaction);
+    setShowTransactionDialog(false);
+    setNewTransaction({
+      type: "income",
+      category: "",
+      account: "",
+      amount: "",
+      description: "",
+      reference: ""
+    });
   };
 
   const refreshAllData = () => {
@@ -604,6 +626,107 @@ export default function AccountsDashboard() {
                   Cancel
                 </Button>
                 <Button onClick={handleCreateAccount}>Create Account</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Transaction Dialog */}
+        <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Transaction</DialogTitle>
+              <DialogDescription>
+                Record a new financial transaction for your business.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="transactionType">Transaction Type</Label>
+                <Select
+                  value={newTransaction.type}
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="expense">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="transactionCategory">Category</Label>
+                <Select
+                  value={newTransaction.category}
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sales">Sales</SelectItem>
+                    <SelectItem value="Inventory">Inventory</SelectItem>
+                    <SelectItem value="Utilities">Utilities</SelectItem>
+                    <SelectItem value="Rent">Rent</SelectItem>
+                    <SelectItem value="Salary">Salary</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="transactionAccount">Account</Label>
+                <Select
+                  value={newTransaction.account}
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, account: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.name}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="transactionAmount">Amount</Label>
+                <Input
+                  id="transactionAmount"
+                  type="number"
+                  value={newTransaction.amount}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="transactionDescription">Description</Label>
+                <Input
+                  id="transactionDescription"
+                  value={newTransaction.description}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                  placeholder="Enter transaction description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="transactionReference">Reference (Optional)</Label>
+                <Input
+                  id="transactionReference"
+                  value={newTransaction.reference}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, reference: e.target.value })}
+                  placeholder="REF-001"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowTransactionDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateTransaction}>Add Transaction</Button>
               </div>
             </div>
           </DialogContent>
