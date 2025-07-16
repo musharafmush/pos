@@ -24,6 +24,7 @@ export default function ReceiptSettings() {
     taxId: '33QIWPS9348F1Z2',
     receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
     showLogo: false,
+    logoUrl: '',
     autoPrint: true,
     paperWidth: 'thermal80',
     fontSize: 'small',

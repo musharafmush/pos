@@ -105,6 +105,7 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       taxId: '33QIWPS9348F1Z2',
       receiptFooter: 'Thank you for shopping with us!\nVisit again soon\nCustomer Care: support@mmart.com',
       showLogo: false,
+      logoUrl: '',
       autoPrint: true,
       paperWidth: 'thermal77',
       fontSize: 'medium',
@@ -613,9 +614,16 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
     };
 
     return `
-      ${settings.showLogo && settings.logoUrl ? `
+      ${settings.showLogo && settings.logoUrl && settings.logoUrl.trim() !== '' ? `
         <div style="text-align: center; margin-bottom: 2mm;">
-          <img src="${settings.logoUrl}" alt="Business Logo" style="max-width: ${settings.paperWidth === 'thermal58' ? '50mm' : settings.paperWidth === 'thermal72' ? '60mm' : settings.paperWidth === 'thermal77' ? '65mm' : '70mm'}; max-height: 20mm; object-fit: contain; margin: 0 auto; display: block;">
+          <img src="${settings.logoUrl}" alt="Business Logo" style="max-width: ${settings.paperWidth === 'thermal58' ? '50mm' : settings.paperWidth === 'thermal72' ? '60mm' : settings.paperWidth === 'thermal77' ? '65mm' : '70mm'}; max-height: 20mm; object-fit: contain; margin: 0 auto; display: block;" onerror="this.style.display='none';">
+        </div>
+      ` : ''}
+      ${settings.showLogo && (!settings.logoUrl || settings.logoUrl.trim() === '') ? `
+        <div style="text-align: center; margin-bottom: 2mm;">
+          <div style="display: inline-block; border: 2px dashed #ccc; padding: 10px; background-color: #f5f5f5; color: #666; font-size: 12px; border-radius: 4px;">
+            📷 Logo Not Configured
+          </div>
         </div>
       ` : ''}
 

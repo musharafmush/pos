@@ -275,13 +275,25 @@ export default function UnifiedPrinterSettings() {
 
     try {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const dataUrl = e.target?.result as string;
         updateSetting('logoUrl', dataUrl);
-        toast({
-          title: "Logo uploaded",
-          description: "Business logo has been updated successfully"
-        });
+        
+        // Auto-save the settings when logo is uploaded
+        try {
+          await saveSettings();
+          toast({
+            title: "Logo uploaded and saved",
+            description: "Business logo has been updated and saved successfully"
+          });
+        } catch (saveError) {
+          console.error('Error saving logo:', saveError);
+          toast({
+            title: "Logo uploaded but not saved",
+            description: "Logo updated but failed to save. Please click Save Settings.",
+            variant: "destructive"
+          });
+        }
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -1030,6 +1042,26 @@ export default function UnifiedPrinterSettings() {
                               <p className="text-sm font-medium text-blue-700">No logo uploaded</p>
                               <p className="text-xs text-blue-600">Upload a logo to display on receipts</p>
                             </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // Create a sample logo using SVG data URL
+                                const sampleLogo = `data:image/svg+xml;base64,${btoa(`
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40">
+                                    <rect width="120" height="40" fill="#2563eb" rx="4"/>
+                                    <text x="60" y="25" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">M MART</text>
+                                  </svg>
+                                `)}`;
+                                updateSetting('logoUrl', sampleLogo);
+                                toast({
+                                  title: "Sample logo added",
+                                  description: "Sample M MART logo has been set. Upload your own logo to replace it."
+                                });
+                              }}
+                            >
+                              Use Sample Logo
+                            </Button>
                           </div>
                         )}
                       </div>

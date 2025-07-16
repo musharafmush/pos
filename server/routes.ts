@@ -4552,6 +4552,7 @@ app.post("/api/customers", async (req, res) => {
         receiptFooter: 'Thank you for shopping with us!',
         paperWidth: '80mm',
         showLogo: true,
+        logoUrl: '', // Default empty logo URL
         autoPrint: true,
         showCustomerDetails: true,
         showItemSKU: true,
