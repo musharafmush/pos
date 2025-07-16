@@ -87,7 +87,7 @@ export default function ReceiptSettings() {
     }
   };
 
-  const handlePrintTest = () => {
+  const handlePrintTest = async () => {
     const testReceiptData = {
       billNumber: 'POS1749631206824',
       billDate: new Date().toLocaleDateString('en-IN'),
@@ -128,7 +128,7 @@ export default function ReceiptSettings() {
       notes: 'Test receipt with custom formatting'
     };
 
-    printReceipt(testReceiptData, settings);
+    await printReceipt(testReceiptData, settings);
   };
 
   const resetToDefaults = () => {

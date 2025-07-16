@@ -87,7 +87,7 @@ export interface ReceiptCustomization {
   thermalOptimized?: boolean;
 }
 
-export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptCustomization>) => {
+export const printReceipt = async (data: ReceiptData, customization?: Partial<ReceiptCustomization>) => {
   // Create a dedicated print container
   const printContainer = document.createElement('div');
   printContainer.style.position = 'fixed';
@@ -96,6 +96,20 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
   document.body.appendChild(printContainer);
 
   try {
+    // Fetch receipt settings from database API
+    let databaseSettings = {};
+    try {
+      const response = await fetch('/api/settings/receipt');
+      if (response.ok) {
+        databaseSettings = await response.json();
+        console.log('🖨️ Fetched receipt settings from database:', databaseSettings);
+      } else {
+        console.warn('Failed to fetch receipt settings from database, using defaults');
+      }
+    } catch (error) {
+      console.error('Error fetching receipt settings:', error);
+    }
+
     const savedSettings = localStorage.getItem('receiptSettings');
     const defaultSettings: ReceiptCustomization = {
       businessName: 'M MART',
@@ -130,11 +144,15 @@ export const printReceipt = (data: ReceiptData, customization?: Partial<ReceiptC
       thermalOptimized: true
     };
 
+    // Priority: Database settings > Custom settings > LocalStorage > Defaults
     const receiptSettings = {
       ...defaultSettings,
       ...(savedSettings ? JSON.parse(savedSettings) : {}),
+      ...databaseSettings,
       ...customization
     };
+
+    console.log('🖨️ Final receipt settings:', { showLogo: receiptSettings.showLogo, logoUrl: receiptSettings.logoUrl ? 'Logo present' : 'No logo' });
 
   // Paper configurations with 77mm support
     const paperConfigs = {

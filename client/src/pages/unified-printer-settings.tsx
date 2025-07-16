@@ -332,7 +332,7 @@ export default function UnifiedPrinterSettings() {
       };
 
       const { printReceipt } = await import('@/components/pos/print-receipt');
-      printReceipt(testReceiptData, settings);
+      await printReceipt(testReceiptData, settings);
 
       toast({
         title: "Test Print Sent",
