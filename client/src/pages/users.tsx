@@ -157,6 +157,12 @@ export default function Users() {
     }
   });
 
+  // Helper function to check if username already exists
+  const isUsernameAvailable = (username: string): boolean => {
+    if (!users || !username) return true;
+    return !users.some((user: any) => user.username.toLowerCase() === username.toLowerCase());
+  };
+
   const addUserMutation = useMutation({
     mutationFn: async (data: UserFormValues) => {
       return await apiRequest("POST", "/api/users", data);
@@ -166,15 +172,29 @@ export default function Users() {
       setIsAddDialogOpen(false);
       form.reset();
       toast({
-        title: "User added",
-        description: "User has been successfully added",
+        title: "✅ User added",
+        description: "User has been successfully added to the system",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error adding user:", error);
+      let errorMessage = "Failed to add user. Please try again.";
+      
+      // Handle specific error messages from the server
+      if (error.response?.data?.message) {
+        const serverMessage = error.response.data.message;
+        if (serverMessage.includes("Username already exists")) {
+          errorMessage = "Username already exists. Please choose a different username.";
+        } else if (serverMessage.includes("Email already exists")) {
+          errorMessage = "Email already exists. Please use a different email address.";
+        } else {
+          errorMessage = serverMessage;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add user. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -471,6 +491,10 @@ export default function Users() {
             <DialogTitle>Add User</DialogTitle>
             <DialogDescription>
               Create a new user account with appropriate permissions.
+              <br />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Note: Existing usernames: {users?.map((u: any) => u.username).join(', ')}
+              </span>
             </DialogDescription>
           </DialogHeader>
           
@@ -498,9 +522,37 @@ export default function Users() {
                     <FormItem>
                       <FormLabel>Username*</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter username" {...field} />
+                        <Input 
+                          placeholder="Enter username" 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Real-time validation feedback
+                            const username = e.target.value;
+                            if (username && !isUsernameAvailable(username)) {
+                              form.setError('username', { message: 'Username already exists' });
+                            } else if (username && isUsernameAvailable(username)) {
+                              form.clearErrors('username');
+                            }
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
+                      {field.value && isUsernameAvailable(field.value) && (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          ✓ Username is available
+                        </p>
+                      )}
+                      {field.value && !isUsernameAvailable(field.value) && (
+                        <div className="mt-1">
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            ✗ Username "{field.value}" is already taken
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            Try: {field.value}2, {field.value}_pos, or {field.value}_{new Date().getFullYear()}
+                          </p>
+                        </div>
+                      )}
                     </FormItem>
                   )}
                 />
@@ -585,7 +637,7 @@ export default function Users() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={addUserMutation.isPending}
+                  disabled={addUserMutation.isPending || (form.watch('username') && !isUsernameAvailable(form.watch('username')))}
                 >
                   {addUserMutation.isPending ? "Adding..." : "Add User"}
                 </Button>
