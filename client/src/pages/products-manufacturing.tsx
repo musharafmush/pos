@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Package, Factory, Clock, Target, AlertCircle, CheckCircle, Plus, Play, Edit, MoreVertical, Trash2, Eye, Settings } from "lucide-react";
+import { Package, Factory, Clock, Target, AlertCircle, CheckCircle, Plus, Play, Edit, MoreVertical, Trash2, Eye, Settings, FileText, Minus } from "lucide-react";
 
 interface Product {
   id: number;
@@ -40,6 +41,38 @@ interface ManufacturingOrder {
   createdAt: string;
 }
 
+interface BOM {
+  id: number;
+  productId: number;
+  name: string;
+  description?: string;
+  version?: string;
+  outputQuantity: number;
+  outputUnit: string;
+  totalCost: string;
+  estimatedTimeMinutes?: number;
+  instructions?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  items?: BOMItem[];
+  product?: Product;
+}
+
+interface BOMItem {
+  id: number;
+  bomId: number;
+  materialId: number;
+  quantity: string;
+  unit: string;
+  unitCost: string;
+  totalCost: string;
+  wastagePercentage?: string;
+  notes?: string;
+  createdAt: string;
+  material?: Product;
+}
+
 export default function ProductsManufacturing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,6 +83,20 @@ export default function ProductsManufacturing() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [viewingOrder, setViewingOrder] = useState<ManufacturingOrder | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  
+  // BOM management states
+  const [selectedBOM, setSelectedBOM] = useState<BOM | null>(null);
+  const [showCreateBOMDialog, setShowCreateBOMDialog] = useState(false);
+  const [editingBOM, setEditingBOM] = useState<BOM | null>(null);
+  const [currentBOMItems, setCurrentBOMItems] = useState<BOMItem[]>([]);
+  const [newBOMItem, setNewBOMItem] = useState({
+    materialId: 0,
+    quantity: "",
+    unit: "pieces",
+    unitCost: "",
+    wastagePercentage: "",
+    notes: ""
+  });
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -65,6 +112,15 @@ export default function ProductsManufacturing() {
     queryKey: ['/api/manufacturing/orders'],
     queryFn: async () => {
       const response = await fetch('/api/manufacturing/orders');
+      return response.json();
+    }
+  });
+
+  // Fetch BOMs
+  const { data: boms = [], isLoading: bomsLoading } = useQuery({
+    queryKey: ['/api/manufacturing/boms'],
+    queryFn: async () => {
+      const response = await fetch('/api/manufacturing/boms');
       return response.json();
     }
   });
@@ -139,6 +195,77 @@ export default function ProductsManufacturing() {
       toast({
         title: "Error",
         description: "Failed to delete manufacturing order",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Create BOM mutation
+  const createBomMutation = useMutation({
+    mutationFn: async (bomData: { productId: number; items: { rawMaterialId: number; quantity: number }[] }) => {
+      return apiRequest('/api/manufacturing/boms', {
+        method: 'POST',
+        body: JSON.stringify(bomData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/boms'] });
+      toast({
+        title: "Success",
+        description: "BOM created successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create BOM",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update BOM mutation
+  const updateBomMutation = useMutation({
+    mutationFn: async ({ id, bomData }: { id: number; bomData: { items: { rawMaterialId: number; quantity: number }[] } }) => {
+      return apiRequest(`/api/manufacturing/boms/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(bomData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/boms'] });
+      toast({
+        title: "Success",
+        description: "BOM updated successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update BOM",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete BOM mutation
+  const deleteBomMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/manufacturing/boms/${id}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/boms'] });
+      toast({
+        title: "Success",
+        description: "BOM deleted successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete BOM",
         variant: "destructive"
       });
     }
@@ -789,9 +916,9 @@ export default function ProductsManufacturing() {
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
