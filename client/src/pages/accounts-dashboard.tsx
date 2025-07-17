@@ -882,6 +882,135 @@ export default function AccountsDashboard() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Deposit Dialog */}
+        <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Amount Deposit</DialogTitle>
+              <DialogDescription>
+                Add money to the cash register from external sources.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="depositAmount">Deposit Amount</Label>
+                <Input
+                  id="depositAmount"
+                  type="number"
+                  value={depositData.amount}
+                  onChange={(e) => setDepositData({ ...depositData, amount: e.target.value })}
+                  placeholder="Enter amount to deposit"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="depositPaymentMethod">Payment Method</Label>
+                <Select
+                  value={depositData.paymentMethod}
+                  onValueChange={(value) => setDepositData({ ...depositData, paymentMethod: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="depositReason">Reason</Label>
+                <Input
+                  id="depositReason"
+                  value={depositData.reason}
+                  onChange={(e) => setDepositData({ ...depositData, reason: e.target.value })}
+                  placeholder="e.g., Bank deposit, Owner contribution"
+                />
+              </div>
+              <div>
+                <Label htmlFor="depositNotes">Notes (Optional)</Label>
+                <Input
+                  id="depositNotes"
+                  value={depositData.notes}
+                  onChange={(e) => setDepositData({ ...depositData, notes: e.target.value })}
+                  placeholder="Additional notes"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowDepositDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleDeposit}
+                  disabled={depositMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {depositMutation.isPending ? 'Processing...' : 'Deposit Amount'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Withdrawal Dialog */}
+        <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Amount Withdrawal</DialogTitle>
+              <DialogDescription>
+                Remove money from the cash register for expenses or other purposes.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="withdrawalAmount">Withdrawal Amount</Label>
+                <Input
+                  id="withdrawalAmount"
+                  type="number"
+                  value={withdrawalData.amount}
+                  onChange={(e) => setWithdrawalData({ ...withdrawalData, amount: e.target.value })}
+                  placeholder="Enter amount to withdraw"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="withdrawalReason">Reason</Label>
+                <Input
+                  id="withdrawalReason"
+                  value={withdrawalData.reason}
+                  onChange={(e) => setWithdrawalData({ ...withdrawalData, reason: e.target.value })}
+                  placeholder="e.g., Office expenses, Petty cash"
+                />
+              </div>
+              <div>
+                <Label htmlFor="withdrawalNotes">Notes (Optional)</Label>
+                <Input
+                  id="withdrawalNotes"
+                  value={withdrawalData.notes}
+                  onChange={(e) => setWithdrawalData({ ...withdrawalData, notes: e.target.value })}
+                  placeholder="Additional notes"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleWithdrawal}
+                  disabled={withdrawalMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {withdrawalMutation.isPending ? 'Processing...' : 'Withdraw Amount'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

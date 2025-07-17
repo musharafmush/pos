@@ -137,6 +137,22 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Accounts Dashboard Deposit and Withdrawal System (July 17, 2025)
+- Added Amount Deposit and Amount Withdrawal functionality to accounts dashboard
+- Implemented professional deposit dialog with amount input, payment method selection, reason, and notes
+- Created withdrawal dialog with amount input, reason, and notes fields
+- Integrated with existing cash register transaction system using deposit and withdrawal transaction types
+- Added real-time cash register balance updates after deposit/withdrawal operations
+- Enhanced UI with green deposit button and red withdrawal button for clear visual distinction
+- Implemented proper validation for deposit and withdrawal amounts
+- Added toast notifications for successful operations and error handling
+- Connected deposit/withdrawal operations to backend cash register transaction API
+- Buttons automatically disable when no active cash register is available
+- Added comprehensive form validation and user feedback system
+- Deposits support multiple payment methods (cash, bank transfer, cheque, other)
+- Withdrawals automatically deduct from current cash register balance
+- All operations logged in cash register transactions with proper audit trail
+
 ### Products Manufacturing System Implementation (July 17, 2025)
 - Created comprehensive products manufacturing page with product-centric interface for intuitive manufacturing workflow
 - Implemented dual-view system: products view and manufacturing orders view with advanced filtering and search
