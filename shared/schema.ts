@@ -420,6 +420,89 @@ export const recipeIngredients = pgTable('recipe_ingredients', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Bill of Materials (BOM) table - Main BOM definitions
+export const billOfMaterials = pgTable('bill_of_materials', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  version: text('version').default('1.0'),
+  outputQuantity: integer('output_quantity').notNull().default(1),
+  outputUnit: text('output_unit').notNull().default('units'),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
+  estimatedTimeMinutes: integer('estimated_time_minutes'),
+  instructions: text('instructions'),
+  active: boolean('active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// BOM Items table - Individual components/materials in a BOM
+export const bomItems = pgTable('bom_items', {
+  id: serial('id').primaryKey(),
+  bomId: integer('bom_id').references(() => billOfMaterials.id).notNull(),
+  materialId: integer('material_id').references(() => products.id).notNull(), // Can reference products as materials
+  quantity: decimal('quantity', { precision: 10, scale: 3 }).notNull(),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  wastagePercentage: decimal('wastage_percentage', { precision: 5, scale: 2 }).default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Production Orders table - Actual production based on BOM
+export const productionOrders = pgTable('production_orders', {
+  id: serial('id').primaryKey(),
+  orderNumber: text('order_number').notNull().unique(),
+  bomId: integer('bom_id').references(() => billOfMaterials.id).notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  targetQuantity: integer('target_quantity').notNull(),
+  producedQuantity: integer('produced_quantity').default(0),
+  status: text('status').default('pending'), // pending, in_progress, completed, cancelled
+  priority: text('priority').default('medium'), // low, medium, high, urgent
+  scheduledDate: timestamp('scheduled_date'),
+  startedDate: timestamp('started_date'),
+  completedDate: timestamp('completed_date'),
+  estimatedCost: decimal('estimated_cost', { precision: 10, scale: 2 }),
+  actualCost: decimal('actual_cost', { precision: 10, scale: 2 }),
+  notes: text('notes'),
+  assignedUserId: integer('assigned_user_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Production Order Items table - Materials consumed in production
+export const productionOrderItems = pgTable('production_order_items', {
+  id: serial('id').primaryKey(),
+  productionOrderId: integer('production_order_id').references(() => productionOrders.id).notNull(),
+  materialId: integer('material_id').references(() => products.id).notNull(),
+  plannedQuantity: decimal('planned_quantity', { precision: 10, scale: 3 }).notNull(),
+  actualQuantity: decimal('actual_quantity', { precision: 10, scale: 3 }).default('0'),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  wastageQuantity: decimal('wastage_quantity', { precision: 10, scale: 3 }).default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Waste/Damage Records table - Track waste and damage during production
+export const wasteRecords = pgTable('waste_records', {
+  id: serial('id').primaryKey(),
+  productionOrderId: integer('production_order_id').references(() => productionOrders.id),
+  materialId: integer('material_id').references(() => products.id),
+  wasteType: text('waste_type').notNull(), // material_waste, production_damage, expired, contaminated
+  quantity: decimal('quantity', { precision: 10, scale: 3 }).notNull(),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  reason: text('reason'),
+  notes: text('notes'),
+  recordedBy: integer('recorded_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
