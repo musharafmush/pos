@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,12 +52,10 @@ import {
   Settings,
   Eye,
   ChevronUp,
-  ChevronDown,
-  MinusIcon
+  ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { useFormatCurrency } from "@/lib/currency";
-import { useToast } from "@/hooks/use-toast";
 
 interface Account {
   id: string;
@@ -84,8 +82,6 @@ export default function AccountsDashboard() {
   const [selectedTab, setSelectedTab] = useState("accounts");
   const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
-  const [showDepositDialog, setShowDepositDialog] = useState(false);
-  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [newAccount, setNewAccount] = useState({
     name: "",
     type: "bank",
@@ -102,22 +98,7 @@ export default function AccountsDashboard() {
     reference: ""
   });
 
-  const [depositData, setDepositData] = useState({
-    amount: "",
-    paymentMethod: "cash",
-    reason: "",
-    notes: ""
-  });
-
-  const [withdrawalData, setWithdrawalData] = useState({
-    amount: "",
-    reason: "",
-    notes: ""
-  });
-
   const formatCurrency = useFormatCurrency();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Fetch real-time data from POS system
   const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
@@ -305,122 +286,6 @@ export default function AccountsDashboard() {
     refetchCashRegister();
   };
 
-  // Deposit mutation
-  const depositMutation = useMutation({
-    mutationFn: async (data: typeof depositData) => {
-      if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found");
-      }
-
-      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'deposit',
-          amount: parseFloat(data.amount),
-          paymentMethod: data.paymentMethod,
-          reason: data.reason || 'Manual deposit',
-          notes: data.notes
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to process deposit');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Deposit Successful",
-        description: `Amount ${formatCurrency(parseFloat(depositData.amount))} has been deposited to the cash register.`,
-      });
-      setShowDepositDialog(false);
-      setDepositData({ amount: "", paymentMethod: "cash", reason: "", notes: "" });
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
-      refreshAllData();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Deposit Failed",
-        description: error.message || "Failed to process deposit",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Withdrawal mutation
-  const withdrawalMutation = useMutation({
-    mutationFn: async (data: typeof withdrawalData) => {
-      if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found");
-      }
-
-      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'withdrawal',
-          amount: parseFloat(data.amount),
-          paymentMethod: 'cash',
-          reason: data.reason || 'Manual withdrawal',
-          notes: data.notes
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to process withdrawal');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Withdrawal Successful",
-        description: `Amount ${formatCurrency(parseFloat(withdrawalData.amount))} has been withdrawn from the cash register.`,
-      });
-      setShowWithdrawDialog(false);
-      setWithdrawalData({ amount: "", reason: "", notes: "" });
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
-      refreshAllData();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Withdrawal Failed",
-        description: error.message || "Failed to process withdrawal",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleDeposit = () => {
-    if (!depositData.amount || parseFloat(depositData.amount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid deposit amount",
-        variant: "destructive"
-      });
-      return;
-    }
-    depositMutation.mutate(depositData);
-  };
-
-  const handleWithdrawal = () => {
-    if (!withdrawalData.amount || parseFloat(withdrawalData.amount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid withdrawal amount",
-        variant: "destructive"
-      });
-      return;
-    }
-    withdrawalMutation.mutate(withdrawalData);
-  };
-
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -459,22 +324,6 @@ export default function AccountsDashboard() {
             <Button onClick={handleAddTransaction}>
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Transaction
-            </Button>
-            <Button 
-              onClick={() => setShowDepositDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
-              disabled={!cashRegisterData?.id}
-            >
-              <ArrowUpIcon className="h-4 w-4 mr-2" />
-              Amount Deposit
-            </Button>
-            <Button 
-              onClick={() => setShowWithdrawDialog(true)}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={!cashRegisterData?.id}
-            >
-              <ArrowDownIcon className="h-4 w-4 mr-2" />
-              Amount Withdrawal
             </Button>
           </div>
         </div>
@@ -878,135 +727,6 @@ export default function AccountsDashboard() {
                   Cancel
                 </Button>
                 <Button onClick={handleCreateTransaction}>Add Transaction</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Deposit Dialog */}
-        <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Amount Deposit</DialogTitle>
-              <DialogDescription>
-                Add money to the cash register from external sources.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="depositAmount">Deposit Amount</Label>
-                <Input
-                  id="depositAmount"
-                  type="number"
-                  value={depositData.amount}
-                  onChange={(e) => setDepositData({ ...depositData, amount: e.target.value })}
-                  placeholder="Enter amount to deposit"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="depositPaymentMethod">Payment Method</Label>
-                <Select
-                  value={depositData.paymentMethod}
-                  onValueChange={(value) => setDepositData({ ...depositData, paymentMethod: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="depositReason">Reason</Label>
-                <Input
-                  id="depositReason"
-                  value={depositData.reason}
-                  onChange={(e) => setDepositData({ ...depositData, reason: e.target.value })}
-                  placeholder="e.g., Bank deposit, Owner contribution"
-                />
-              </div>
-              <div>
-                <Label htmlFor="depositNotes">Notes (Optional)</Label>
-                <Input
-                  id="depositNotes"
-                  value={depositData.notes}
-                  onChange={(e) => setDepositData({ ...depositData, notes: e.target.value })}
-                  placeholder="Additional notes"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowDepositDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleDeposit}
-                  disabled={depositMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {depositMutation.isPending ? 'Processing...' : 'Deposit Amount'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Withdrawal Dialog */}
-        <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Amount Withdrawal</DialogTitle>
-              <DialogDescription>
-                Remove money from the cash register for expenses or other purposes.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="withdrawalAmount">Withdrawal Amount</Label>
-                <Input
-                  id="withdrawalAmount"
-                  type="number"
-                  value={withdrawalData.amount}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, amount: e.target.value })}
-                  placeholder="Enter amount to withdraw"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="withdrawalReason">Reason</Label>
-                <Input
-                  id="withdrawalReason"
-                  value={withdrawalData.reason}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, reason: e.target.value })}
-                  placeholder="e.g., Office expenses, Petty cash"
-                />
-              </div>
-              <div>
-                <Label htmlFor="withdrawalNotes">Notes (Optional)</Label>
-                <Input
-                  id="withdrawalNotes"
-                  value={withdrawalData.notes}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, notes: e.target.value })}
-                  placeholder="Additional notes"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleWithdrawal}
-                  disabled={withdrawalMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {withdrawalMutation.isPending ? 'Processing...' : 'Withdraw Amount'}
-                </Button>
               </div>
             </div>
           </DialogContent>

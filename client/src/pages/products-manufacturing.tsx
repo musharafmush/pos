@@ -1,160 +1,449 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Factory, Package, Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Package, Factory, Clock, Target, AlertCircle, CheckCircle, Plus, Play } from "lucide-react";
+
+interface Product {
+  id: number;
+  name: string;
+  sku: string;
+  price: string;
+  costPrice: string;
+  stock: number;
+  minStock: number;
+  description?: string;
+}
+
+interface ManufacturingOrder {
+  id: number;
+  orderNumber: string;
+  productId: number;
+  targetQuantity: number;
+  currentQuantity: number;
+  status: string;
+  priority: string;
+  manufacturingDate: string;
+  expiryDate: string;
+  estimatedCost: string;
+  notes: string;
+  createdAt: string;
+}
 
 export default function ProductsManufacturing() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
+
+  // Fetch products
+  const { data: products = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['/api/products'],
+    queryFn: async () => {
+      const response = await fetch('/api/products');
+      return response.json();
+    }
+  });
+
+  // Fetch manufacturing orders
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['/api/manufacturing/orders'],
+    queryFn: async () => {
+      const response = await fetch('/api/manufacturing/orders');
+      return response.json();
+    }
+  });
+
+  // Create manufacturing order mutation
+  const createOrderMutation = useMutation({
+    mutationFn: async (orderData: any) => {
+      return apiRequest('/api/manufacturing/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/orders'] });
+      setShowCreateOrder(false);
+      setSelectedProduct(null);
+      toast({
+        title: "Success",
+        description: "Manufacturing order created successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create manufacturing order",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Filter products based on search
+  const filteredProducts = products.filter((product: Product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get orders for a specific product
+  const getProductOrders = (productId: number) => {
+    return orders.filter((order: ManufacturingOrder) => order.productId === productId);
+  };
+
+  // Start manufacturing for a product
+  const startManufacturing = (product: Product) => {
+    setSelectedProduct(product);
+    setShowCreateOrder(true);
+  };
+
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-500';
+      case 'in_progress': return 'bg-blue-500';
+      case 'planned': return 'bg-yellow-500';
+      case 'cancelled': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  // Get priority color
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const handleCreateOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const orderData = {
+      orderNumber: `MO-${Date.now()}`,
+      productId: selectedProduct.id,
+      targetQuantity: parseInt(formData.get('targetQuantity') as string),
+      currentQuantity: 0,
+      batchNumber: formData.get('batchNumber') as string,
+      manufacturingDate: formData.get('manufacturingDate') as string,
+      expiryDate: formData.get('expiryDate') as string,
+      status: 'planned',
+      priority: formData.get('priority') as string,
+      estimatedCost: formData.get('estimatedCost') as string,
+      notes: formData.get('notes') as string,
+      assignedUserId: 1 // Current user
+    };
+
+    createOrderMutation.mutate(orderData);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Manufacturing</h1>
-          <p className="text-gray-600">Manage production orders and bill of materials</p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Products Manufacturing</h1>
+          <p className="text-gray-600 mt-2">Manage manufacturing orders for your products</p>
         </div>
-
-        {/* Navigation Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "overview"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "orders"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Production Orders
-            </button>
-            <button
-              onClick={() => setActiveTab("bom")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "bom"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Bill of Materials
-            </button>
-          </nav>
-        </div>
-
-        {/* Content Area */}
-        {activeTab === "overview" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-                <Factory className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  No active production orders
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Orders completed today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">BOMs</CardTitle>
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Bill of materials defined
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "orders" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Production Orders</h2>
-              <Button>
-                <Factory className="w-4 h-4 mr-2" />
-                New Order
-              </Button>
-            </div>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <Factory className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No production orders</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Create your first production order to start manufacturing.
-                  </p>
-                  <div className="mt-6">
-                    <Button>
-                      <Factory className="w-4 h-4 mr-2" />
-                      Create Order
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "bom" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Bill of Materials</h2>
-              <Button>
-                <Settings className="w-4 h-4 mr-2" />
-                New BOM
-              </Button>
-            </div>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-12">
-                  <Settings className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No BOMs defined</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Create bill of materials to define product recipes and manufacturing instructions.
-                  </p>
-                  <div className="mt-6">
-                    <Button>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Create BOM
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <Button onClick={() => setShowCreateOrder(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          New Manufacturing Order
+        </Button>
       </div>
+
+      {/* Search */}
+      <div className="flex items-center space-x-4">
+        <div className="flex-1">
+          <Label htmlFor="search">Search Products</Label>
+          <Input
+            id="search"
+            placeholder="Search by product name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue="products" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="orders">Manufacturing Orders</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="products" className="space-y-4">
+          {productsLoading ? (
+            <div className="text-center py-8">Loading products...</div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProducts.map((product: Product) => {
+                const productOrders = getProductOrders(product.id);
+                const activeOrders = productOrders.filter((order: ManufacturingOrder) => 
+                  order.status === 'in_progress' || order.status === 'planned'
+                );
+
+                return (
+                  <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{product.name}</CardTitle>
+                        <Badge variant="outline">{product.sku}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Stock:</span>
+                          <p className="font-medium">{product.stock}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Min Stock:</span>
+                          <p className="font-medium">{product.minStock}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Price:</span>
+                          <p className="font-medium">₹{product.price}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Cost:</span>
+                          <p className="font-medium">₹{product.costPrice}</p>
+                        </div>
+                      </div>
+
+                      {/* Stock Status */}
+                      <div className="flex items-center space-x-2">
+                        {product.stock <= product.minStock ? (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                        <span className={`text-sm ${product.stock <= product.minStock ? 'text-red-600' : 'text-green-600'}`}>
+                          {product.stock <= product.minStock ? 'Low Stock' : 'In Stock'}
+                        </span>
+                      </div>
+
+                      {/* Active Orders */}
+                      {activeOrders.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Active Orders:</p>
+                          {activeOrders.slice(0, 2).map((order: ManufacturingOrder) => (
+                            <div key={order.id} className="flex items-center justify-between text-xs">
+                              <span>{order.orderNumber}</span>
+                              <Badge size="sm" className={getStatusColor(order.status)}>
+                                {order.status}
+                              </Badge>
+                            </div>
+                          ))}
+                          {activeOrders.length > 2 && (
+                            <p className="text-xs text-gray-500">+{activeOrders.length - 2} more</p>
+                          )}
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => startManufacturing(product)}
+                        className="w-full"
+                        variant={product.stock <= product.minStock ? "default" : "outline"}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Manufacturing
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="orders" className="space-y-4">
+          {ordersLoading ? (
+            <div className="text-center py-8">Loading orders...</div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {orders.map((order: ManufacturingOrder) => {
+                const product = products.find((p: Product) => p.id === order.productId);
+                
+                return (
+                  <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{order.orderNumber}</CardTitle>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Product</p>
+                        <p className="font-medium">{product?.name || 'Unknown Product'}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Target Qty:</span>
+                          <p className="font-medium">{order.targetQuantity}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Current Qty:</span>
+                          <p className="font-medium">{order.currentQuantity}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Badge size="sm" className={getPriorityColor(order.priority)}>
+                            {order.priority}
+                          </Badge>
+                          <span className="text-sm text-gray-500">priority</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {new Date(order.manufacturingDate).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {order.notes && (
+                        <div>
+                          <p className="text-sm text-gray-500">Notes</p>
+                          <p className="text-sm">{order.notes}</p>
+                        </div>
+                      )}
+
+                      {order.estimatedCost && (
+                        <div>
+                          <p className="text-sm text-gray-500">Estimated Cost</p>
+                          <p className="font-medium">₹{order.estimatedCost}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Create Order Dialog */}
+      <Dialog open={showCreateOrder} onOpenChange={setShowCreateOrder}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Manufacturing Order</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateOrder} className="space-y-4">
+            {selectedProduct && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium">{selectedProduct.name}</h3>
+                <p className="text-sm text-gray-600">SKU: {selectedProduct.sku}</p>
+                <p className="text-sm text-gray-600">Current Stock: {selectedProduct.stock}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="targetQuantity">Target Quantity</Label>
+                <Input
+                  id="targetQuantity"
+                  name="targetQuantity"
+                  type="number"
+                  required
+                  min="1"
+                  defaultValue={selectedProduct?.minStock || 100}
+                />
+              </div>
+              <div>
+                <Label htmlFor="batchNumber">Batch Number</Label>
+                <Input
+                  id="batchNumber"
+                  name="batchNumber"
+                  defaultValue={`B-${Date.now()}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="manufacturingDate">Manufacturing Date</Label>
+                <Input
+                  id="manufacturingDate"
+                  name="manufacturingDate"
+                  type="date"
+                  required
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div>
+                <Label htmlFor="expiryDate">Expiry Date</Label>
+                <Input
+                  id="expiryDate"
+                  name="expiryDate"
+                  type="date"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select name="priority" defaultValue="medium">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="estimatedCost">Estimated Cost (₹)</Label>
+                <Input
+                  id="estimatedCost"
+                  name="estimatedCost"
+                  type="number"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                placeholder="Add any additional notes..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setShowCreateOrder(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createOrderMutation.isPending}>
+                {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
