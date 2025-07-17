@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,10 +52,12 @@ import {
   Settings,
   Eye,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  MinusIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { useFormatCurrency } from "@/lib/currency";
+import { useToast } from "@/hooks/use-toast";
 
 interface Account {
   id: string;
@@ -82,6 +84,8 @@ export default function AccountsDashboard() {
   const [selectedTab, setSelectedTab] = useState("accounts");
   const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const [newAccount, setNewAccount] = useState({
     name: "",
     type: "bank",
@@ -98,7 +102,22 @@ export default function AccountsDashboard() {
     reference: ""
   });
 
+  const [depositData, setDepositData] = useState({
+    amount: "",
+    paymentMethod: "cash",
+    reason: "",
+    notes: ""
+  });
+
+  const [withdrawalData, setWithdrawalData] = useState({
+    amount: "",
+    reason: "",
+    notes: ""
+  });
+
   const formatCurrency = useFormatCurrency();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch real-time data from POS system
   const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
