@@ -305,6 +305,122 @@ export default function AccountsDashboard() {
     refetchCashRegister();
   };
 
+  // Deposit mutation
+  const depositMutation = useMutation({
+    mutationFn: async (data: typeof depositData) => {
+      if (!cashRegisterData?.id) {
+        throw new Error("No active cash register found");
+      }
+
+      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'deposit',
+          amount: parseFloat(data.amount),
+          paymentMethod: data.paymentMethod,
+          reason: data.reason || 'Manual deposit',
+          notes: data.notes
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process deposit');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deposit Successful",
+        description: `Amount ${formatCurrency(parseFloat(depositData.amount))} has been deposited to the cash register.`,
+      });
+      setShowDepositDialog(false);
+      setDepositData({ amount: "", paymentMethod: "cash", reason: "", notes: "" });
+      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
+      refreshAllData();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Deposit Failed",
+        description: error.message || "Failed to process deposit",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Withdrawal mutation
+  const withdrawalMutation = useMutation({
+    mutationFn: async (data: typeof withdrawalData) => {
+      if (!cashRegisterData?.id) {
+        throw new Error("No active cash register found");
+      }
+
+      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'withdrawal',
+          amount: parseFloat(data.amount),
+          paymentMethod: 'cash',
+          reason: data.reason || 'Manual withdrawal',
+          notes: data.notes
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process withdrawal');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Withdrawal Successful",
+        description: `Amount ${formatCurrency(parseFloat(withdrawalData.amount))} has been withdrawn from the cash register.`,
+      });
+      setShowWithdrawDialog(false);
+      setWithdrawalData({ amount: "", reason: "", notes: "" });
+      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
+      refreshAllData();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to process withdrawal",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleDeposit = () => {
+    if (!depositData.amount || parseFloat(depositData.amount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid deposit amount",
+        variant: "destructive"
+      });
+      return;
+    }
+    depositMutation.mutate(depositData);
+  };
+
+  const handleWithdrawal = () => {
+    if (!withdrawalData.amount || parseFloat(withdrawalData.amount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount",
+        variant: "destructive"
+      });
+      return;
+    }
+    withdrawalMutation.mutate(withdrawalData);
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -343,6 +459,22 @@ export default function AccountsDashboard() {
             <Button onClick={handleAddTransaction}>
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Transaction
+            </Button>
+            <Button 
+              onClick={() => setShowDepositDialog(true)}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={!cashRegisterData?.id}
+            >
+              <ArrowUpIcon className="h-4 w-4 mr-2" />
+              Amount Deposit
+            </Button>
+            <Button 
+              onClick={() => setShowWithdrawDialog(true)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={!cashRegisterData?.id}
+            >
+              <ArrowDownIcon className="h-4 w-4 mr-2" />
+              Amount Withdrawal
             </Button>
           </div>
         </div>
