@@ -7527,6 +7527,20 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  app.delete('/api/manufacturing/orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteManufacturingOrder(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Manufacturing order not found' });
+      }
+      res.json({ message: 'Manufacturing order deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting manufacturing order:', error);
+      res.status(500).json({ message: 'Failed to delete manufacturing order' });
+    }
+  });
+
   // Manufacturing Batches Routes
   app.get('/api/manufacturing/batches', isAuthenticated, async (req, res) => {
     try {

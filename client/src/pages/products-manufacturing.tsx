@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Package, Factory, Clock, Target, AlertCircle, CheckCircle, Plus, Play } from "lucide-react";
+import { Package, Factory, Clock, Target, AlertCircle, CheckCircle, Plus, Play, Edit, MoreVertical, Trash2, Eye, Settings } from "lucide-react";
 
 interface Product {
   id: number;
@@ -45,6 +46,10 @@ export default function ProductsManufacturing() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<ManufacturingOrder | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [viewingOrder, setViewingOrder] = useState<ManufacturingOrder | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -90,6 +95,55 @@ export default function ProductsManufacturing() {
     }
   });
 
+  // Update manufacturing order mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return apiRequest(`/api/manufacturing/orders/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/orders'] });
+      setShowEditDialog(false);
+      setEditingOrder(null);
+      toast({
+        title: "Success",
+        description: "Manufacturing order updated successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update manufacturing order",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete manufacturing order mutation
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/manufacturing/orders/${id}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/orders'] });
+      toast({
+        title: "Success",
+        description: "Manufacturing order deleted successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete manufacturing order",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Filter products based on search
   const filteredProducts = products.filter((product: Product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,6 +159,25 @@ export default function ProductsManufacturing() {
   const startManufacturing = (product: Product) => {
     setSelectedProduct(product);
     setShowCreateOrder(true);
+  };
+
+  // Edit manufacturing order
+  const editOrder = (order: ManufacturingOrder) => {
+    setEditingOrder(order);
+    setShowEditDialog(true);
+  };
+
+  // View manufacturing order
+  const viewOrder = (order: ManufacturingOrder) => {
+    setViewingOrder(order);
+    setShowViewDialog(true);
+  };
+
+  // Delete manufacturing order
+  const deleteOrder = (id: number) => {
+    if (confirm("Are you sure you want to delete this manufacturing order?")) {
+      deleteOrderMutation.mutate(id);
+    }
   };
 
   // Get status color
@@ -283,9 +356,35 @@ export default function ProductsManufacturing() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{order.orderNumber}</CardTitle>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => viewOrder(order)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => editOrder(order)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => deleteOrder(order.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Order
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -442,6 +541,255 @@ export default function ProductsManufacturing() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Order Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Manufacturing Order</DialogTitle>
+          </DialogHeader>
+          {editingOrder && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const updateData = {
+                targetQuantity: parseInt(formData.get('targetQuantity') as string),
+                currentQuantity: parseInt(formData.get('currentQuantity') as string),
+                manufacturingDate: formData.get('manufacturingDate') as string,
+                expiryDate: formData.get('expiryDate') as string,
+                status: formData.get('status') as string,
+                priority: formData.get('priority') as string,
+                estimatedCost: formData.get('estimatedCost') as string,
+                notes: formData.get('notes') as string
+              };
+              updateOrderMutation.mutate({ id: editingOrder.id, data: updateData });
+            }} className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium">{editingOrder.orderNumber}</h3>
+                <p className="text-sm text-gray-600">
+                  Product: {products.find(p => p.id === editingOrder.productId)?.name || 'Unknown Product'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="targetQuantity">Target Quantity</Label>
+                  <Input
+                    id="targetQuantity"
+                    name="targetQuantity"
+                    type="number"
+                    required
+                    min="1"
+                    defaultValue={editingOrder.targetQuantity}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="currentQuantity">Current Quantity</Label>
+                  <Input
+                    id="currentQuantity"
+                    name="currentQuantity"
+                    type="number"
+                    min="0"
+                    defaultValue={editingOrder.currentQuantity}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="manufacturingDate">Manufacturing Date</Label>
+                  <Input
+                    id="manufacturingDate"
+                    name="manufacturingDate"
+                    type="date"
+                    required
+                    defaultValue={editingOrder.manufacturingDate?.split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="expiryDate">Expiry Date</Label>
+                  <Input
+                    id="expiryDate"
+                    name="expiryDate"
+                    type="date"
+                    defaultValue={editingOrder.expiryDate?.split('T')[0]}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select name="status" defaultValue={editingOrder.status}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planned">Planned</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select name="priority" defaultValue={editingOrder.priority}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="estimatedCost">Estimated Cost (₹)</Label>
+                <Input
+                  id="estimatedCost"
+                  name="estimatedCost"
+                  type="number"
+                  step="0.01"
+                  defaultValue={editingOrder.estimatedCost}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  placeholder="Add any additional notes..."
+                  rows={3}
+                  defaultValue={editingOrder.notes}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateOrderMutation.isPending}>
+                  {updateOrderMutation.isPending ? 'Updating...' : 'Update Order'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Order Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manufacturing Order Details</DialogTitle>
+          </DialogHeader>
+          {viewingOrder && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{viewingOrder.orderNumber}</h3>
+                  <p className="text-gray-600">
+                    Product: {products.find(p => p.id === viewingOrder.productId)?.name || 'Unknown Product'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Badge className={getStatusColor(viewingOrder.status)}>
+                    {viewingOrder.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-medium mb-3">Production Details</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Target Quantity:</span>
+                      <span className="font-medium">{viewingOrder.targetQuantity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Current Quantity:</span>
+                      <span className="font-medium">{viewingOrder.currentQuantity}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Progress:</span>
+                      <span className="font-medium">
+                        {((viewingOrder.currentQuantity / viewingOrder.targetQuantity) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-medium mb-3">Schedule</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Manufacturing Date:</span>
+                      <span className="font-medium">
+                        {new Date(viewingOrder.manufacturingDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {viewingOrder.expiryDate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Expiry Date:</span>
+                        <span className="font-medium">
+                          {new Date(viewingOrder.expiryDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Priority:</span>
+                      <Badge size="sm" className={getPriorityColor(viewingOrder.priority)}>
+                        {viewingOrder.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {viewingOrder.estimatedCost && (
+                <div>
+                  <h4 className="font-medium mb-2">Cost Information</h4>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Estimated Cost:</span>
+                      <span className="font-medium text-lg">₹{viewingOrder.estimatedCost}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {viewingOrder.notes && (
+                <div>
+                  <h4 className="font-medium mb-2">Notes</h4>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm">{viewingOrder.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowViewDialog(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setShowViewDialog(false);
+                  editOrder(viewingOrder);
+                }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Order
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
