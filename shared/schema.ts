@@ -503,6 +503,18 @@ export const wasteRecords = pgTable('waste_records', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Type definitions for BOM
+export type BillOfMaterial = typeof billOfMaterials.$inferSelect;
+export type BillOfMaterialInsert = typeof billOfMaterials.$inferInsert;
+export type BomItem = typeof bomItems.$inferSelect;
+export type BomItemInsert = typeof bomItems.$inferInsert;
+export type ProductionOrder = typeof productionOrders.$inferSelect;
+export type ProductionOrderInsert = typeof productionOrders.$inferInsert;
+export type ProductionOrderItem = typeof productionOrderItems.$inferSelect;
+export type ProductionOrderItemInsert = typeof productionOrderItems.$inferInsert;
+export type WasteRecord = typeof wasteRecords.$inferSelect;
+export type WasteRecordInsert = typeof wasteRecords.$inferInsert;
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
