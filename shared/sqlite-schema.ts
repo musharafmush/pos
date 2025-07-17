@@ -605,5 +605,136 @@ export type TaxSettingsType = typeof taxSettings.$inferSelect;
 export type HsnCode = typeof hsnCodes.$inferSelect;
 export type HsnCodeInsert = z.infer<typeof insertHsnCodeSchema>;
 
+// Manufacturing Orders table (converted from PostgreSQL)
+export const manufacturingOrders = sqliteTable('manufacturing_orders', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  orderNumber: text('order_number').notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  quantity: integer('quantity').notNull(),
+  requiredQuantity: integer('required_quantity').notNull(),
+  producedQuantity: integer('produced_quantity').default(0),
+  status: text('status').default('pending'), // pending, in_progress, completed, cancelled
+  priority: text('priority').default('medium'), // low, medium, high, urgent
+  startDate: text('start_date'),
+  expectedCompletionDate: text('expected_completion_date'),
+  actualCompletionDate: text('actual_completion_date'),
+  assignedTo: integer('assigned_to').references(() => users.id),
+  createdBy: integer('created_by').references(() => users.id),
+  notes: text('notes'),
+  estimatedCost: real('estimated_cost'),
+  actualCost: real('actual_cost'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Manufacturing Batches table (converted from PostgreSQL)
+export const manufacturingBatches = sqliteTable('manufacturing_batches', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  manufacturingOrderId: integer('manufacturing_order_id').references(() => manufacturingOrders.id).notNull(),
+  batchNumber: text('batch_number').notNull(),
+  quantity: integer('quantity').notNull(),
+  status: text('status').default('in_progress'), // in_progress, completed, failed
+  startTime: text('start_time'),
+  endTime: text('end_time'),
+  qualityStatus: text('quality_status').default('pending'), // pending, passed, failed
+  notes: text('notes'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Quality Control Checks table (converted from PostgreSQL)
+export const qualityControlChecks = sqliteTable('quality_control_checks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  batchId: integer('batch_id').references(() => manufacturingBatches.id).notNull(),
+  checkType: text('check_type').notNull(), // visual, weight, measurement, chemical, etc.
+  checkParameter: text('check_parameter').notNull(),
+  expectedValue: text('expected_value'),
+  actualValue: text('actual_value'),
+  status: text('status').default('pending'), // pending, passed, failed
+  checkedBy: integer('checked_by').references(() => users.id),
+  checkDate: text('check_date').default(new Date().toISOString()),
+  notes: text('notes'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Raw Materials table (converted from PostgreSQL)
+export const rawMaterials = sqliteTable('raw_materials', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  description: text('description'),
+  sku: text('sku').notNull(),
+  category: text('category'),
+  unit: text('unit').notNull(), // kg, liters, pieces, etc.
+  costPerUnit: real('cost_per_unit').notNull(),
+  stockQuantity: integer('stock_quantity').default(0),
+  minimumStock: integer('minimum_stock').default(0),
+  supplierId: integer('supplier_id').references(() => suppliers.id),
+  storageLocation: text('storage_location'),
+  expiryDate: text('expiry_date'),
+  batchNumber: text('batch_number'),
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Manufacturing Recipes table (converted from PostgreSQL)
+export const manufacturingRecipes = sqliteTable('manufacturing_recipes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  version: text('version').default('1.0'),
+  instructions: text('instructions'),
+  preparationTime: integer('preparation_time'), // in minutes
+  cookingTime: integer('cooking_time'), // in minutes
+  totalTime: integer('total_time'), // in minutes
+  difficulty: text('difficulty').default('medium'), // easy, medium, hard
+  servings: integer('servings').default(1),
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Recipe Ingredients table (converted from PostgreSQL)
+export const recipeIngredients = sqliteTable('recipe_ingredients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  recipeId: integer('recipe_id').references(() => manufacturingRecipes.id).notNull(),
+  rawMaterialId: integer('raw_material_id').references(() => rawMaterials.id).notNull(),
+  quantity: real('quantity').notNull(),
+  unit: text('unit').notNull(), // kg, liters, pieces, etc.
+  notes: text('notes'),
+  optional: integer('optional', { mode: 'boolean' }).default(false),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Manufacturing table schemas for validation
+export const insertManufacturingOrderSchema = createInsertSchema(manufacturingOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectManufacturingOrderSchema = createSelectSchema(manufacturingOrders);
+export const insertManufacturingBatchSchema = createInsertSchema(manufacturingBatches).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectManufacturingBatchSchema = createSelectSchema(manufacturingBatches);
+export const insertQualityControlCheckSchema = createInsertSchema(qualityControlChecks).omit({ id: true, createdAt: true });
+export const selectQualityControlCheckSchema = createSelectSchema(qualityControlChecks);
+export const insertRawMaterialSchema = createInsertSchema(rawMaterials).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectRawMaterialSchema = createSelectSchema(rawMaterials);
+export const insertManufacturingRecipeSchema = createInsertSchema(manufacturingRecipes).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectManufacturingRecipeSchema = createSelectSchema(manufacturingRecipes);
+export const insertRecipeIngredientSchema = createInsertSchema(recipeIngredients).omit({ id: true, createdAt: true });
+export const selectRecipeIngredientSchema = createSelectSchema(recipeIngredients);
+
+// Manufacturing table types
+export type ManufacturingOrder = typeof manufacturingOrders.$inferSelect;
+export type ManufacturingOrderInsert = z.infer<typeof insertManufacturingOrderSchema>;
+export type ManufacturingBatch = typeof manufacturingBatches.$inferSelect;
+export type ManufacturingBatchInsert = z.infer<typeof insertManufacturingBatchSchema>;
+export type QualityControlCheck = typeof qualityControlChecks.$inferSelect;
+export type QualityControlCheckInsert = z.infer<typeof insertQualityControlCheckSchema>;
+export type RawMaterial = typeof rawMaterials.$inferSelect;
+export type RawMaterialInsert = z.infer<typeof insertRawMaterialSchema>;
+export type ManufacturingRecipe = typeof manufacturingRecipes.$inferSelect;
+export type ManufacturingRecipeInsert = z.infer<typeof insertManufacturingRecipeSchema>;
+export type RecipeIngredient = typeof recipeIngredients.$inferSelect;
+export type RecipeIngredientInsert = z.infer<typeof insertRecipeIngredientSchema>;
+
 
 
