@@ -96,6 +96,55 @@ export const products = sqliteTable('products', {
   itemProductType: text('item_product_type'),
   department: text('department'),
   brand: text('brand'),
+  buyer: text('buyer'),
+  purchaseGstCalculatedOn: text('purchase_gst_calculated_on'),
+  gstUom: text('gst_uom'),
+  purchaseAbatement: text('purchase_abatement'),
+  
+  // Configuration Options
+  configItemWithCommodity: integer('config_item_with_commodity', { mode: 'boolean' }).default(false),
+  seniorExemptApplicable: integer('senior_exempt_applicable', { mode: 'boolean' }).default(false),
+  eanCodeRequired: integer('ean_code_required', { mode: 'boolean' }).default(false),
+  weightsPerUnit: text('weights_per_unit'),
+  batchExpiryDetails: text('batch_expiry_details'),
+  itemPreparationsStatus: text('item_preparations_status'),
+  
+  // Pricing & Charges
+  grindingCharge: text('grinding_charge'),
+  weightInGms: text('weight_in_gms'),
+  bulkItemName: text('bulk_item_name'),
+  repackageUnits: text('repackage_units'),
+  repackageType: text('repackage_type'),
+  packagingMaterial: text('packaging_material'),
+  decimalPoint: text('decimal_point'),
+  productType: text('product_type'),
+  sellBy: text('sell_by'),
+  itemPerUnit: text('item_per_unit'),
+  maintainSellingMrpBy: text('maintain_selling_mrp_by'),
+  batchSelection: text('batch_selection'),
+  
+  // Mobile & eCommerce Features
+  isWeighable: integer('is_weighable', { mode: 'boolean' }).default(false),
+  skuType: text('sku_type'),
+  indentType: text('indent_type'),
+  gateKeeperMargin: text('gate_keeper_margin'),
+  allowItemFree: integer('allow_item_free', { mode: 'boolean' }).default(false),
+  showOnMobileDashboard: integer('show_on_mobile_dashboard', { mode: 'boolean' }).default(true),
+  enableMobileNotifications: integer('enable_mobile_notifications', { mode: 'boolean' }).default(true),
+  quickAddToCart: integer('quick_add_to_cart', { mode: 'boolean' }).default(false),
+  
+  // Item Properties
+  perishableItem: integer('perishable_item', { mode: 'boolean' }).default(false),
+  temperatureControlled: integer('temperature_controlled', { mode: 'boolean' }).default(false),
+  fragileItem: integer('fragile_item', { mode: 'boolean' }).default(false),
+  trackSerialNumbers: integer('track_serial_numbers', { mode: 'boolean' }).default(false),
+  
+  // Certification & Quality
+  fdaApproved: integer('fda_approved', { mode: 'boolean' }).default(false),
+  bisCertified: integer('bis_certified', { mode: 'boolean' }).default(false),
+  organicCertified: integer('organic_certified', { mode: 'boolean' }).default(false),
+  itemIngredients: text('item_ingredients'),
+  
   model: text('model'),
   size: text('size'),
   color: text('color'),
@@ -213,8 +262,129 @@ export const purchaseItems = sqliteTable('purchase_items', {
   subtotal: real('subtotal').notNull(),
   receivedQty: integer('received_qty').default(0),
   freeQty: integer('free_qty').default(0),
+  cost: real('cost'),
+  sellingPrice: real('selling_price'),
+  mrp: real('mrp'),
+  hsnCode: text('hsn_code'),
+  taxPercentage: real('tax_percentage'),
+  discountAmount: real('discount_amount'),
+  discountPercent: real('discount_percent'),
+  expiryDate: text('expiry_date'),
+  batchNumber: text('batch_number'),
+  netCost: real('net_cost'),
+  roiPercent: real('roi_percent'),
+  grossProfitPercent: real('gross_profit_percent'),
+  netAmount: real('net_amount'),
+  cashPercent: real('cash_percent'),
+  cashAmount: real('cash_amount'),
+  location: text('location'),
+  unit: text('unit'),
   createdAt: text('created_at').default(new Date().toISOString()).notNull()
 });
+
+// Sales Items table (updated)
+export const salesItems = sqliteTable('sales_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  saleId: integer('sale_id').references(() => sales.id).notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  quantity: real('quantity').notNull(),
+  unitPrice: real('unit_price').notNull(),
+  subtotal: real('subtotal').notNull(),
+  mrp: real('mrp')
+});
+
+// Cash Register table
+export const cashRegister = sqliteTable('cash_register', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  registerId: integer('register_id').notNull(),
+  status: text('status').notNull().default('closed'),
+  openingCash: real('opening_cash').notNull().default(0),
+  currentCash: real('current_cash').notNull().default(0),
+  cashReceived: real('cash_received').notNull().default(0),
+  upiReceived: real('upi_received').notNull().default(0),
+  cardReceived: real('card_received').notNull().default(0),
+  bankReceived: real('bank_received').notNull().default(0),
+  chequeReceived: real('cheque_received').notNull().default(0),
+  otherReceived: real('other_received').notNull().default(0),
+  totalWithdrawals: real('total_withdrawals').notNull().default(0),
+  totalRefunds: real('total_refunds').notNull().default(0),
+  totalSales: real('total_sales').notNull().default(0),
+  notes: text('notes'),
+  openedBy: integer('opened_by').references(() => users.id),
+  closedBy: integer('closed_by').references(() => users.id),
+  openedAt: text('opened_at'),
+  closedAt: text('closed_at'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Cash Register Transactions table
+export const cashRegisterTransactions = sqliteTable('cash_register_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  registerId: integer('register_id').references(() => cashRegister.id).notNull(),
+  type: text('type').notNull(), // 'sale', 'refund', 'withdrawal', 'deposit'
+  amount: real('amount').notNull(),
+  paymentMethod: text('payment_method').notNull(),
+  description: text('description'),
+  referenceId: integer('reference_id'), // sale_id, return_id, etc.
+  userId: integer('user_id').references(() => users.id).notNull(),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Inventory Adjustments table
+export const inventoryAdjustments = sqliteTable('inventory_adjustments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  type: text('type').notNull(), // 'increase', 'decrease', 'correction'
+  quantity: real('quantity').notNull(),
+  previousQuantity: real('previous_quantity').notNull(),
+  newQuantity: real('new_quantity').notNull(),
+  reason: text('reason'),
+  notes: text('notes'),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Offers table
+export const offers = sqliteTable('offers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').notNull(), // 'discount', 'bogo', 'bundle'
+  value: real('value').notNull(), // percentage or fixed amount
+  minPurchase: real('min_purchase').default(0),
+  maxDiscount: real('max_discount'),
+  validFrom: text('valid_from').notNull(),
+  validTo: text('valid_to').notNull(),
+  applicableProducts: text('applicable_products'), // JSON array of product IDs
+  maxUsage: integer('max_usage'),
+  currentUsage: integer('current_usage').default(0),
+  active: integer('active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Offer Usage table
+export const offerUsage = sqliteTable('offer_usage', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  offerId: integer('offer_id').references(() => offers.id).notNull(),
+  customerId: integer('customer_id').references(() => customers.id),
+  saleId: integer('sale_id').references(() => sales.id),
+  usedAt: text('used_at').default(new Date().toISOString()).notNull()
+});
+
+// Customer Loyalty table
+export const customerLoyalty = sqliteTable('customer_loyalty', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  customerId: integer('customer_id').references(() => customers.id).notNull(),
+  totalPoints: integer('total_points').default(0),
+  usedPoints: integer('used_points').default(0),
+  availablePoints: integer('available_points').default(0),
+  tier: text('tier').default('Bronze'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  lastUpdated: text('last_updated').default(new Date().toISOString()).notNull()
+});
+
+
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -393,3 +563,47 @@ export type ExpenseCategory = typeof expenseCategories.$inferSelect;
 export type ExpenseCategoryInsert = z.infer<typeof insertExpenseCategorySchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type ExpenseInsert = z.infer<typeof insertExpenseSchema>;
+
+// Additional schemas for the new tables
+export const insertCashRegisterSchema = createInsertSchema(cashRegister).omit({ id: true, createdAt: true });
+export const selectCashRegisterSchema = createSelectSchema(cashRegister);
+export const insertCashRegisterTransactionSchema = createInsertSchema(cashRegisterTransactions).omit({ id: true, createdAt: true });
+export const selectCashRegisterTransactionSchema = createSelectSchema(cashRegisterTransactions);
+export const insertInventoryAdjustmentSchema = createInsertSchema(inventoryAdjustments).omit({ id: true, createdAt: true });
+export const selectInventoryAdjustmentSchema = createSelectSchema(inventoryAdjustments);
+export const insertOfferSchema = createInsertSchema(offers).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectOfferSchema = createSelectSchema(offers);
+export const insertOfferUsageSchema = createInsertSchema(offerUsage).omit({ id: true, usedAt: true });
+export const selectOfferUsageSchema = createSelectSchema(offerUsage);
+export const insertCustomerLoyaltySchema = createInsertSchema(customerLoyalty).omit({ id: true, createdAt: true, lastUpdated: true });
+export const selectCustomerLoyaltySchema = createSelectSchema(customerLoyalty);
+export const insertTaxCategorySchema = createInsertSchema(taxCategories).omit({ id: true, createdAt: true });
+export const selectTaxCategorySchema = createSelectSchema(taxCategories);
+export const insertTaxSettingsSchema = createInsertSchema(taxSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectTaxSettingsSchema = createSelectSchema(taxSettings);
+export const insertHsnCodeSchema = createInsertSchema(hsnCodes).omit({ id: true, createdAt: true });
+export const selectHsnCodeSchema = createSelectSchema(hsnCodes);
+
+// Types for the new tables
+export type CashRegister = typeof cashRegister.$inferSelect;
+export type CashRegisterInsert = z.infer<typeof insertCashRegisterSchema>;
+export type CashRegisterTransaction = typeof cashRegisterTransactions.$inferSelect;
+export type CashRegisterTransactionInsert = z.infer<typeof insertCashRegisterTransactionSchema>;
+export type InventoryAdjustment = typeof inventoryAdjustments.$inferSelect;
+export type InventoryAdjustmentInsert = z.infer<typeof insertInventoryAdjustmentSchema>;
+export type Offer = typeof offers.$inferSelect;
+export type OfferInsert = z.infer<typeof insertOfferSchema>;
+export type OfferUsage = typeof offerUsage.$inferSelect;
+export type OfferUsageInsert = z.infer<typeof insertOfferUsageSchema>;
+export type CustomerLoyalty = typeof customerLoyalty.$inferSelect;
+export type CustomerLoyaltyInsert = z.infer<typeof insertCustomerLoyaltySchema>;
+export type TaxCategory = typeof taxCategories.$inferSelect;
+export type TaxCategoryInsert = z.infer<typeof insertTaxCategorySchema>;
+export type TaxSettings = typeof taxSettings.$inferSelect;
+export type TaxSettingsInsert = z.infer<typeof insertTaxSettingsSchema>;
+export type TaxSettingsType = typeof taxSettings.$inferSelect;
+export type HsnCode = typeof hsnCodes.$inferSelect;
+export type HsnCodeInsert = z.infer<typeof insertHsnCodeSchema>;
+
+
+
