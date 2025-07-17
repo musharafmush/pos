@@ -420,6 +420,101 @@ export const recipeIngredients = pgTable('recipe_ingredients', {
   createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
+// Bill of Materials (BOM) table - Main BOM definitions
+export const billOfMaterials = pgTable('bill_of_materials', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  version: text('version').default('1.0'),
+  outputQuantity: integer('output_quantity').notNull().default(1),
+  outputUnit: text('output_unit').notNull().default('units'),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
+  estimatedTimeMinutes: integer('estimated_time_minutes'),
+  instructions: text('instructions'),
+  active: boolean('active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// BOM Items table - Individual components/materials in a BOM
+export const bomItems = pgTable('bom_items', {
+  id: serial('id').primaryKey(),
+  bomId: integer('bom_id').references(() => billOfMaterials.id).notNull(),
+  materialId: integer('material_id').references(() => products.id).notNull(), // Can reference products as materials
+  quantity: decimal('quantity', { precision: 10, scale: 3 }).notNull(),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  wastagePercentage: decimal('wastage_percentage', { precision: 5, scale: 2 }).default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Production Orders table - Actual production based on BOM
+export const productionOrders = pgTable('production_orders', {
+  id: serial('id').primaryKey(),
+  orderNumber: text('order_number').notNull().unique(),
+  bomId: integer('bom_id').references(() => billOfMaterials.id).notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  targetQuantity: integer('target_quantity').notNull(),
+  producedQuantity: integer('produced_quantity').default(0),
+  status: text('status').default('pending'), // pending, in_progress, completed, cancelled
+  priority: text('priority').default('medium'), // low, medium, high, urgent
+  scheduledDate: timestamp('scheduled_date'),
+  startedDate: timestamp('started_date'),
+  completedDate: timestamp('completed_date'),
+  estimatedCost: decimal('estimated_cost', { precision: 10, scale: 2 }),
+  actualCost: decimal('actual_cost', { precision: 10, scale: 2 }),
+  notes: text('notes'),
+  assignedUserId: integer('assigned_user_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// Production Order Items table - Materials consumed in production
+export const productionOrderItems = pgTable('production_order_items', {
+  id: serial('id').primaryKey(),
+  productionOrderId: integer('production_order_id').references(() => productionOrders.id).notNull(),
+  materialId: integer('material_id').references(() => products.id).notNull(),
+  plannedQuantity: decimal('planned_quantity', { precision: 10, scale: 3 }).notNull(),
+  actualQuantity: decimal('actual_quantity', { precision: 10, scale: 3 }).default('0'),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  wastageQuantity: decimal('wastage_quantity', { precision: 10, scale: 3 }).default('0'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Waste/Damage Records table - Track waste and damage during production
+export const wasteRecords = pgTable('waste_records', {
+  id: serial('id').primaryKey(),
+  productionOrderId: integer('production_order_id').references(() => productionOrders.id),
+  materialId: integer('material_id').references(() => products.id),
+  wasteType: text('waste_type').notNull(), // material_waste, production_damage, expired, contaminated
+  quantity: decimal('quantity', { precision: 10, scale: 3 }).notNull(),
+  unit: text('unit').notNull(),
+  unitCost: decimal('unit_cost', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).notNull(),
+  reason: text('reason'),
+  notes: text('notes'),
+  recordedBy: integer('recorded_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+// Type definitions for BOM
+export type BillOfMaterial = typeof billOfMaterials.$inferSelect;
+export type BillOfMaterialInsert = typeof billOfMaterials.$inferInsert;
+export type BomItem = typeof bomItems.$inferSelect;
+export type BomItemInsert = typeof bomItems.$inferInsert;
+export type ProductionOrder = typeof productionOrders.$inferSelect;
+export type ProductionOrderInsert = typeof productionOrders.$inferInsert;
+export type ProductionOrderItem = typeof productionOrderItems.$inferSelect;
+export type ProductionOrderItemInsert = typeof productionOrderItems.$inferInsert;
+export type WasteRecord = typeof wasteRecords.$inferSelect;
+export type WasteRecordInsert = typeof wasteRecords.$inferInsert;
+
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
@@ -472,6 +567,37 @@ export const manufacturingOrdersRelations = relations(manufacturingOrders, ({ on
   assignedUser: one(users, { fields: [manufacturingOrders.assignedUserId], references: [users.id] }),
   batches: many(manufacturingBatches),
   qualityChecks: many(qualityControlChecks)
+}));
+
+// BOM Relations
+export const billOfMaterialsRelations = relations(billOfMaterials, ({ one, many }) => ({
+  product: one(products, { fields: [billOfMaterials.productId], references: [products.id] }),
+  bomItems: many(bomItems),
+  productionOrders: many(productionOrders)
+}));
+
+export const bomItemsRelations = relations(bomItems, ({ one }) => ({
+  bom: one(billOfMaterials, { fields: [bomItems.bomId], references: [billOfMaterials.id] }),
+  material: one(products, { fields: [bomItems.materialId], references: [products.id] })
+}));
+
+export const productionOrdersRelations = relations(productionOrders, ({ one, many }) => ({
+  bom: one(billOfMaterials, { fields: [productionOrders.bomId], references: [billOfMaterials.id] }),
+  product: one(products, { fields: [productionOrders.productId], references: [products.id] }),
+  assignedUser: one(users, { fields: [productionOrders.assignedUserId], references: [users.id] }),
+  productionOrderItems: many(productionOrderItems),
+  wasteRecords: many(wasteRecords)
+}));
+
+export const productionOrderItemsRelations = relations(productionOrderItems, ({ one }) => ({
+  productionOrder: one(productionOrders, { fields: [productionOrderItems.productionOrderId], references: [productionOrders.id] }),
+  material: one(products, { fields: [productionOrderItems.materialId], references: [products.id] })
+}));
+
+export const wasteRecordsRelations = relations(wasteRecords, ({ one }) => ({
+  productionOrder: one(productionOrders, { fields: [wasteRecords.productionOrderId], references: [productionOrders.id] }),
+  material: one(products, { fields: [wasteRecords.materialId], references: [products.id] }),
+  recordedBy: one(users, { fields: [wasteRecords.recordedBy], references: [users.id] })
 }));
 
 export const manufacturingBatchesRelations = relations(manufacturingBatches, ({ one }) => ({
@@ -690,6 +816,77 @@ export const hsnCodeInsertSchema = createInsertSchema(hsnCodes, {
 export type HsnCodeInsert = z.infer<typeof hsnCodeInsertSchema>;
 export const hsnCodeSelectSchema = createSelectSchema(hsnCodes);
 export type HsnCode = z.infer<typeof hsnCodeSelectSchema>;
+
+// BOM (Bill of Materials) validation schemas
+export const billOfMaterialsInsertSchema = createInsertSchema(billOfMaterials, {
+  name: (schema) => schema.min(3, "Name must be at least 3 characters"),
+  description: (schema) => schema.optional(),
+  version: (schema) => schema.optional(),
+  outputQuantity: (schema) => schema.min(1, "Output quantity must be at least 1"),
+  outputUnit: (schema) => schema.min(1, "Output unit must be specified"),
+  totalCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  estimatedTimeMinutes: (schema) => schema.min(0, "Estimated time must be at least 0").optional(),
+  instructions: (schema) => schema.optional(),
+  active: (schema) => schema.optional()
+});
+export type BillOfMaterialsInsert = z.infer<typeof billOfMaterialsInsertSchema>;
+export const billOfMaterialsSelectSchema = createSelectSchema(billOfMaterials);
+export type BillOfMaterials = z.infer<typeof billOfMaterialsSelectSchema>;
+
+export const bomItemInsertSchema = createInsertSchema(bomItems, {
+  quantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) > 0, "Quantity must be greater than 0"),
+  unit: (schema) => schema.min(1, "Unit must be specified"),
+  unitCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Unit cost must be at least 0"),
+  totalCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Total cost must be at least 0"),
+  wastagePercentage: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0 && parseFloat(val) <= 100, "Wastage percentage must be between 0 and 100").optional(),
+  notes: (schema) => schema.optional()
+});
+export type BomItemInsert = z.infer<typeof bomItemInsertSchema>;
+export const bomItemSelectSchema = createSelectSchema(bomItems);
+export type BomItem = z.infer<typeof bomItemSelectSchema>;
+
+export const productionOrderInsertSchema = createInsertSchema(productionOrders, {
+  orderNumber: (schema) => schema.min(3, "Order number must be at least 3 characters"),
+  targetQuantity: (schema) => schema.min(1, "Target quantity must be at least 1"),
+  producedQuantity: (schema) => schema.min(0, "Produced quantity must be at least 0").optional(),
+  status: (schema) => schema.optional(),
+  priority: (schema) => schema.optional(),
+  scheduledDate: (schema) => schema.optional(),
+  startedDate: (schema) => schema.optional(),
+  completedDate: (schema) => schema.optional(),
+  estimatedCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  actualCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).optional(),
+  notes: (schema) => schema.optional()
+});
+export type ProductionOrderInsert = z.infer<typeof productionOrderInsertSchema>;
+export const productionOrderSelectSchema = createSelectSchema(productionOrders);
+export type ProductionOrder = z.infer<typeof productionOrderSelectSchema>;
+
+export const productionOrderItemInsertSchema = createInsertSchema(productionOrderItems, {
+  plannedQuantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) > 0, "Planned quantity must be greater than 0"),
+  actualQuantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Actual quantity must be at least 0").optional(),
+  unit: (schema) => schema.min(1, "Unit must be specified"),
+  unitCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Unit cost must be at least 0"),
+  totalCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Total cost must be at least 0"),
+  wastageQuantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Wastage quantity must be at least 0").optional(),
+  notes: (schema) => schema.optional()
+});
+export type ProductionOrderItemInsert = z.infer<typeof productionOrderItemInsertSchema>;
+export const productionOrderItemSelectSchema = createSelectSchema(productionOrderItems);
+export type ProductionOrderItem = z.infer<typeof productionOrderItemSelectSchema>;
+
+export const wasteRecordInsertSchema = createInsertSchema(wasteRecords, {
+  wasteType: (schema) => schema.min(3, "Waste type must be at least 3 characters"),
+  quantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) > 0, "Quantity must be greater than 0"),
+  unit: (schema) => schema.min(1, "Unit must be specified"),
+  unitCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Unit cost must be at least 0"),
+  totalCost: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) >= 0, "Total cost must be at least 0"),
+  reason: (schema) => schema.optional(),
+  notes: (schema) => schema.optional()
+});
+export type WasteRecordInsert = z.infer<typeof wasteRecordInsertSchema>;
+export const wasteRecordSelectSchema = createSelectSchema(wasteRecords);
+export type WasteRecord = z.infer<typeof wasteRecordSelectSchema>;
 
 // Returns table
 export const returns = pgTable('returns', {

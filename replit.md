@@ -137,6 +137,35 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Accounts Dashboard Deposit and Withdrawal System (July 17, 2025)
+- Added Amount Deposit and Amount Withdrawal functionality to accounts dashboard
+- Implemented professional deposit dialog with amount input, payment method selection, reason, and notes
+- Created withdrawal dialog with amount input, reason, and notes fields
+- Integrated with existing cash register transaction system using deposit and withdrawal transaction types
+- Added real-time cash register balance updates after deposit/withdrawal operations
+- Enhanced UI with green deposit button and red withdrawal button for clear visual distinction
+- Implemented proper validation for deposit and withdrawal amounts
+- Added toast notifications for successful operations and error handling
+- Connected deposit/withdrawal operations to backend cash register transaction API
+- Buttons automatically disable when no active cash register is available
+- Added comprehensive form validation and user feedback system
+- Deposits support multiple payment methods (cash, bank transfer, cheque, other)
+- Withdrawals automatically deduct from current cash register balance
+- All operations logged in cash register transactions with proper audit trail
+
+### Products Manufacturing System Implementation (July 17, 2025)
+- Created comprehensive products manufacturing page with product-centric interface for intuitive manufacturing workflow
+- Implemented dual-view system: products view and manufacturing orders view with advanced filtering and search
+- Added one-click manufacturing order creation directly from product catalog with automatic stock level monitoring
+- Built complete edit menu system with view, edit, and delete functionality for manufacturing orders
+- Enhanced UI with dropdown menus, detailed view dialogs, and comprehensive edit forms
+- Integrated priority-based manufacturing planning with color-coded status indicators
+- Added batch number generation, cost estimation, and progress tracking
+- Created professional dialog system for order creation, editing, and viewing with form validation
+- Added sidebar navigation menu item for easy access to products manufacturing functionality
+- Implemented full CRUD operations with proper error handling and user feedback
+- Enhanced manufacturing system with real-time data updates and comprehensive order management
+
 ### Manufacturing Management System Implementation (July 16, 2025)
 - Created comprehensive manufacturing management system extending existing repacking functionality
 - Implemented 6 new database tables: manufacturing_orders, manufacturing_batches, quality_control_checks, raw_materials, manufacturing_recipes, and recipe_ingredients
