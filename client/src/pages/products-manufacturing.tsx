@@ -43,6 +43,83 @@ interface ManufacturingOrder {
   updated_at: string;
 }
 
+// Manufacturing Process Stages (7-Step Workflow)
+interface ManufacturingStage {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'approved';
+}
+
+const manufacturingStages: ManufacturingStage[] = [
+  {
+    id: 1,
+    name: "Formula Creation (BOM)",
+    description: "Create recipe with raw materials and exact quantities by R&D team",
+    icon: "🧪",
+    color: "blue",
+    bgColor: "bg-blue-50",
+    status: 'pending'
+  },
+  {
+    id: 2,
+    name: "Formula Approval (Actam)",
+    description: "Management/QC approval and sign-off on formula before production",
+    icon: "✅",
+    color: "green",
+    bgColor: "bg-green-50",
+    status: 'pending'
+  },
+  {
+    id: 3,
+    name: "Manufacturing Begins",
+    description: "Manufacturing team receives formula and starts batch processing",
+    icon: "🏭",
+    color: "orange",
+    bgColor: "bg-orange-50",
+    status: 'pending'
+  },
+  {
+    id: 4,
+    name: "Processing Formula",
+    description: "Mix ingredients in machines with controlled temperature, timing, and speed",
+    icon: "⚙️",
+    color: "purple",
+    bgColor: "bg-purple-50",
+    status: 'pending'
+  },
+  {
+    id: 5,
+    name: "Quality Testing",
+    description: "QC team checks pH, color, smell, viscosity - must pass to continue",
+    icon: "🔬",
+    color: "indigo",
+    bgColor: "bg-indigo-50",
+    status: 'pending'
+  },
+  {
+    id: 6,
+    name: "Filling & Packaging",
+    description: "Fill into bottles, label, cap, and pack into cartons",
+    icon: "📦",
+    color: "pink",
+    bgColor: "bg-pink-50",
+    status: 'pending'
+  },
+  {
+    id: 7,
+    name: "Final Product (FG)",
+    description: "Store as Finished Goods, ready for dispatch to warehouses/retailers",
+    icon: "🎯",
+    color: "emerald",
+    bgColor: "bg-emerald-50",
+    status: 'pending'
+  }
+];
+
 // Manufacturing Formulas Database - Auto-Select System
 const manufacturingFormulas = {
   "mort-lemon-floor-cleaner": {
@@ -169,6 +246,8 @@ export default function ProductsManufacturing() {
   const [selectedFormula, setSelectedFormula] = useState<string>("");
   const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
   const [batchSize, setBatchSize] = useState<number>(500);
+  const [currentStages, setCurrentStages] = useState<ManufacturingStage[]>(manufacturingStages);
+  const [formulaApproved, setFormulaApproved] = useState<boolean>(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -181,11 +260,50 @@ export default function ProductsManufacturing() {
         ...material,
         actualQty: material.standard
       })));
+      
+      // Update Stage 1 to completed
+      const updatedStages = [...currentStages];
+      updatedStages[0].status = 'completed';
+      setCurrentStages(updatedStages);
+      
       toast({
         title: "Formula Auto-Loaded",
         description: `${formula.name} formula with ${formula.materials.length} materials loaded successfully`,
       });
     }
+  };
+
+  // Handle stage progression
+  const handleStageAction = (stageId: number, action: 'start' | 'complete' | 'approve') => {
+    const updatedStages = [...currentStages];
+    const stageIndex = stageId - 1;
+    
+    if (action === 'start') {
+      updatedStages[stageIndex].status = 'in-progress';
+    } else if (action === 'complete') {
+      updatedStages[stageIndex].status = 'completed';
+      // Auto-start next stage if exists
+      if (stageIndex + 1 < updatedStages.length) {
+        updatedStages[stageIndex + 1].status = 'in-progress';
+      }
+    } else if (action === 'approve') {
+      updatedStages[stageIndex].status = 'approved';
+      if (stageId === 2) {
+        setFormulaApproved(true);
+        // Auto-start manufacturing after approval
+        if (stageIndex + 1 < updatedStages.length) {
+          updatedStages[stageIndex + 1].status = 'in-progress';
+        }
+      }
+    }
+    
+    setCurrentStages(updatedStages);
+    
+    const stage = manufacturingStages[stageIndex];
+    toast({
+      title: `Stage ${stageId} ${action === 'approve' ? 'Approved' : action === 'complete' ? 'Completed' : 'Started'}`,
+      description: stage.name,
+    });
   };
 
   // Fetch data
@@ -271,10 +389,123 @@ export default function ProductsManufacturing() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Manufacturing</h1>
-          <p className="text-gray-600">Manage production orders and bill of materials</p>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-700 p-8 rounded-3xl shadow-2xl text-white">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Manufacturing Management</h1>
+              <p className="text-xl opacity-90">7-Step Production Process: Formula → Approval → Manufacturing → Quality → Packaging → Final Product</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <Button
+                onClick={() => setIsCreateOrderOpen(true)}
+                className="bg-white text-purple-700 hover:bg-gray-100 font-semibold px-8 py-3 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Plus className="w-6 h-6 mr-2" />
+                Create New Batch Record
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* 7-Step Manufacturing Process Workflow */}
+        <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            Manufacturing Process Workflow
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {currentStages.map((stage, index) => (
+              <div
+                key={stage.id}
+                className={`${stage.bgColor} border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${
+                  stage.status === 'completed' ? 'border-green-400' :
+                  stage.status === 'approved' ? 'border-blue-400' :
+                  stage.status === 'in-progress' ? 'border-orange-400' :
+                  'border-gray-200'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-2">{stage.icon}</span>
+                    <span className="font-bold text-gray-700">Step {stage.id}</span>
+                  </div>
+                  <Badge
+                    className={
+                      stage.status === 'completed' ? 'bg-green-500' :
+                      stage.status === 'approved' ? 'bg-blue-500' :
+                      stage.status === 'in-progress' ? 'bg-orange-500' :
+                      'bg-gray-400'
+                    }
+                  >
+                    {stage.status === 'completed' ? '✓ Done' :
+                     stage.status === 'approved' ? '✓ Approved' :
+                     stage.status === 'in-progress' ? '⏳ Active' :
+                     '⏳ Pending'}
+                  </Badge>
+                </div>
+                <h3 className="font-semibold text-gray-800 mb-2">{stage.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{stage.description}</p>
+                
+                <div className="space-y-2">
+                  {stage.status === 'pending' && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStageAction(stage.id, 'start')}
+                      className="w-full bg-blue-500 hover:bg-blue-600"
+                      disabled={index > 0 && currentStages[index - 1].status !== 'completed' && currentStages[index - 1].status !== 'approved'}
+                    >
+                      Start Stage
+                    </Button>
+                  )}
+                  {stage.status === 'in-progress' && (
+                    <div className="space-y-2">
+                      {stage.id === 2 ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStageAction(stage.id, 'approve')}
+                          className="w-full bg-green-500 hover:bg-green-600"
+                        >
+                          Approve Formula (Actam)
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStageAction(stage.id, 'complete')}
+                          className="w-full bg-green-500 hover:bg-green-600"
+                        >
+                          Complete Stage
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {(stage.status === 'completed' || stage.status === 'approved') && (
+                    <div className="flex items-center justify-center text-green-600 font-semibold">
+                      ✅ {stage.status === 'approved' ? 'Approved' : 'Completed'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Process Progress Bar */}
+          <div className="mt-6 bg-gray-100 rounded-full p-2">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">Manufacturing Progress</span>
+              <span className="text-sm font-medium text-blue-600">
+                {Math.round((currentStages.filter(s => s.status === 'completed' || s.status === 'approved').length / currentStages.length) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-300 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                style={{
+                  width: `${(currentStages.filter(s => s.status === 'completed' || s.status === 'approved').length / currentStages.length) * 100}%`
+                }}
+              ></div>
+            </div>
+          </div>
         </div>
 
         {/* Enhanced Navigation Tabs */}
