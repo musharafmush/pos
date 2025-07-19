@@ -51,7 +51,11 @@ import {
   Settings,
   ShoppingCart,
   Beaker,
-  Zap
+  Zap,
+  FlaskConical,
+  Droplets,
+  Sparkles,
+  RefreshCw
 } from "lucide-react";
 import type { 
   ManufacturingOrder, 
@@ -74,12 +78,96 @@ interface ManufacturingStats {
   qualityPassRate: number;
 }
 
+// Manufacturing Formulas Data (Based on provided screenshots)
+const manufacturingFormulas = {
+  "GLORY Glass Cleaner": [
+    { material: "DM Water", quantity: -31.000 },
+    { material: "EDTA Powder", quantity: -0.018 },
+    { material: "IPA", quantity: -3.500 },
+    { material: "Kathon CG", quantity: -0.018 },
+    { material: "Perfume - Shimmer", quantity: -0.105 },
+    { material: "SLES Liquid", quantity: -0.245 },
+    { material: "Tergitol 15 S-9", quantity: -0.105 },
+    { material: "Colour - Lavanya Geniva", quantity: -0.001 },
+    { material: "Rhodasurf NP 9M", quantity: 0.000 },
+    { material: "Miratin CAPB", quantity: 0.000 },
+    { material: "Polyquart Pro A", quantity: 0.000 }
+  ],
+  "Fabric Conditioner": [
+    { material: "DM Water", quantity: -455.000 },
+    { material: "Prrapagen TQ", quantity: -30.000 },
+    { material: "Kathon CG", quantity: -0.250 },
+    { material: "Perfume - Silk musk", quantity: -2.500 },
+    { material: "Rosaline Marencaps", quantity: -10.000 },
+    { material: "Flosoft", quantity: -2.500 },
+    { material: "Colour - Liquimint pink AL", quantity: -0.010 }
+  ],
+  "MORT Lemon Floor Cleaner": [
+    { material: "DM Water", quantity: -91.000, percentage: 91.000 },
+    { material: "EDTA Powder", quantity: -0.500, percentage: 0.500 },
+    { material: "Kathon CG", quantity: -0.050, percentage: 0.050 },
+    { material: "Miratin CAPB", quantity: -1.100, percentage: 1.100 },
+    { material: "Perfume - Lemon Mod", quantity: -2.300, percentage: 2.300 },
+    { material: "Rhodasurf NP 9M", quantity: -5.000, percentage: 5.000 },
+    { material: "SLES Liquid", quantity: -1.000, percentage: 1.000 },
+    { material: "Perfume - Lavender", quantity: -0.000, percentage: 0.000 },
+    { material: "BKC - 80%", quantity: -0.000, percentage: 0.000 },
+    { material: "BKC - 50%", quantity: -0.000, percentage: 0.000 },
+    { material: "Tergitol 15 S-9", quantity: -0.000, percentage: 0.000 }
+  ],
+  "MORT Rose Floor Cleaner": [
+    { material: "DM Water", quantity: -91.000, percentage: 91.000 },
+    { material: "EDTA Powder", quantity: -0.500, percentage: 0.500 },
+    { material: "Kathon CG", quantity: -0.050, percentage: 0.050 },
+    { material: "Miratin CAPB", quantity: -1.100, percentage: 1.100 },
+    { material: "Perfume - Rose Mod", quantity: -2.300, percentage: 2.300 },
+    { material: "Rhodasurf NP 9M", quantity: -5.000, percentage: 5.000 },
+    { material: "SLES Liquid", quantity: -1.000, percentage: 1.000 }
+  ],
+  "HYGRA Toilet Cleaner": [
+    { material: "DM Water", quantity: -53.240, percentage: 53.240 },
+    { material: "Pentacare", quantity: -1.000, percentage: 1.000 },
+    { material: "HCl", quantity: -43.600, percentage: 43.600 },
+    { material: "Kathon CG", quantity: -0.050, percentage: 0.050 },
+    { material: "Rhodasurf NP 9M", quantity: -2.000, percentage: 2.000 },
+    { material: "Tergitol 15 S-9", quantity: -0.060, percentage: 0.060 }
+  ],
+  "SHCLEAN Tiles & Ceramic Cleaner": [
+    { material: "DM Water", quantity: -50.760, percentage: 50.760 },
+    { material: "HCl", quantity: -43.600, percentage: 43.600 },
+    { material: "Kathon CG", quantity: -0.050, percentage: 0.050 },
+    { material: "Perfume - Lemon Mod", quantity: -1.600, percentage: 1.600 },
+    { material: "Rhodasurf NP 9M", quantity: -2.000, percentage: 2.000 }
+  ]
+};
+
+const cleaningProducts = [
+  { id: 1, name: "GLORY Glass Cleaner", category: "Glass Cleaners", status: "Active" },
+  { id: 2, name: "Fabric Conditioner", category: "Fabric Care", status: "Active" },
+  { id: 3, name: "MORT Lemon Floor Cleaner", category: "Floor Cleaners", status: "Active" },
+  { id: 4, name: "MORT Rose Floor Cleaner", category: "Floor Cleaners", status: "Active" },
+  { id: 5, name: "MORT Lavender Floor Cleaner", category: "Floor Cleaners", status: "Active" },
+  { id: 6, name: "MORT Jasmine Floor Cleaner", category: "Floor Cleaners", status: "Active" },
+  { id: 7, name: "MORT Herbal Floor Cleaner", category: "Floor Cleaners", status: "Active" },
+  { id: 8, name: "HYGRA Toilet Cleaner", category: "Toilet Cleaners", status: "Active" },
+  { id: 9, name: "SHCLEAN Tiles & Ceramic Cleaner", category: "Tiles Cleaners", status: "Active" },
+  { id: 10, name: "SHCLEAN DL3", category: "Multi-Purpose", status: "Active" },
+  { id: 11, name: "SHCLEAN DL3 - Blue", category: "Multi-Purpose", status: "Active" },
+  { id: 12, name: "SHCLEAN DL3 - Pink", category: "Multi-Purpose", status: "Active" }
+];
+
 export default function ManufacturingDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedOrder, setSelectedOrder] = useState<ManufacturingOrder | null>(null);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [isCreateBatchOpen, setIsCreateBatchOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState("");
+  const [orderType, setOrderType] = useState("Domestic");
+  const [batchSize, setBatchSize] = useState("");
+  const [orderDate, setOrderDate] = useState("07-11-2020");
+  const [operation, setOperation] = useState("Standard");
+  const [currentFormula, setCurrentFormula] = useState<any[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
@@ -125,6 +213,17 @@ export default function ManufacturingDashboard() {
     queryFn: () => apiRequest('/api/users')
   });
 
+  // Handle product selection
+  const handleProductSelection = (productName: string) => {
+    setSelectedProduct(productName);
+    const formula = manufacturingFormulas[productName as keyof typeof manufacturingFormulas];
+    if (formula) {
+      setCurrentFormula(formula);
+    } else {
+      setCurrentFormula([]);
+    }
+  };
+
   // Create manufacturing order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -141,6 +240,10 @@ export default function ManufacturingDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/stats'] });
       setIsCreateOrderOpen(false);
+      // Reset form
+      setSelectedProduct("");
+      setBatchSize("");
+      setCurrentFormula([]);
     },
     onError: (error: any) => {
       toast({
@@ -150,6 +253,32 @@ export default function ManufacturingDashboard() {
       });
     }
   });
+
+  const handleCreateOrder = () => {
+    if (!selectedProduct || !batchSize) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a product and enter batch size",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const orderData = {
+      orderNumber: `MFG-${Date.now()}`,
+      batchNumber: `BATCH-${Date.now()}`,
+      productName: selectedProduct,
+      batchSize: parseInt(batchSize),
+      orderType,
+      orderDate,
+      operation,
+      formula: currentFormula,
+      status: "pending",
+      priority: "medium"
+    };
+
+    createOrderMutation.mutate(orderData);
+  };
 
   // Update order status mutation
   const updateOrderStatusMutation = useMutation({
@@ -224,105 +353,199 @@ export default function ManufacturingDashboard() {
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                   <Plus className="h-4 w-4" />
-                  New Order
+                  Create Manufacturing Order
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Create Manufacturing Order</DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FlaskConical className="h-5 w-5 text-blue-600" />
+                    Create Manufacturing Order
+                  </DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="orderNumber">Order Number</Label>
-                      <Input
-                        id="orderNumber"
-                        placeholder="MFG-001"
-                        defaultValue={`MFG-${Date.now()}`}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="batchNumber">Batch Number</Label>
-                      <Input
-                        id="batchNumber"
-                        placeholder="BATCH-001"
-                        defaultValue={`BATCH-${Date.now()}`}
-                      />
-                    </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Left Column - Order Configuration */}
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Order Configuration
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Order Number</Label>
+                            <Input value={`MFG-${Date.now()}`} disabled />
+                          </div>
+                          <div>
+                            <Label>Batch Number</Label>
+                            <Input value={`BATCH-${Date.now()}`} disabled />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label>Select Product</Label>
+                          <Select value={selectedProduct} onValueChange={handleProductSelection}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select product" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[300px]">
+                              {cleaningProducts.map((product) => (
+                                <SelectItem key={product.id} value={product.name}>
+                                  <div className="flex items-center gap-2">
+                                    <Droplets className="h-4 w-4 text-blue-500" />
+                                    <span>{product.name}</span>
+                                    <Badge variant="secondary" className="ml-2 text-xs">
+                                      {product.category}
+                                    </Badge>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className={orderType === "Domestic" ? "bg-blue-100 border-blue-300" : ""}
+                            onClick={() => setOrderType("Domestic")}
+                          >
+                            Domestic
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className={orderType === "Export" ? "bg-blue-100 border-blue-300" : ""}
+                            onClick={() => setOrderType("Export")}
+                          >
+                            Export
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label>Batch Size</Label>
+                            <Input 
+                              type="number" 
+                              placeholder="500" 
+                              value={batchSize}
+                              onChange={(e) => setBatchSize(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label>Date</Label>
+                            <Input 
+                              value={orderDate}
+                              onChange={(e) => setOrderDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Operation</Label>
+                          <Select value={operation} onValueChange={setOperation}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Standard">Standard</SelectItem>
+                              <SelectItem value="Express">Express</SelectItem>
+                              <SelectItem value="Quality Control">Quality Control</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex gap-2 pt-3">
+                          <Button variant="outline" className="flex-1" size="sm">
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Refresh
+                          </Button>
+                          <Button variant="outline" className="flex-1" size="sm">
+                            Inflow
+                          </Button>
+                          <Button variant="outline" className="flex-1" size="sm">
+                            Outflow
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="productId">Product</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id.toString()}>
-                              {product.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="targetQuantity">Target Quantity</Label>
-                      <Input
-                        id="targetQuantity"
-                        type="number"
-                        placeholder="100"
-                        min="1"
-                      />
-                    </div>
+
+                  {/* Right Column - Material Formula */}
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Beaker className="h-4 w-4" />
+                          Material Formula
+                          {selectedProduct && (
+                            <Badge variant="outline" className="ml-2">
+                              {selectedProduct}
+                            </Badge>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {currentFormula.length > 0 ? (
+                          <div className="space-y-3">
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <div className="grid grid-cols-3 gap-2 text-sm font-medium text-gray-600 mb-2">
+                                <span>Material</span>
+                                <span>Standard</span>
+                                <span>Actual</span>
+                              </div>
+                              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                                {currentFormula.map((item, index) => (
+                                  <div key={index} className="grid grid-cols-3 gap-2 py-2 border-b border-gray-200 last:border-b-0">
+                                    <div className="text-sm font-medium flex items-center gap-1">
+                                      <Sparkles className="h-3 w-3 text-orange-500" />
+                                      {item.material}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                      {item.quantity.toFixed(3)}
+                                      {item.percentage && (
+                                        <span className="text-xs text-blue-600 ml-1">
+                                          ({item.percentage}%)
+                                        </span>
+                                      )}
+                                    </div>
+                                    <Input 
+                                      className="h-8 text-sm" 
+                                      defaultValue={Math.abs(item.quantity).toFixed(3)}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <FlaskConical className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                            <p>Select a product to view its formula</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="priority">Priority</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="assignedUser">Assigned User</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select user" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((user) => (
-                            <SelectItem key={user.id} value={user.id.toString()}>
-                              {user.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      placeholder="Additional notes or instructions..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsCreateOrderOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={() => createOrderMutation.mutate({})}>
-                      Create Order
-                    </Button>
-                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setIsCreateOrderOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCreateOrder}
+                    disabled={!selectedProduct || !batchSize}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Create Order
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
