@@ -43,6 +43,119 @@ interface ManufacturingOrder {
   updated_at: string;
 }
 
+// Manufacturing Formulas Database - Auto-Select System
+const manufacturingFormulas = {
+  "mort-lemon-floor-cleaner": {
+    name: "MORT Lemon Floor Cleaner",
+    type: "Domestic",
+    category: "Floor Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Texakaline", standard: 15.000, unit: "gm" },
+      { name: "EDTA Powder", standard: 0.500, unit: "gm" },
+      { name: "Kathon CG", standard: 1.000, unit: "gm" },
+      { name: "Miralan CXP8", standard: 1.000, unit: "gm" },
+      { name: "Perfume - Lemon Mist", standard: 2.200, unit: "ml" },
+      { name: "Rhodiasurf HP", standard: 5.000, unit: "ml" },
+      { name: "SLES Liquid", standard: 5.000, unit: "ml" },
+      { name: "Perfume - Lemon", standard: 1.000, unit: "ml" },
+      { name: "BRC - 80%", standard: 0.000, unit: "ml" },
+      { name: "BRC - 50%", standard: 0.000, unit: "ml" },
+      { name: "Tergitol 15-S-9", standard: 0.000, unit: "ml" }
+    ]
+  },
+  "mort-rose-floor-cleaner": {
+    name: "MORT Rose Floor Cleaner",
+    type: "Domestic", 
+    category: "Floor Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Colour - Carmine", standard: 15.000, unit: "gm" },
+      { name: "EDTA Powder", standard: 0.500, unit: "gm" },
+      { name: "Kathon CG", standard: 1.000, unit: "gm" },
+      { name: "Miralan CXP8", standard: 1.000, unit: "gm" },
+      { name: "Perfume - Rose Mist", standard: 2.200, unit: "ml" },
+      { name: "Rhodiasurf HP", standard: 5.000, unit: "ml" },
+      { name: "SLES Liquid", standard: 5.000, unit: "ml" },
+      { name: "Perfume - Rose", standard: 1.000, unit: "ml" },
+      { name: "BRC - 80%", standard: 0.000, unit: "ml" },
+      { name: "BRC - 50%", standard: 0.000, unit: "ml" },
+      { name: "Tergitol 15-S-9", standard: 0.000, unit: "ml" }
+    ]
+  },
+  "mort-lavender-floor-cleaner": {
+    name: "MORT Lavender Floor Cleaner",
+    type: "Domestic",
+    category: "Floor Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Colour - Purple", standard: 15.000, unit: "gm" },
+      { name: "EDTA Powder", standard: 0.500, unit: "gm" },
+      { name: "Kathon CG", standard: 1.000, unit: "gm" },
+      { name: "Water Soluble", standard: 1.000, unit: "gm" },
+      { name: "Miralan CXP8", standard: 1.000, unit: "gm" },
+      { name: "Perfume - Lavender", standard: 2.200, unit: "ml" },
+      { name: "Rhodiasurf HP", standard: 5.000, unit: "ml" },
+      { name: "SLES Liquid", standard: 5.000, unit: "ml" }
+    ]
+  },
+  "mort-jasmine-floor-cleaner": {
+    name: "MORT Jasmine Floor Cleaner",
+    type: "Domestic",
+    category: "Floor Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Colour - Pink Green", standard: 15.000, unit: "gm" },
+      { name: "EDTA Powder", standard: 0.500, unit: "gm" },
+      { name: "Kathon CG", standard: 1.000, unit: "gm" },
+      { name: "Miralan CXP8", standard: 1.000, unit: "gm" },
+      { name: "Perfume - Indian Jasmine SM", standard: 2.200, unit: "ml" },
+      { name: "Rhodiasurf HP", standard: 5.000, unit: "ml" },
+      { name: "SLES Liquid", standard: 5.000, unit: "ml" },
+      { name: "Perfume - Jasmine Mist", standard: 1.000, unit: "ml" }
+    ]
+  },
+  "glory-glass-cleaner": {
+    name: "GLORY Glass Cleaner",
+    type: "Export",
+    category: "Glass Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "EDTA Powder", standard: 10.000, unit: "gm" },
+      { name: "IPA", standard: 0.050, unit: "gm" },
+      { name: "Kathon CG", standard: 0.300, unit: "gm" },
+      { name: "Colour - Shimmer", standard: 0.700, unit: "ml" },
+      { name: "SLES Liquid", standard: 0.300, unit: "ml" },
+      { name: "Tergitol 15-S-9", standard: 0.0015, unit: "ml" }
+    ]
+  },
+  "hygra-toilet-cleaner": {
+    name: "HYGRA Toilet Cleaner",
+    type: "Domestic",
+    category: "Toilet Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Colour - Lavender Apple", standard: 53.240, unit: "gm" },
+      { name: "Forticarbe", standard: 1.000, unit: "gm" },
+      { name: "HCl", standard: 48.600, unit: "gm" },
+      { name: "Rhodiasolvn ST", standard: 2.400, unit: "ml" }
+    ]
+  },
+  "sriclean-tiles-ceramic": {
+    name: "SRICLEAN Tiles & Ceramic Cleaner",
+    type: "Premium",
+    category: "Tiles Cleaner",
+    materials: [
+      { name: "DM Water", standard: 455.000, unit: "L" },
+      { name: "Colour - Carmaline", standard: 50.720, unit: "gm" },
+      { name: "HCl", standard: 45.600, unit: "gm" },
+      { name: "Perfume - Squeeze Lime", standard: 0.300, unit: "ml" },
+      { name: "Rhodiasolvn HTE", standard: 2.000, unit: "ml" },
+      { name: "Tergitol 15-S-9", standard: 1.600, unit: "ml" }
+    ]
+  }
+};
+
 interface User {
   id: number;
   username: string;
@@ -53,8 +166,27 @@ export default function ProductsManufacturing() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ManufacturingOrder | null>(null);
+  const [selectedFormula, setSelectedFormula] = useState<string>("");
+  const [selectedMaterials, setSelectedMaterials] = useState<any[]>([]);
+  const [batchSize, setBatchSize] = useState<number>(500);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Auto-select formula and populate materials
+  const handleFormulaSelection = (formulaKey: string) => {
+    setSelectedFormula(formulaKey);
+    const formula = manufacturingFormulas[formulaKey as keyof typeof manufacturingFormulas];
+    if (formula) {
+      setSelectedMaterials(formula.materials.map(material => ({
+        ...material,
+        actualQty: material.standard
+      })));
+      toast({
+        title: "Formula Auto-Loaded",
+        description: `${formula.name} formula with ${formula.materials.length} materials loaded successfully`,
+      });
+    }
+  };
 
   // Fetch data
   const { data: products = [] } = useQuery<Product[]>({
@@ -605,18 +737,49 @@ export default function ProductsManufacturing() {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label className="text-lg font-semibold text-gray-700">Product Name & Type</Label>
-                        <Select>
+                        <Label className="text-lg font-semibold text-gray-700 flex items-center">
+                          Product Name & Type
+                          <Badge className="ml-2 bg-green-500 text-white">Auto-Formula</Badge>
+                        </Label>
+                        <Select onValueChange={handleFormulaSelection} value={selectedFormula}>
                           <SelectTrigger className="h-12 text-lg bg-white border-2 border-blue-300 focus:border-blue-500">
-                            <SelectValue placeholder="Select product (Domestic/Export)" />
+                            <SelectValue placeholder="Select product formula (Auto-loads materials)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="fabric-conditioner-domestic">🏠 Fabric Conditioner - Domestic</SelectItem>
-                            <SelectItem value="fabric-conditioner-export">🌍 Fabric Conditioner - Export</SelectItem>
-                            <SelectItem value="liquid-detergent-domestic">🏠 Liquid Detergent - Domestic</SelectItem>
-                            <SelectItem value="liquid-detergent-export">🌍 Liquid Detergent - Export</SelectItem>
+                            {Object.entries(manufacturingFormulas).map(([key, formula]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center space-x-2">
+                                  <span className={formula.type === 'Domestic' ? '🏠' : formula.type === 'Export' ? '🌍' : '✨'}>
+                                    {formula.type === 'Domestic' ? '🏠' : formula.type === 'Export' ? '🌍' : '✨'}
+                                  </span>
+                                  <span className="font-medium">{formula.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {formula.type}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">
+                                    ({formula.materials.length} materials)
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        {selectedFormula && (
+                          <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-green-600 font-medium">✅ Formula Loaded:</span>
+                              <span className="text-green-800 font-semibold">
+                                {manufacturingFormulas[selectedFormula as keyof typeof manufacturingFormulas]?.name}
+                              </span>
+                              <Badge className="bg-green-500 text-white">
+                                {manufacturingFormulas[selectedFormula as keyof typeof manufacturingFormulas]?.type}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-green-600 mt-1">
+                              Materials automatically populated in Raw Materials section below
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-3">
                         <Label className="text-lg font-semibold text-gray-700">Manufacturing Date</Label>
@@ -667,59 +830,80 @@ export default function ProductsManufacturing() {
                     </div>
                   </div>
 
-                  {/* Raw Materials Section */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center">🧪 Raw Materials</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border border-gray-300 text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="border border-gray-300 p-2 text-left">Material</th>
-                            <th className="border border-gray-300 p-2 text-left">Standard Qty</th>
-                            <th className="border border-gray-300 p-2 text-left">Actual Qty</th>
-                            <th className="border border-gray-300 p-2 text-left">Unit</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="border border-gray-300 p-2">DM Water</td>
-                            <td className="border border-gray-300 p-2">455.000</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="455.000" /></td>
-                            <td className="border border-gray-300 p-2">L</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-gray-300 p-2">Preservatives TQ</td>
-                            <td className="border border-gray-300 p-2">30.000</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="30.000" /></td>
-                            <td className="border border-gray-300 p-2">ml</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-gray-300 p-2">Perfume + Silk mask</td>
-                            <td className="border border-gray-300 p-2">-2.500</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
-                            <td className="border border-gray-300 p-2">ml</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-gray-300 p-2">Colour Liqua</td>
-                            <td className="border border-gray-300 p-2">-2.500</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
-                            <td className="border border-gray-300 p-2">ml</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-gray-300 p-2">Florasil</td>
-                            <td className="border border-gray-300 p-2">-2.500</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
-                            <td className="border border-gray-300 p-2">ml</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-gray-300 p-2">Colour - Liquid pink AL</td>
-                            <td className="border border-gray-300 p-2">-0.010</td>
-                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-0.010" /></td>
-                            <td className="border border-gray-300 p-2">L</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                  {/* Enhanced Raw Materials Section with Auto-Population */}
+                  <div className="bg-purple-50 p-6 rounded-xl border border-purple-200">
+                    <h3 className="text-xl font-bold text-purple-800 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">🧪</span>
+                      Raw Materials
+                      {selectedMaterials.length > 0 && (
+                        <Badge className="ml-2 bg-purple-500 text-white">
+                          Auto-Populated ({selectedMaterials.length} materials)
+                        </Badge>
+                      )}
+                    </h3>
+                    
+                    {selectedMaterials.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-4">🔬</div>
+                        <p className="text-gray-600 mb-2">No formula selected</p>
+                        <p className="text-sm text-gray-500">
+                          Select a product formula above to automatically populate raw materials
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-2 border-purple-300 text-sm bg-white rounded-lg">
+                          <thead className="bg-purple-100">
+                            <tr>
+                              <th className="border border-purple-300 p-3 text-left font-semibold">Material</th>
+                              <th className="border border-purple-300 p-3 text-left font-semibold">Standard Qty</th>
+                              <th className="border border-purple-300 p-3 text-left font-semibold">Actual Qty</th>
+                              <th className="border border-purple-300 p-3 text-left font-semibold">Unit</th>
+                              <th className="border border-purple-300 p-3 text-left font-semibold">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedMaterials.map((material, index) => (
+                              <tr key={index} className="hover:bg-purple-50">
+                                <td className="border border-purple-300 p-3 font-medium">{material.name}</td>
+                                <td className="border border-purple-300 p-3 text-blue-600 font-semibold">
+                                  {material.standard.toFixed(3)}
+                                </td>
+                                <td className="border border-purple-300 p-3">
+                                  <Input 
+                                    className="h-10 border-2 border-purple-200 focus:border-purple-400" 
+                                    value={material.actualQty?.toFixed(3) || material.standard.toFixed(3)}
+                                    onChange={(e) => {
+                                      const newMaterials = [...selectedMaterials];
+                                      newMaterials[index].actualQty = parseFloat(e.target.value) || 0;
+                                      setSelectedMaterials(newMaterials);
+                                    }}
+                                  />
+                                </td>
+                                <td className="border border-purple-300 p-3">
+                                  <Badge variant="outline" className="border-purple-300 text-purple-700">
+                                    {material.unit}
+                                  </Badge>
+                                </td>
+                                <td className="border border-purple-300 p-3">
+                                  <Badge className="bg-green-500 text-white">
+                                    ✅ Ready
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-green-600 font-semibold">📊 Formula Summary:</span>
+                            <span className="text-green-800">
+                              {selectedMaterials.length} materials loaded from {manufacturingFormulas[selectedFormula as keyof typeof manufacturingFormulas]?.name}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* SKU and Packaging Section */}
