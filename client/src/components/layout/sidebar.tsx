@@ -157,7 +157,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       label: "Manufacturing",
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 20h20"/><path d="M7 16v4"/><path d="M12 12v8"/><path d="M17 8v12"/><path d="M7 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/><path d="M12 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/><path d="M17 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>,
       items: [
-        { href: "/manufacturing-dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 8h10M7 12h4m1 8l-4-4H2l3-3h14l3 3v4z"/></svg>, label: "Manufacturing Dashboard" }
+        { href: "/manufacturing-dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 8h10M7 12h4m1 8l-4-4H2l3-3h14l3 3v4z"/></svg>, label: "Manufacturing Dashboard" },
+        { href: "/create-product-formula", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13l-3.5 3.5-2-2L8 17"/></svg>, label: "Create Product Formula" }
       ]
     },
     {
