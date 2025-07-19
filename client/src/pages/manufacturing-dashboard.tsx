@@ -168,9 +168,20 @@ export default function ManufacturingDashboard() {
   const [orderDate, setOrderDate] = useState("07-11-2020");
   const [operation, setOperation] = useState("Standard");
   const [currentFormula, setCurrentFormula] = useState<any[]>([]);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const formatCurrency = useFormatCurrency();
+
+  // Filter products based on search and category
+  const filteredProducts = cleaningProducts.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(productSearchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const productCategories = ["All", ...Array.from(new Set(cleaningProducts.map(p => p.category)))];
 
   // Fetch manufacturing data
   const { data: manufacturingStats, isLoading: statsLoading } = useQuery<ManufacturingStats>({
@@ -388,24 +399,90 @@ export default function ManufacturingDashboard() {
                         
                         <div>
                           <Label>Select Product</Label>
-                          <Select value={selectedProduct} onValueChange={handleProductSelection}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-[300px]">
-                              {cleaningProducts.map((product) => (
-                                <SelectItem key={product.id} value={product.name}>
+                          
+                          {/* Search and Filter Controls */}
+                          <div className="space-y-3 mb-3">
+                            <Input
+                              placeholder="Search products..."
+                              value={productSearchTerm}
+                              onChange={(e) => setProductSearchTerm(e.target.value)}
+                              className="w-full"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              {productCategories.map((category) => (
+                                <Button
+                                  key={category}
+                                  variant={selectedCategory === category ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => setSelectedCategory(category)}
+                                  className="text-xs"
+                                >
+                                  {category}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3 max-h-[300px] overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                            {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+                              <div 
+                                key={product.id}
+                                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                                  selectedProduct === product.name 
+                                    ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                                    : 'bg-white border-gray-200 hover:border-gray-300'
+                                }`}
+                                onClick={() => handleProductSelection(product.name)}
+                              >
+                                <div className="flex-shrink-0">
+                                  {product.category === "Glass Cleaners" && <Sparkles className="h-5 w-5 text-purple-500" />}
+                                  {product.category === "Floor Cleaners" && <Droplets className="h-5 w-5 text-blue-500" />}
+                                  {product.category === "Toilet Cleaners" && <FlaskConical className="h-5 w-5 text-green-500" />}
+                                  {product.category === "Tiles Cleaners" && <Zap className="h-5 w-5 text-yellow-500" />}
+                                  {product.category === "Fabric Care" && <Package className="h-5 w-5 text-pink-500" />}
+                                  {product.category === "Multi-Purpose" && <Beaker className="h-5 w-5 text-orange-500" />}
+                                </div>
+                                <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Droplets className="h-4 w-4 text-blue-500" />
-                                    <span>{product.name}</span>
-                                    <Badge variant="secondary" className="ml-2 text-xs">
+                                    <span className="font-medium text-gray-900">{product.name}</span>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className={`text-xs ${
+                                        product.category === "Floor Cleaners" ? "bg-blue-100 text-blue-700" :
+                                        product.category === "Glass Cleaners" ? "bg-purple-100 text-purple-700" :
+                                        product.category === "Toilet Cleaners" ? "bg-green-100 text-green-700" :
+                                        product.category === "Tiles Cleaners" ? "bg-yellow-100 text-yellow-700" :
+                                        product.category === "Fabric Care" ? "bg-pink-100 text-pink-700" :
+                                        "bg-orange-100 text-orange-700"
+                                      }`}
+                                    >
                                       {product.category}
                                     </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className="text-xs text-green-600 border-green-200"
+                                    >
+                                      {product.status}
+                                    </Badge>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                                  <div className="text-sm text-gray-500 mt-1">
+                                    {manufacturingFormulas[product.name as keyof typeof manufacturingFormulas] 
+                                      ? `${manufacturingFormulas[product.name as keyof typeof manufacturingFormulas].length} materials` 
+                                      : 'Formula not available'}
+                                  </div>
+                                </div>
+                                {selectedProduct === product.name && (
+                                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                                )}
+                              </div>
+                            )) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                <p>No products found</p>
+                                <p className="text-sm">Try adjusting your search or filter</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex gap-3">
