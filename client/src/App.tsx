@@ -70,7 +70,6 @@ import OfferReports from "@/pages/offer-reports";
 import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
 import ManufacturingDashboard from "@/pages/manufacturing-dashboard";
-import ProductsManufacturing from "@/pages/products-manufacturing";
 
 function Router() {
   return (
@@ -145,7 +144,6 @@ function Router() {
       <ProtectedRoute path="/loyalty-management" component={LoyaltyManagement} />
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
       <ProtectedRoute path="/manufacturing-dashboard" component={ManufacturingDashboard} />
-      <ProtectedRoute path="/products-manufacturing" component={ProductsManufacturing} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -206,17 +206,12 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Implemented product selection, batch management, and user assignment features
 - Migration completed with enhanced functionality and no breaking changes to existing features
 
-### 7-Step Manufacturing Process Implementation (July 19, 2025)
-- Implemented complete 7-step manufacturing workflow following real-world production process
-- Added comprehensive manufacturing stages: Formula Creation (BOM) → Formula Approval (Actam) → Manufacturing Begins → Processing Formula → Quality Testing → Filling & Packaging → Final Product (FG)
-- Enhanced auto-select formula system with 7 manufacturing formulas from Excel data (MORT Lemon/Rose/Lavender/Jasmine Floor Cleaners, GLORY Glass Cleaner, HYGRA Toilet Cleaner, SRICLEAN Tiles & Ceramic)
-- Created interactive workflow visualization with stage progression, approval controls, and progress tracking
-- Added professional stage management with color-coded status indicators (pending, in-progress, completed, approved)
-- Implemented Formula Approval (Actam) system with management sign-off before production begins
-- Enhanced raw materials auto-population with standard quantities and editable actual quantities
-- Added comprehensive progress bar showing manufacturing completion percentage
-- Created stage-by-stage workflow controls with proper dependencies and approval gates
-- Manufacturing system now follows complete production lifecycle from R&D formula creation to finished goods dispatch
+### Products Manufacturing Page Removal (July 19, 2025)
+- Removed products-manufacturing page from the system as requested by user
+- Cleaned up App.tsx routing configuration to remove references to deleted page
+- Removed products-manufacturing references from sidebar navigation
+- Deleted products-manufacturing.tsx file completely from the system
+- Manufacturing functionality remains available through the existing manufacturing-dashboard page
 
 ### Product Name Font Size Control Complete Fix (July 3, 2025)
 - Fixed critical missing product_name_font_size field in generatePreviewTemplate function - this was the root cause preventing preview updates
