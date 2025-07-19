@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useFormatCurrency } from "@/lib/currency";
+import CreateFormulaForm from "@/components/CreateFormulaForm";
 import {
   Factory,
   Package,
@@ -214,6 +215,11 @@ export default function ManufacturingDashboard() {
     queryFn: () => apiRequest('/api/manufacturing/recipes')
   });
 
+  const { data: allProducts = [], isLoading: productsLoading } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    queryFn: () => apiRequest('/api/products')
+  });
+
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     queryFn: () => apiRequest('/api/products')
@@ -360,6 +366,34 @@ export default function ManufacturingDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Dialog open={isCreateRecipeOpen} onOpenChange={setIsCreateRecipeOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Beaker className="h-4 w-4" />
+                  Create Product Formula
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FlaskConical className="h-5 w-5 text-blue-600" />
+                    Create Product Formula
+                  </DialogTitle>
+                </DialogHeader>
+                <CreateFormulaForm 
+                  onSuccess={() => {
+                    setIsCreateRecipeOpen(false);
+                    toast({
+                      title: "Formula Created",
+                      description: "Product formula has been created successfully"
+                    });
+                  }}
+                  products={allProducts || []}
+                  rawMaterials={rawMaterials}
+                />
+              </DialogContent>
+            </Dialog>
+            
             <Dialog open={isCreateOrderOpen} onOpenChange={setIsCreateOrderOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
