@@ -5043,6 +5043,52 @@ export const storage = {
     }
   },
 
+  // Quality Control CRUD
+  async getQualityChecks(): Promise<any[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const query = sqlite.prepare(`
+        SELECT qc.*, mb.batch_number, p.name as product_name
+        FROM quality_control_checks qc
+        LEFT JOIN manufacturing_batches mb ON qc.batch_id = mb.id
+        LEFT JOIN manufacturing_orders mo ON mb.order_id = mo.id
+        LEFT JOIN products p ON mo.product_id = p.id
+        ORDER BY qc.check_date DESC
+      `);
+      return query.all();
+    } catch (error) {
+      console.error('Error in getQualityChecks:', error);
+      return [];
+    }
+  },
+
+  async createQualityCheck(data: any): Promise<any> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const insertCheck = sqlite.prepare(`
+        INSERT INTO quality_control_checks (
+          batch_id, check_type, check_date, check_result, 
+          checked_by, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+
+      const result = insertCheck.run(
+        data.batchId,
+        data.checkType,
+        data.checkDate,
+        data.checkResult,
+        data.checkedBy,
+        data.notes || null
+      );
+
+      const getCheck = sqlite.prepare('SELECT * FROM quality_control_checks WHERE id = ?');
+      return getCheck.get(result.lastInsertRowid);
+    } catch (error) {
+      console.error('Error creating quality check:', error);
+      throw error;
+    }
+  },
+
   // Raw Materials CRUD
   async getRawMaterials(): Promise<any[]> {
     try {
