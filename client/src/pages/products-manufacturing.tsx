@@ -145,41 +145,52 @@ export default function ProductsManufacturing() {
           <p className="text-gray-600">Manage production orders and bill of materials</p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "overview"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "orders"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Production Orders
-            </button>
-            <button
-              onClick={() => setActiveTab("bom")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "bom"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Bill of Materials
-            </button>
-          </nav>
-        </div>
+        {/* Enhanced Navigation Tabs */}
+        <Card className="mb-6">
+          <CardContent className="p-0">
+            <div className="flex flex-wrap bg-gradient-to-r from-blue-50 to-indigo-50">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`flex-1 min-w-fit py-4 px-6 font-medium text-sm transition-all duration-200 ${
+                  activeTab === "overview"
+                    ? "bg-blue-500 text-white shadow-lg"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-white/50"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-lg">📊</span>
+                  <span>Overview</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab("orders")}
+                className={`flex-1 min-w-fit py-4 px-6 font-medium text-sm transition-all duration-200 ${
+                  activeTab === "orders"
+                    ? "bg-blue-500 text-white shadow-lg"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-white/50"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-lg">🏭</span>
+                  <span>Production Orders</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab("bom")}
+                className={`flex-1 min-w-fit py-4 px-6 font-medium text-sm transition-all duration-200 ${
+                  activeTab === "bom"
+                    ? "bg-blue-500 text-white shadow-lg"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-white/50"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-lg">⚙️</span>
+                  <span>Manufacturing Control</span>
+                </div>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Content Area */}
         {activeTab === "overview" && (
@@ -474,155 +485,185 @@ export default function ProductsManufacturing() {
         )}
 
         {activeTab === "bom" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Manufacturing Control System</h2>
-              <div className="flex space-x-2">
-                <Button onClick={() => setActiveTab("batch-records")}>
-                  📋 Batch Records
-                </Button>
-                <Button onClick={() => setActiveTab("quality-control")}>
-                  🧪 Quality Control
-                </Button>
-                <Button onClick={() => setActiveTab("inventory-tracking")}>
-                  📦 Inventory Tracking
-                </Button>
-              </div>
+          <div className="space-y-8">
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl font-bold text-gray-800">Manufacturing Control System</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Complete manufacturing management with batch tracking, quality control, and inventory automation
+              </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("batch-records")}>
-                <CardHeader className="text-center">
-                  <div className="text-4xl mb-2">🧪</div>
-                  <CardTitle className="text-lg">Batch Manufacturing</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50" onClick={() => setActiveTab("batch-records")}>
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">🧪</div>
+                  <CardTitle className="text-xl font-bold text-gray-800">Batch Manufacturing</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">Complete batch production records with materials tracking and approval workflow</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Active Batches:</span>
-                      <span className="font-semibold">{manufacturingOrders.filter(o => o.status === 'in_progress').length}</span>
+                  <p className="text-gray-700 mb-6 leading-relaxed">Complete batch production records with materials tracking and approval workflow</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Active Batches:</span>
+                      <Badge className="bg-blue-500 text-white">{manufacturingOrders.filter(o => o.status === 'in_progress').length}</Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Pending Approval:</span>
-                      <span className="font-semibold text-yellow-600">{manufacturingOrders.filter(o => o.status === 'pending').length}</span>
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Pending Approval:</span>
+                      <Badge className="bg-yellow-500 text-white">{manufacturingOrders.filter(o => o.status === 'pending').length}</Badge>
                     </div>
                   </div>
+                  <Button className="mt-4 w-full bg-blue-600 hover:bg-blue-700">
+                    Start New Batch
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("quality-control")}>
-                <CardHeader className="text-center">
-                  <div className="text-4xl mb-2">🧬</div>
-                  <CardTitle className="text-lg">Quality Control</CardTitle>
+              <Card className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-green-300 bg-gradient-to-br from-green-50 to-emerald-50" onClick={() => setActiveTab("quality-control")}>
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">🧬</div>
+                  <CardTitle className="text-xl font-bold text-gray-800">Quality Control</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">Quality testing, parameters tracking, and chemist approval system</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Tests Today:</span>
-                      <span className="font-semibold">0</span>
+                  <p className="text-gray-700 mb-6 leading-relaxed">Quality testing, parameters tracking, and chemist approval system</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Tests Today:</span>
+                      <Badge className="bg-green-500 text-white">0</Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Pass Rate:</span>
-                      <span className="font-semibold text-green-600">100%</span>
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Pass Rate:</span>
+                      <Badge className="bg-green-600 text-white">100%</Badge>
                     </div>
                   </div>
+                  <Button className="mt-4 w-full bg-green-600 hover:bg-green-700">
+                    Run Quality Test
+                  </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("inventory-tracking")}>
-                <CardHeader className="text-center">
-                  <div className="text-4xl mb-2">📊</div>
-                  <CardTitle className="text-lg">Inventory Control</CardTitle>
+              <Card className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-purple-300 bg-gradient-to-br from-purple-50 to-violet-50" onClick={() => setActiveTab("inventory-tracking")}>
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">📊</div>
+                  <CardTitle className="text-xl font-bold text-gray-800">Inventory Control</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">Raw material consumption tracking and automatic stock deduction</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Low Stock Items:</span>
-                      <span className="font-semibold text-red-600">42</span>
+                  <p className="text-gray-700 mb-6 leading-relaxed">Raw material consumption tracking and automatic stock deduction</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Low Stock Items:</span>
+                      <Badge className="bg-red-500 text-white">42</Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Auto Updates:</span>
-                      <span className="font-semibold text-green-600">Enabled</span>
+                    <div className="flex justify-between items-center bg-white/60 p-2 rounded-lg">
+                      <span className="font-medium">Auto Updates:</span>
+                      <Badge className="bg-green-500 text-white">Enabled</Badge>
                     </div>
                   </div>
+                  <Button className="mt-4 w-full bg-purple-600 hover:bg-purple-700">
+                    View Inventory
+                  </Button>
                 </CardContent>
               </Card>
             </div>
           </div>
         )}
 
-        {/* Batch Records Tab */}
+        {/* Enhanced Batch Records Tab */}
         {activeTab === "batch-records" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold">Batch Manufacturing Records</h2>
-                <p className="text-gray-600">Complete production tracking with materials and approval workflow</p>
+          <div className="space-y-8">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center items-center space-x-3">
+                <div className="text-4xl">🧪</div>
+                <h2 className="text-3xl font-bold text-gray-800">Batch Manufacturing Records</h2>
               </div>
-              <Button onClick={() => setIsCreateOrderOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Batch Record
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Complete production tracking with materials management, quality control, and digital approval workflow
+              </p>
+              <Button 
+                onClick={() => setIsCreateOrderOpen(true)}
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-8 py-3"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create New Batch Record
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  📋 Manufacturing Batch Form
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center text-2xl">
+                  <span className="text-3xl mr-3">📋</span>
+                  Manufacturing Batch Form
                 </CardTitle>
+                <p className="text-blue-100 mt-2">Fill in all required information for complete batch tracking and compliance</p>
               </CardHeader>
-              <CardContent>
-                <form className="space-y-6">
-                  {/* Product Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="flex items-center">
-                        🏷️ Product Name & Type
-                      </Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select product (Domestic/Export)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fabric-conditioner-domestic">Fabric Conditioner - Domestic</SelectItem>
-                          <SelectItem value="fabric-conditioner-export">Fabric Conditioner - Export</SelectItem>
-                          <SelectItem value="liquid-detergent-domestic">Liquid Detergent - Domestic</SelectItem>
-                          <SelectItem value="liquid-detergent-export">Liquid Detergent - Export</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>📅 Manufacturing Date</Label>
-                      <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+              <CardContent className="p-8">
+                <form className="space-y-8">
+                  {/* Enhanced Product Selection */}
+                  <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                    <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">🏷️</span>
+                      Product Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-lg font-semibold text-gray-700">Product Name & Type</Label>
+                        <Select>
+                          <SelectTrigger className="h-12 text-lg bg-white border-2 border-blue-300 focus:border-blue-500">
+                            <SelectValue placeholder="Select product (Domestic/Export)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fabric-conditioner-domestic">🏠 Fabric Conditioner - Domestic</SelectItem>
+                            <SelectItem value="fabric-conditioner-export">🌍 Fabric Conditioner - Export</SelectItem>
+                            <SelectItem value="liquid-detergent-domestic">🏠 Liquid Detergent - Domestic</SelectItem>
+                            <SelectItem value="liquid-detergent-export">🌍 Liquid Detergent - Export</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-lg font-semibold text-gray-700">Manufacturing Date</Label>
+                        <Input 
+                          type="date" 
+                          defaultValue={new Date().toISOString().split('T')[0]} 
+                          className="h-12 text-lg bg-white border-2 border-blue-300 focus:border-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Batch Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>📊 Batch Size</Label>
-                      <Input placeholder="500" />
-                      <span className="text-xs text-gray-500">Enter quantity in units</span>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>🔧 Operation</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select operation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="standard">Standard</SelectItem>
-                          <SelectItem value="premium">Premium</SelectItem>
-                          <SelectItem value="custom">Custom Blend</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>📋 Document No.</Label>
-                      <Input placeholder="SRI/PMO-001" />
+                  {/* Enhanced Batch Information */}
+                  <div className="bg-green-50 p-6 rounded-xl border border-green-200">
+                    <h3 className="text-xl font-bold text-green-800 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">📊</span>
+                      Batch Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-lg font-semibold text-gray-700">Batch Size</Label>
+                        <Input 
+                          placeholder="500" 
+                          className="h-12 text-lg bg-white border-2 border-green-300 focus:border-green-500"
+                        />
+                        <span className="text-sm text-green-600 font-medium">Enter quantity in units</span>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-lg font-semibold text-gray-700">Operation Type</Label>
+                        <Select>
+                          <SelectTrigger className="h-12 text-lg bg-white border-2 border-green-300 focus:border-green-500">
+                            <SelectValue placeholder="Select operation" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="standard">⚙️ Standard</SelectItem>
+                            <SelectItem value="premium">✨ Premium</SelectItem>
+                            <SelectItem value="custom">🔧 Custom Blend</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-lg font-semibold text-gray-700">Document Number</Label>
+                        <Input 
+                          placeholder="SRI/PMO-001" 
+                          className="h-12 text-lg bg-white border-2 border-green-300 focus:border-green-500"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -777,13 +818,34 @@ export default function ProductsManufacturing() {
                     </div>
                   </div>
 
-                  {/* Submit Actions */}
-                  <div className="flex justify-end space-x-4 pt-6 border-t">
-                    <Button variant="outline">Save as Draft</Button>
-                    <Button variant="outline">Submit for Review</Button>
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                      Complete Batch & Update Inventory
-                    </Button>
+                  {/* Enhanced Submit Actions */}
+                  <div className="bg-gray-50 p-6 rounded-xl border-t-4 border-blue-500">
+                    <div className="flex flex-col md:flex-row justify-center space-y-3 md:space-y-0 md:space-x-4">
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        className="flex-1 h-12 text-lg border-2 border-gray-300 hover:border-gray-400"
+                      >
+                        💾 Save as Draft
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        className="flex-1 h-12 text-lg border-2 border-yellow-300 hover:border-yellow-400 text-yellow-700 hover:text-yellow-800"
+                      >
+                        📋 Submit for Review
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        size="lg"
+                        className="flex-1 h-12 text-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                      >
+                        ✅ Complete Batch & Update Inventory
+                      </Button>
+                    </div>
+                    <p className="text-center text-sm text-gray-600 mt-4">
+                      Completing the batch will automatically update inventory levels and generate quality reports
+                    </p>
                   </div>
                 </form>
               </CardContent>
