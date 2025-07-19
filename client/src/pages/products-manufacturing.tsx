@@ -476,27 +476,483 @@ export default function ProductsManufacturing() {
         {activeTab === "bom" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Bill of Materials</h2>
-              <Button>
-                <Settings className="w-4 h-4 mr-2" />
-                New BOM
-              </Button>
+              <h2 className="text-xl font-semibold">Manufacturing Control System</h2>
+              <div className="flex space-x-2">
+                <Button onClick={() => setActiveTab("batch-records")}>
+                  📋 Batch Records
+                </Button>
+                <Button onClick={() => setActiveTab("quality-control")}>
+                  🧪 Quality Control
+                </Button>
+                <Button onClick={() => setActiveTab("inventory-tracking")}>
+                  📦 Inventory Tracking
+                </Button>
+              </div>
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("batch-records")}>
+                <CardHeader className="text-center">
+                  <div className="text-4xl mb-2">🧪</div>
+                  <CardTitle className="text-lg">Batch Manufacturing</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-gray-600 mb-4">Complete batch production records with materials tracking and approval workflow</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Active Batches:</span>
+                      <span className="font-semibold">{manufacturingOrders.filter(o => o.status === 'in_progress').length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pending Approval:</span>
+                      <span className="font-semibold text-yellow-600">{manufacturingOrders.filter(o => o.status === 'pending').length}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("quality-control")}>
+                <CardHeader className="text-center">
+                  <div className="text-4xl mb-2">🧬</div>
+                  <CardTitle className="text-lg">Quality Control</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-gray-600 mb-4">Quality testing, parameters tracking, and chemist approval system</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Tests Today:</span>
+                      <span className="font-semibold">0</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pass Rate:</span>
+                      <span className="font-semibold text-green-600">100%</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab("inventory-tracking")}>
+                <CardHeader className="text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <CardTitle className="text-lg">Inventory Control</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-gray-600 mb-4">Raw material consumption tracking and automatic stock deduction</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Low Stock Items:</span>
+                      <span className="font-semibold text-red-600">42</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Auto Updates:</span>
+                      <span className="font-semibold text-green-600">Enabled</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Batch Records Tab */}
+        {activeTab === "batch-records" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Batch Manufacturing Records</h2>
+                <p className="text-gray-600">Complete production tracking with materials and approval workflow</p>
+              </div>
+              <Button onClick={() => setIsCreateOrderOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Batch Record
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  📋 Manufacturing Batch Form
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-6">
+                  {/* Product Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center">
+                        🏷️ Product Name & Type
+                      </Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product (Domestic/Export)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fabric-conditioner-domestic">Fabric Conditioner - Domestic</SelectItem>
+                          <SelectItem value="fabric-conditioner-export">Fabric Conditioner - Export</SelectItem>
+                          <SelectItem value="liquid-detergent-domestic">Liquid Detergent - Domestic</SelectItem>
+                          <SelectItem value="liquid-detergent-export">Liquid Detergent - Export</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>📅 Manufacturing Date</Label>
+                      <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                    </div>
+                  </div>
+
+                  {/* Batch Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>📊 Batch Size</Label>
+                      <Input placeholder="500" />
+                      <span className="text-xs text-gray-500">Enter quantity in units</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>🔧 Operation</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select operation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="premium">Premium</SelectItem>
+                          <SelectItem value="custom">Custom Blend</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>📋 Document No.</Label>
+                      <Input placeholder="SRI/PMO-001" />
+                    </div>
+                  </div>
+
+                  {/* Raw Materials Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">🧪 Raw Materials</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border border-gray-300 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="border border-gray-300 p-2 text-left">Material</th>
+                            <th className="border border-gray-300 p-2 text-left">Standard Qty</th>
+                            <th className="border border-gray-300 p-2 text-left">Actual Qty</th>
+                            <th className="border border-gray-300 p-2 text-left">Unit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-300 p-2">DM Water</td>
+                            <td className="border border-gray-300 p-2">455.000</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="455.000" /></td>
+                            <td className="border border-gray-300 p-2">L</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Preservatives TQ</td>
+                            <td className="border border-gray-300 p-2">30.000</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="30.000" /></td>
+                            <td className="border border-gray-300 p-2">ml</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Perfume + Silk mask</td>
+                            <td className="border border-gray-300 p-2">-2.500</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
+                            <td className="border border-gray-300 p-2">ml</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Colour Liqua</td>
+                            <td className="border border-gray-300 p-2">-2.500</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
+                            <td className="border border-gray-300 p-2">ml</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Florasil</td>
+                            <td className="border border-gray-300 p-2">-2.500</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-2.500" /></td>
+                            <td className="border border-gray-300 p-2">ml</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Colour - Liquid pink AL</td>
+                            <td className="border border-gray-300 p-2">-0.010</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" defaultValue="-0.010" /></td>
+                            <td className="border border-gray-300 p-2">L</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* SKU and Packaging Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">📦 SKU Size & Packaging</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label>Product Size</Label>
+                        <Input placeholder="250" />
+                        <span className="text-xs text-gray-500">ml/L</span>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Bottle Glass Count</Label>
+                        <Input placeholder="300" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sticker Count</Label>
+                        <Input placeholder="300" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Cotton Box</Label>
+                        <Input placeholder="300" />
+                      </div>
+                    </div>
+                    <div className="flex space-x-4">
+                      <div className="flex-1 space-y-2">
+                        <Label>Total Quantity (in KG)</Label>
+                        <Input placeholder="Calculate automatically" disabled className="bg-gray-50" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Label>Unpacked PG (L)</Label>
+                        <Input placeholder="0.00" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quality Parameters Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">🧬 Quality Parameters</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border border-gray-300 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="border border-gray-300 p-2 text-left">Quality Parameters</th>
+                            <th className="border border-gray-300 p-2 text-left">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-300 p-2">pH Level</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" placeholder="6.5-7.5" /></td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Viscosity</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" placeholder="Pass/Fail" /></td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Color Consistency</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" placeholder="Pass/Fail" /></td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 p-2">Fragrance Strength</td>
+                            <td className="border border-gray-300 p-2"><Input className="h-8" placeholder="Pass/Fail" /></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Approval Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">✍️ Approval Workflow</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="p-4">
+                        <h4 className="font-medium flex items-center mb-3">👨‍🔬 Signature of the Supervisor</h4>
+                        <div className="space-y-2">
+                          <Input placeholder="Supervisor Name" />
+                          <Input type="date" />
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-500">Click to upload signature or draw</p>
+                            <Button variant="outline" size="sm" className="mt-2">Upload Signature</Button>
+                          </div>
+                        </div>
+                      </Card>
+                      <Card className="p-4">
+                        <h4 className="font-medium flex items-center mb-3">🧪 Signature of the Chemist</h4>
+                        <div className="space-y-2">
+                          <Input placeholder="Chemist Name" />
+                          <Input type="date" />
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                            <p className="text-sm text-gray-500">Click to upload signature or draw</p>
+                            <Button variant="outline" size="sm" className="mt-2">Upload Signature</Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Submit Actions */}
+                  <div className="flex justify-end space-x-4 pt-6 border-t">
+                    <Button variant="outline">Save as Draft</Button>
+                    <Button variant="outline">Submit for Review</Button>
+                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                      Complete Batch & Update Inventory
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Quality Control Tab */}
+        {activeTab === "quality-control" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Quality Control Dashboard</h2>
+                <p className="text-gray-600">Quality testing, parameters tracking, and approval system</p>
+              </div>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Quality Check
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Tests Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-gray-500">Quality tests performed</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Pass Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">100%</div>
+                  <p className="text-xs text-gray-500">This month</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Pending Review</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">0</div>
+                  <p className="text-xs text-gray-500">Awaiting chemist approval</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Failed Tests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">0</div>
+                  <p className="text-xs text-gray-500">Require reprocessing</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardContent className="p-6">
                 <div className="text-center py-12">
-                  <Settings className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No BOMs defined</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Create bill of materials to define product recipes and manufacturing instructions.
+                  <div className="text-6xl mb-4">🧪</div>
+                  <h3 className="text-xl font-semibold mb-2">Quality Control System</h3>
+                  <p className="text-gray-600 mb-6">
+                    Comprehensive quality testing with parameter tracking, chemist approval, and automated reporting
                   </p>
-                  <div className="mt-6">
-                    <Button>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Create BOM
-                    </Button>
-                  </div>
+                  <Button size="lg">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Start Quality Test
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Inventory Tracking Tab */}
+        {activeTab === "inventory-tracking" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Inventory Consumption Tracking</h2>
+                <p className="text-gray-600">Raw material usage, automatic deduction, and stock monitoring</p>
+              </div>
+              <Button>
+                <Settings className="w-4 h-4 mr-2" />
+                Configure Auto-Deduction
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Auto Updates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold text-green-600">Enabled</div>
+                  <p className="text-xs text-gray-500">Inventory automatically updated</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Low Stock Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">42</div>
+                  <p className="text-xs text-gray-500">Below threshold</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Batches Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-gray-500">Inventory consumed</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Raw Material Consumption</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Material</th>
+                        <th className="text-left p-2">Current Stock</th>
+                        <th className="text-left p-2">Used Today</th>
+                        <th className="text-left p-2">Remaining</th>
+                        <th className="text-left p-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="p-2 font-medium">DM Water</td>
+                        <td className="p-2">1000.00 L</td>
+                        <td className="p-2">0.00 L</td>
+                        <td className="p-2">1000.00 L</td>
+                        <td className="p-2"><Badge className="bg-green-100 text-green-800">In Stock</Badge></td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-medium">Preservatives TQ</td>
+                        <td className="p-2">500.00 ml</td>
+                        <td className="p-2">0.00 ml</td>
+                        <td className="p-2">500.00 ml</td>
+                        <td className="p-2"><Badge className="bg-green-100 text-green-800">In Stock</Badge></td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-medium">Perfume + Silk mask</td>
+                        <td className="p-2">50.00 ml</td>
+                        <td className="p-2">0.00 ml</td>
+                        <td className="p-2">50.00 ml</td>
+                        <td className="p-2"><Badge className="bg-yellow-100 text-yellow-800">Low Stock</Badge></td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="p-2 font-medium">Colour - Liquid pink AL</td>
+                        <td className="p-2">2.50 L</td>
+                        <td className="p-2">0.00 L</td>
+                        <td className="p-2">2.50 L</td>
+                        <td className="p-2"><Badge className="bg-green-100 text-green-800">In Stock</Badge></td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
