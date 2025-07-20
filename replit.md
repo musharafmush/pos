@@ -237,6 +237,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added unit cost display in Indian Rupee format with per-unit pricing information
 - Enhanced visual design with improved spacing, shadows, and hover effects for better user experience
 
+### Raw Materials Tab in Add Item Dashboard (July 20, 2025)
+- Added dedicated "Raw Materials" tab to add-item-dashboard alongside existing product management tabs
+- Created comprehensive RawMaterialsManagement component with full CRUD functionality
+- Implemented professional grid layout showing all raw materials with detailed information cards
+- Added material information display including current stock, unit cost, min stock levels, and storage locations
+- Built add new raw material dialog with comprehensive form fields for all material properties
+- Integrated view material dialog showing complete material details in organized sections
+- Added edit and delete functionality for existing raw materials with proper error handling
+- Implemented low stock warnings with color-coded badges for inventory management
+- Connected to existing manufacturing/raw-materials API endpoints for seamless data integration
+- Enhanced add-item-dashboard with 7-column tab layout including new Raw Materials section
+
 ### Products Manufacturing Page Removal (July 19, 2025)
 - Removed products-manufacturing page from the system as requested by user
 - Cleaned up App.tsx routing configuration to remove references to deleted page

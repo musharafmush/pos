@@ -83,7 +83,11 @@ import {
   CopyIcon,
   PrinterIcon,
   ArchiveIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  Beaker,
+  Edit,
+  Trash2,
+  Eye
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -1449,13 +1453,14 @@ export default function AddItemDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="active">Active Items</TabsTrigger>
             <TabsTrigger value="inactive">Inactive Items</TabsTrigger>
             <TabsTrigger value="low-stock">Low Stock</TabsTrigger>
             <TabsTrigger value="bulk">Bulk Items</TabsTrigger>
             <TabsTrigger value="repackaged">Repackaged</TabsTrigger>
+            <TabsTrigger value="raw-materials">Raw Materials</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -2436,6 +2441,11 @@ export default function AddItemDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Raw Materials Tab */}
+          <TabsContent value="raw-materials" className="space-y-4">
+            <RawMaterialsManagement />
           </TabsContent>
         </Tabs>
 
@@ -3883,5 +3893,399 @@ export default function AddItemDashboard() {
         </Dialog>
       </div>
     </DashboardLayout>
+  );
+}
+
+// Raw Materials Management Component
+function RawMaterialsManagement() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch raw materials
+  const { data: rawMaterials = [], isLoading, error } = useQuery({
+    queryKey: ['/api/manufacturing/raw-materials'],
+  });
+
+  // Add raw material mutation
+  const addRawMaterialMutation = useMutation({
+    mutationFn: async (rawMaterial: {
+      name: string;
+      description?: string;
+      unit: string;
+      unit_cost: number;
+      current_stock: number;
+      min_stock_level: number;
+      storage_location?: string;
+    }) => {
+      return apiRequest('/api/manufacturing/raw-materials', {
+        method: 'POST',
+        body: rawMaterial,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/raw-materials'] });
+      toast({
+        title: "Raw Material Added",
+        description: "New raw material has been added successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add raw material",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update raw material mutation
+  const updateRawMaterialMutation = useMutation({
+    mutationFn: async ({ id, ...updates }: { id: number; [key: string]: any }) => {
+      return apiRequest(`/api/manufacturing/raw-materials/${id}`, {
+        method: 'PUT',
+        body: updates,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/raw-materials'] });
+      toast({
+        title: "Raw Material Updated",
+        description: "Raw material has been updated successfully",
+      });
+    },
+  });
+
+  // Delete raw material mutation
+  const deleteRawMaterialMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/manufacturing/raw-materials/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/raw-materials'] });
+      toast({
+        title: "Raw Material Deleted",
+        description: "Raw material has been deleted successfully",
+      });
+    },
+  });
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<any>(null);
+  const [viewingMaterial, setViewingMaterial] = useState<any>(null);
+
+  const [newMaterial, setNewMaterial] = useState({
+    name: '',
+    description: '',
+    unit: 'kg',
+    unit_cost: 0,
+    current_stock: 0,
+    min_stock_level: 10,
+    storage_location: '',
+  });
+
+  const handleAddMaterial = () => {
+    if (!newMaterial.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Material name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addRawMaterialMutation.mutate(newMaterial);
+    setNewMaterial({
+      name: '',
+      description: '',
+      unit: 'kg',
+      unit_cost: 0,
+      current_stock: 0,
+      min_stock_level: 10,
+      storage_location: '',
+    });
+    setIsAddDialogOpen(false);
+  };
+
+  const handleUpdateMaterial = (updates: any) => {
+    if (editingMaterial) {
+      updateRawMaterialMutation.mutate({ id: editingMaterial.id, ...updates });
+      setEditingMaterial(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Loading raw materials...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center text-red-600">
+            <p>Error loading raw materials. Please try again.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                <Beaker className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <CardTitle>Raw Materials Management</CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Manage raw materials for manufacturing and formula creation
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+              <PlusIcon className="h-4 w-4" />
+              Add Raw Material
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Raw Materials Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {rawMaterials.map((material: any) => (
+          <Card key={material.id} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Beaker className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-lg">{material.name}</CardTitle>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewingMaterial(material)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingMaterial(material)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteRawMaterialMutation.mutate(material.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              {material.description && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">{material.description}</p>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                    Current Stock
+                  </label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge 
+                      variant={material.current_stock > material.min_stock_level ? "default" : "destructive"} 
+                      className="text-xs"
+                    >
+                      {material.current_stock} {material.unit}
+                    </Badge>
+                    {material.current_stock <= material.min_stock_level && (
+                      <span className="text-xs text-orange-600">Low Stock</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                    Unit Cost
+                  </label>
+                  <p className="text-sm font-semibold text-green-600 dark:text-green-400 mt-1">
+                    ₹{material.unit_cost.toFixed(2)}/{material.unit}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                  Min Stock Level
+                </label>
+                <p className="text-sm mt-1">{material.min_stock_level} {material.unit}</p>
+              </div>
+              {material.storage_location && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                    Storage Location
+                  </label>
+                  <p className="text-sm mt-1">{material.storage_location}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Add Raw Material Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Raw Material</DialogTitle>
+            <DialogDescription>
+              Create a new raw material for manufacturing use
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Material Name *</label>
+              <Input
+                value={newMaterial.name}
+                onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                placeholder="Enter material name"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newMaterial.description}
+                onChange={(e) => setNewMaterial({ ...newMaterial, description: e.target.value })}
+                placeholder="Material description (optional)"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Unit</label>
+                <Select
+                  value={newMaterial.unit}
+                  onValueChange={(value) => setNewMaterial({ ...newMaterial, unit: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                    <SelectItem value="liters">Liters (L)</SelectItem>
+                    <SelectItem value="grams">Grams (g)</SelectItem>
+                    <SelectItem value="ml">Milliliters (ml)</SelectItem>
+                    <SelectItem value="units">Units</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Unit Cost (₹)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={newMaterial.unit_cost}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, unit_cost: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Current Stock</label>
+                <Input
+                  type="number"
+                  value={newMaterial.current_stock}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, current_stock: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Min Stock Level</label>
+                <Input
+                  type="number"
+                  value={newMaterial.min_stock_level}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, min_stock_level: parseInt(e.target.value) || 10 })}
+                  placeholder="10"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Storage Location</label>
+              <Input
+                value={newMaterial.storage_location}
+                onChange={(e) => setNewMaterial({ ...newMaterial, storage_location: e.target.value })}
+                placeholder="Storage location (optional)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMaterial} disabled={addRawMaterialMutation.isPending}>
+              {addRawMaterialMutation.isPending ? "Adding..." : "Add Material"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Material Dialog */}
+      <Dialog open={!!viewingMaterial} onOpenChange={() => setViewingMaterial(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Raw Material Details</DialogTitle>
+          </DialogHeader>
+          {viewingMaterial && (
+            <div className="space-y-4">
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <Beaker className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-lg">{viewingMaterial.name}</h3>
+                {viewingMaterial.description && (
+                  <p className="text-sm text-gray-600 mt-1">{viewingMaterial.description}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-xs text-blue-600 font-medium">CURRENT STOCK</p>
+                  <p className="text-lg font-bold">{viewingMaterial.current_stock} {viewingMaterial.unit}</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-xs text-green-600 font-medium">UNIT COST</p>
+                  <p className="text-lg font-bold">₹{viewingMaterial.unit_cost.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <p className="text-xs text-orange-600 font-medium">MIN STOCK LEVEL</p>
+                <p className="text-lg font-bold">{viewingMaterial.min_stock_level} {viewingMaterial.unit}</p>
+              </div>
+              {viewingMaterial.storage_location && (
+                <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <p className="text-xs text-gray-600 font-medium">STORAGE LOCATION</p>
+                  <p className="text-lg font-bold">{viewingMaterial.storage_location}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
