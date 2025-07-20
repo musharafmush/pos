@@ -424,75 +424,201 @@ export default function CreateProductFormula() {
                 No ingredients added yet. Click "Add Ingredient" to start building your formula.
               </div>
             ) : (
-              <div className="space-y-4">
-                {formulaData.ingredients.map((ingredient, index) => (
-                  <div key={index} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800/20">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                      <div className="md:col-span-2">
-                        <Label>Raw Material</Label>
+              <div className="space-y-6">
+                {formulaData.ingredients.map((ingredient, index) => {
+                  const selectedMaterial = rawMaterials.find(m => m.id === ingredient.rawMaterialId);
+                  
+                  return (
+                    <div key={index} className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 bg-white dark:bg-gray-800/40 shadow-sm hover:shadow-md transition-shadow">
+                      {/* Material Selection Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                            <Beaker className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                              Ingredient #{index + 1}
+                            </h4>
+                            <p className="text-sm text-gray-500">Select raw material and specify quantities</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeIngredient(index)}
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          <Minus className="h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+
+                      {/* Material Selection */}
+                      <div className="mb-4">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                          Raw Material
+                        </Label>
                         <Select
                           value={ingredient.rawMaterialId.toString()}
                           onValueChange={(value) => updateIngredient(index, 'rawMaterialId', parseInt(value))}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select material..." />
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Choose a raw material..." />
                           </SelectTrigger>
                           <SelectContent>
                             {rawMaterials.map(material => (
                               <SelectItem key={material.id} value={material.id.toString()}>
-                                {material.name} ({material.unit})
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{material.name}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {material.unit}
+                                  </Badge>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
-                        <Label>Quantity</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={ingredient.quantity}
-                          onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value))}
-                          placeholder="0.0"
-                        />
+
+                      {/* Material Information Card (when selected) */}
+                      {selectedMaterial && (
+                        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg border">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                                Material Name
+                              </label>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                                {selectedMaterial.name}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                                Current Stock
+                              </label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={selectedMaterial.current_stock > 10 ? "default" : "destructive"} className="text-xs">
+                                  {selectedMaterial.current_stock} {selectedMaterial.unit}
+                                </Badge>
+                                {selectedMaterial.current_stock <= 10 && (
+                                  <span className="text-xs text-orange-600">Low Stock</span>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                                Unit Cost
+                              </label>
+                              <p className="text-sm font-semibold text-green-600 dark:text-green-400 mt-1">
+                                ₹{selectedMaterial.unit_cost.toFixed(2)}/{selectedMaterial.unit}
+                              </p>
+                            </div>
+                          </div>
+                          {selectedMaterial.description && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                                Description
+                              </label>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                                {selectedMaterial.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Quantity and Percentage Inputs */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Quantity Required
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={ingredient.quantity}
+                              onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value))}
+                              placeholder="0.0"
+                              className="pr-12"
+                            />
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+                              {ingredient.unit}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Unit
+                          </Label>
+                          <Select
+                            value={ingredient.unit}
+                            onValueChange={(value) => updateIngredient(index, 'unit', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select unit..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                              <SelectItem value="liters">Liters (L)</SelectItem>
+                              <SelectItem value="grams">Grams (g)</SelectItem>
+                              <SelectItem value="ml">Milliliters (ml)</SelectItem>
+                              <SelectItem value="units">Units</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Percentage (%)
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              max="100"
+                              value={ingredient.percentage}
+                              onChange={(e) => updateIngredient(index, 'percentage', parseFloat(e.target.value))}
+                              placeholder="0.0"
+                              className="pr-8"
+                            />
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+                              %
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <Label>Unit</Label>
-                        <Input
-                          value={ingredient.unit}
-                          onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                          placeholder="kg/L"
+
+                      {/* Cost Calculation */}
+                      {selectedMaterial && ingredient.quantity > 0 && (
+                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-green-800 dark:text-green-400">
+                              Estimated Cost:
+                            </span>
+                            <span className="text-lg font-bold text-green-700 dark:text-green-300">
+                              ₹{(selectedMaterial.unit_cost * ingredient.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes Section */}
+                      <div className="mt-4">
+                        <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Notes (Optional)
+                        </Label>
+                        <Textarea
+                          value={ingredient.notes || ''}
+                          onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
+                          placeholder="Add any special instructions or notes for this ingredient..."
+                          rows={2}
+                          className="mt-1"
                         />
-                      </div>
-                      <div>
-                        <Label>Percentage</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          max="100"
-                          value={ingredient.percentage}
-                          onChange={(e) => updateIngredient(index, 'percentage', parseFloat(e.target.value))}
-                          placeholder="0.0"
-                        />
-                      </div>
-                      <div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeIngredient(index)}
-                          className="w-full"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
-                    {ingredient.rawMaterialName && (
-                      <div className="mt-2">
-                        <Badge variant="outline">{ingredient.rawMaterialName}</Badge>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

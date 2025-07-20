@@ -225,6 +225,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Connected to manufacturing recipes API endpoints for data persistence
 - Route configured at /create-product-formula with proper authentication protection
 
+### Enhanced Formula Ingredients Display (July 20, 2025)
+- Enhanced Formula Ingredients section with rich item data display similar to add-item-dashboard
+- Added detailed material information cards showing current stock, unit cost, and descriptions
+- Implemented professional ingredient cards with headers, icons, and organized data sections
+- Added real-time cost calculations showing estimated cost per ingredient based on quantity
+- Enhanced material selection with badge indicators for units and stock levels
+- Added low stock warnings with color-coded badges (red for low stock, green for adequate)
+- Implemented notes section for each ingredient with manufacturing instructions
+- Created comprehensive ingredient interface with quantity, unit, and percentage controls
+- Added unit cost display in Indian Rupee format with per-unit pricing information
+- Enhanced visual design with improved spacing, shadows, and hover effects for better user experience
+
 ### Products Manufacturing Page Removal (July 19, 2025)
 - Removed products-manufacturing page from the system as requested by user
 - Cleaned up App.tsx routing configuration to remove references to deleted page
