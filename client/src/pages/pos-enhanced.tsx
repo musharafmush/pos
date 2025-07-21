@@ -732,13 +732,14 @@ export default function POSEnhanced() {
           weightInKg = weight / 1000;
         }
         
-        const pricePerKg = parseFloat(product.price);
-        const totalPrice = weightInKg * pricePerKg;
+        // For repacked items, the product price is for the whole package
+        const packagePrice = parseFloat(product.price);
+        const pricePerKg = packagePrice / weightInKg; // Calculate per-kg price based on package
         
         const cartItem: CartItem = {
           ...product,
           quantity: weightInKg, // Use actual weight as quantity for proper unit counting
-          total: totalPrice,
+          total: packagePrice, // Total price is the package price
           isWeightBased: true,
           actualWeight: weightInKg,
           pricePerKg: pricePerKg,
@@ -749,7 +750,7 @@ export default function POSEnhanced() {
         
         toast({
           title: "Product Added",
-          description: `${weightInKg}kg of ${product.name} added for ${formatCurrency(totalPrice)}`,
+          description: `${weightInKg}kg of ${product.name} added for ${formatCurrency(packagePrice)}`,
         });
         
         // Clear search after adding
