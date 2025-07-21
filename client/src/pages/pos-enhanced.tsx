@@ -2938,18 +2938,6 @@ export default function POSEnhanced() {
                           <div className="flex-1">
                             <h4 className="font-semibold text-lg text-gray-900">{item.name}</h4>
                             <p className="text-sm text-gray-500 font-mono">{item.sku || 'No SKU'}</p>
-                            {/* Debug: show all item properties to track down the "unite onlye" text */}
-                            {process.env.NODE_ENV === 'development' && item.name?.includes('rice') && (
-                              <div className="text-xs text-red-500 bg-red-50 p-1 mt-1 rounded">
-                                Debug - Item data: {JSON.stringify({
-                                  sku: item.sku,
-                                  description: item.description,
-                                  repackageUnits: item.repackageUnits,
-                                  repackageType: item.repackageType,
-                                  itemPerUnit: item.itemPerUnit
-                                }, null, 2)}
-                              </div>
-                            )}
                             <div className="flex items-center space-x-4 mt-2">
                               <div className="flex flex-col">
                                 <p className="text-lg font-bold text-green-600">

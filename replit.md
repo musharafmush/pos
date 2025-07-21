@@ -196,6 +196,15 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Complete integration workflow now functional with proper form value display including final MRP field corrections
 - Applied comprehensive fixes as part of Replit Agent to Replit migration process
 
+### Repackaged Item "unite onlye" Display Fix (July 21, 2025)
+- Fixed critical display issue where repackaged items showed "unite onlye" instead of proper product information
+- Identified source of corrupted text: itemPerUnit database field getting set to "unite onlye" during repackaging process
+- Updated database to clear all corrupted itemPerUnit values from affected products
+- Enhanced repackaging API to explicitly set itemPerUnit to null during product creation
+- Fixed cart display to show proper SKU information for all repackaged products
+- Added preventive measures to ensure future repackaging operations don't introduce similar data corruption
+- Weight-based product unit counting also improved to show actual weight values in shopping cart header
+
 ### Replit Agent to Replit Migration (July 19, 2025)
 - Successfully migrated project from Replit Agent to standard Replit environment
 - Ensured proper client/server separation and security practices

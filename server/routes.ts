@@ -7237,6 +7237,7 @@ app.post("/api/customers", async (req, res) => {
         itemPreparationsStatus: 'Repackage',
         bulkItemName: bulkProduct.name,
         repackageUnits: repackQuantity.toString(),
+        itemPerUnit: null, // Clear this field to prevent corrupted data
         
         // Additional product fields with defaults
         hsnCode: bulkProduct.hsnCode || '',
