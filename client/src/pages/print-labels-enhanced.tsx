@@ -4076,7 +4076,30 @@ export default function PrintLabelsEnhanced() {
                             };
                             await updateTemplateMutation.mutateAsync({ 
                               id: editingTemplate.id, 
-                              data: { custom_css: updatedTemplate.custom_css }
+                              data: {
+                                name: editingTemplate.name,
+                                width: editingTemplate.width,
+                                height: editingTemplate.height,
+                                font_size: editingTemplate.font_size,
+                                include_barcode: editingTemplate.include_barcode,
+                                include_price: editingTemplate.include_price,
+                                include_description: editingTemplate.include_description,
+                                include_mrp: editingTemplate.include_mrp,
+                                include_weight: editingTemplate.include_weight,
+                                include_hsn: editingTemplate.include_hsn,
+                                include_manufacturing_date: editingTemplate.include_manufacturing_date,
+                                include_expiry_date: editingTemplate.include_expiry_date,
+                                barcode_position: editingTemplate.barcode_position,
+                                barcode_width: editingTemplate.barcode_width,
+                                barcode_height: editingTemplate.barcode_height,
+                                border_style: editingTemplate.border_style,
+                                border_width: editingTemplate.border_width,
+                                background_color: editingTemplate.background_color,
+                                text_color: editingTemplate.text_color,
+                                is_default: editingTemplate.is_default,
+                                is_active: editingTemplate.is_active,
+                                custom_css: updatedTemplate.custom_css
+                              }
                             });
                             toast({
                               title: "Left Alignment Applied",
@@ -4106,7 +4129,30 @@ export default function PrintLabelsEnhanced() {
                             };
                             await updateTemplateMutation.mutateAsync({ 
                               id: editingTemplate.id, 
-                              data: { custom_css: updatedTemplate.custom_css }
+                              data: {
+                                name: editingTemplate.name,
+                                width: editingTemplate.width,
+                                height: editingTemplate.height,
+                                font_size: editingTemplate.font_size,
+                                include_barcode: editingTemplate.include_barcode,
+                                include_price: editingTemplate.include_price,
+                                include_description: editingTemplate.include_description,
+                                include_mrp: editingTemplate.include_mrp,
+                                include_weight: editingTemplate.include_weight,
+                                include_hsn: editingTemplate.include_hsn,
+                                include_manufacturing_date: editingTemplate.include_manufacturing_date,
+                                include_expiry_date: editingTemplate.include_expiry_date,
+                                barcode_position: editingTemplate.barcode_position,
+                                barcode_width: editingTemplate.barcode_width,
+                                barcode_height: editingTemplate.barcode_height,
+                                border_style: editingTemplate.border_style,
+                                border_width: editingTemplate.border_width,
+                                background_color: editingTemplate.background_color,
+                                text_color: editingTemplate.text_color,
+                                is_default: editingTemplate.is_default,
+                                is_active: editingTemplate.is_active,
+                                custom_css: updatedTemplate.custom_css
+                              }
                             });
                             toast({
                               title: "Center Alignment Applied",
@@ -4134,7 +4180,33 @@ export default function PrintLabelsEnhanced() {
                                 .label-text { text-align: right; justify-content: flex-end; }
                                 .label-content { align-items: flex-end; }`
                             };
-                            await updateTemplateMutation.mutateAsync(updatedTemplate);
+                            await updateTemplateMutation.mutateAsync({ 
+                              id: editingTemplate.id, 
+                              data: {
+                                name: editingTemplate.name,
+                                width: editingTemplate.width,
+                                height: editingTemplate.height,
+                                font_size: editingTemplate.font_size,
+                                include_barcode: editingTemplate.include_barcode,
+                                include_price: editingTemplate.include_price,
+                                include_description: editingTemplate.include_description,
+                                include_mrp: editingTemplate.include_mrp,
+                                include_weight: editingTemplate.include_weight,
+                                include_hsn: editingTemplate.include_hsn,
+                                include_manufacturing_date: editingTemplate.include_manufacturing_date,
+                                include_expiry_date: editingTemplate.include_expiry_date,
+                                barcode_position: editingTemplate.barcode_position,
+                                barcode_width: editingTemplate.barcode_width,
+                                barcode_height: editingTemplate.barcode_height,
+                                border_style: editingTemplate.border_style,
+                                border_width: editingTemplate.border_width,
+                                background_color: editingTemplate.background_color,
+                                text_color: editingTemplate.text_color,
+                                is_default: editingTemplate.is_default,
+                                is_active: editingTemplate.is_active,
+                                custom_css: updatedTemplate.custom_css
+                              }
+                            });
                             toast({
                               title: "Right Alignment Applied",
                               description: "All text elements aligned to the right",
@@ -4161,7 +4233,33 @@ export default function PrintLabelsEnhanced() {
                                 .label-text { text-align: justify; text-justify: inter-word; }
                                 .label-content { align-items: stretch; text-align: justify; }`
                             };
-                            await updateTemplateMutation.mutateAsync(updatedTemplate);
+                            await updateTemplateMutation.mutateAsync({ 
+                              id: editingTemplate.id, 
+                              data: {
+                                name: editingTemplate.name,
+                                width: editingTemplate.width,
+                                height: editingTemplate.height,
+                                font_size: editingTemplate.font_size,
+                                include_barcode: editingTemplate.include_barcode,
+                                include_price: editingTemplate.include_price,
+                                include_description: editingTemplate.include_description,
+                                include_mrp: editingTemplate.include_mrp,
+                                include_weight: editingTemplate.include_weight,
+                                include_hsn: editingTemplate.include_hsn,
+                                include_manufacturing_date: editingTemplate.include_manufacturing_date,
+                                include_expiry_date: editingTemplate.include_expiry_date,
+                                barcode_position: editingTemplate.barcode_position,
+                                barcode_width: editingTemplate.barcode_width,
+                                barcode_height: editingTemplate.barcode_height,
+                                border_style: editingTemplate.border_style,
+                                border_width: editingTemplate.border_width,
+                                background_color: editingTemplate.background_color,
+                                text_color: editingTemplate.text_color,
+                                is_default: editingTemplate.is_default,
+                                is_active: editingTemplate.is_active,
+                                custom_css: updatedTemplate.custom_css
+                              }
+                            });
                             toast({
                               title: "Justify Alignment Applied",
                               description: "All text elements justified for even spacing",
