@@ -204,6 +204,7 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Fixed cart display to show proper SKU information for all repackaged products
 - Added preventive measures to ensure future repackaging operations don't introduce similar data corruption
 - Weight-based product unit counting also improved to show actual weight values in shopping cart header
+- Enhanced cart header display to properly separate regular items and weight-based items (e.g., "2 units + 1.3 kg" instead of confusing "2.3 kg/units")
 
 ### Replit Agent to Replit Migration (July 19, 2025)
 - Successfully migrated project from Replit Agent to standard Replit environment

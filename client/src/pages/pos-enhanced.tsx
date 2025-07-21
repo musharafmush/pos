@@ -2888,10 +2888,20 @@ export default function POSEnhanced() {
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold">
-                      {cart.length} items • {cart.reduce((sum, item) => {
-                        // For weight-based products, use actualWeight; for regular products, use quantity
-                        return sum + (item.isWeightBased ? (item.actualWeight || item.quantity) : item.quantity);
-                      }, 0).toFixed(1)} {cart.some(item => item.isWeightBased) ? 'kg/units' : 'units'}
+                      {cart.length} items • {(() => {
+                        const regularItems = cart.filter(item => !item.isWeightBased);
+                        const weightItems = cart.filter(item => item.isWeightBased);
+                        const regularCount = regularItems.reduce((sum, item) => sum + item.quantity, 0);
+                        const weightTotal = weightItems.reduce((sum, item) => sum + (item.actualWeight || item.quantity), 0);
+                        
+                        if (weightItems.length > 0 && regularItems.length > 0) {
+                          return `${regularCount} units + ${weightTotal.toFixed(1)} kg`;
+                        } else if (weightItems.length > 0) {
+                          return `${weightTotal.toFixed(1)} kg`;
+                        } else {
+                          return `${regularCount} units`;
+                        }
+                      })()}
                     </div>
                     <div className="text-blue-100 text-lg font-medium">
                       Subtotal: {formatCurrency(subtotal)}
