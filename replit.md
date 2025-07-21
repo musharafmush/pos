@@ -196,14 +196,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Complete integration workflow now functional with proper form value display including final MRP field corrections
 - Applied comprehensive fixes as part of Replit Agent to Replit migration process
 
-### Repackaged Item "unite onlye" Display Fix (July 21, 2025)
+### Repackaged Item Display and Weight Classification Fix (July 21, 2025)
 - Fixed critical display issue where repackaged items showed "unite onlye" instead of proper product information
 - Identified source of corrupted text: itemPerUnit database field getting set to "unite onlye" during repackaging process
 - Updated database to clear all corrupted itemPerUnit values from affected products
 - Enhanced repackaging API to explicitly set itemPerUnit to null during product creation
 - Fixed cart display to show proper SKU information for all repackaged products
 - Added preventive measures to ensure future repackaging operations don't introduce similar data corruption
-- Weight-based product unit counting also improved to show actual weight values in shopping cart header
+- Fixed weight-based product classification: repackaged items (like 1kg packs) now show as "1 unit" instead of "1 kg"
+- Enhanced cart header to properly separate regular units from actual weight-based items (e.g., "1 units + 1.0 kg")
+- Updated isWeightBasedProduct function to exclude repackaged products from weight-based classification
 - Enhanced cart header display to properly separate regular items and weight-based items (e.g., "2 units + 1.3 kg" instead of confusing "2.3 kg/units")
 
 ### Replit Agent to Replit Migration (July 19, 2025)

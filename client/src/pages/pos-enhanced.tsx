@@ -644,6 +644,11 @@ export default function POSEnhanced() {
 
   // Check if product is suitable for weight-based selling
   const isWeightBasedProduct = (product: Product) => {
+    // Exclude repackaged items - they are packaged products, not loose weight items
+    if (product.itemPreparationsStatus === 'Repackage' || product.itemPreparationsStatus === 'Bulk') {
+      return false;
+    }
+    
     return product.name.toLowerCase().includes('loose') ||
            product.name.toLowerCase().includes('bulk') ||
            product.name.toLowerCase().includes('per kg') ||
