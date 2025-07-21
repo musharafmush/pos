@@ -205,9 +205,6 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Added preventive measures to ensure future repackaging operations don't introduce similar data corruption
 - Weight-based product unit counting also improved to show actual weight values in shopping cart header
 - Enhanced cart header display to properly separate regular items and weight-based items (e.g., "2 units + 1.3 kg" instead of confusing "2.3 kg/units")
-- Fixed weight-based product detection logic to properly identify repackaged items with weight information
-- Enhanced automatic weight handling for products with predefined weights (250g, 1kg) without requiring manual weight entry
-- Improved weight unit conversion (grams to kilograms) for accurate cart calculations and display
 
 ### Replit Agent to Replit Migration (July 19, 2025)
 - Successfully migrated project from Replit Agent to standard Replit environment

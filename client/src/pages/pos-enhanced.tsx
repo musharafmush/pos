@@ -644,18 +644,10 @@ export default function POSEnhanced() {
 
   // Check if product is suitable for weight-based selling
   const isWeightBasedProduct = (product: Product) => {
-    // Check for weight-based keywords in product name
-    const nameKeywords = product.name.toLowerCase().includes('loose') ||
-                        product.name.toLowerCase().includes('bulk') ||
-                        product.name.toLowerCase().includes('per kg');
-    
-    // Check if product has weight information (any weight value means it's weight-based)
-    const hasWeightInfo = product.weight && parseFloat(product.weight.toString()) > 0;
-    
-    // Check if it's a repackaged product (which should be treated as weight-based)
-    const isRepackaged = product.description?.toLowerCase().includes('repack');
-    
-    return nameKeywords || hasWeightInfo || isRepackaged;
+    return product.name.toLowerCase().includes('loose') ||
+           product.name.toLowerCase().includes('bulk') ||
+           product.name.toLowerCase().includes('per kg') ||
+           (product.weightUnit === 'kg' && parseFloat(product.weight?.toString() || "0") >= 1);
   };
 
   // Handle weight-based product addition
@@ -722,44 +714,6 @@ export default function POSEnhanced() {
 
     // Check if this is a weight-based product
     if (isWeightBasedProduct(product)) {
-      // For products with predefined weight (like repacked items), use that weight directly
-      if (product.weight && parseFloat(product.weight.toString()) > 0) {
-        const weight = parseFloat(product.weight.toString());
-        let weightInKg = weight;
-        
-        // Convert to kg if needed
-        if (product.weightUnit === 'g') {
-          weightInKg = weight / 1000;
-        }
-        
-        // For repacked items, the product price is for the whole package
-        const packagePrice = parseFloat(product.price);
-        const pricePerKg = packagePrice / weightInKg; // Calculate per-kg price based on package
-        
-        const cartItem: CartItem = {
-          ...product,
-          quantity: weightInKg, // Use actual weight as quantity for proper unit counting
-          total: packagePrice, // Total price is the package price
-          isWeightBased: true,
-          actualWeight: weightInKg,
-          pricePerKg: pricePerKg,
-          mrp: parseFloat(product.mrp) || 0,
-        };
-        
-        setCart(prev => [...prev, cartItem]);
-        
-        toast({
-          title: "Product Added",
-          description: `${weightInKg}kg of ${product.name} added for ${formatCurrency(packagePrice)}`,
-        });
-        
-        // Clear search after adding
-        setSearchTerm("");
-        searchInputRef.current?.focus();
-        return;
-      }
-      
-      // For products without predefined weight, show weight dialog
       handleWeightBasedAddition(product);
       return;
     }
