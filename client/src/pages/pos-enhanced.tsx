@@ -703,7 +703,17 @@ export default function POSEnhanced() {
 
   // Cart functions
   const addToCart = (product: Product) => {
+    console.log('🛒 AddToCart called with product:', {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      stockQuantity: product.stockQuantity,
+      mrp: product.mrp
+    });
+    console.log('🛒 Current cart state:', cart);
+
     if (product.stockQuantity <= 0) {
+      console.log('❌ Product out of stock:', product.name);
       toast({
         title: "Out of Stock",
         description: `${product.name} is currently out of stock`,
@@ -714,14 +724,17 @@ export default function POSEnhanced() {
 
     // Check if this is a weight-based product
     if (isWeightBasedProduct(product)) {
+      console.log('⚖️ Weight-based product detected:', product.name);
       handleWeightBasedAddition(product);
       return;
     }
 
     const existingItem = cart.find(item => item.id === product.id && !item.isWeightBased);
+    console.log('🔍 Existing item in cart:', existingItem);
 
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
+        console.log('📦 Stock limit reached for:', product.name);
         toast({
           title: "Stock Limit Reached",
           description: `Only ${product.stockQuantity} units available for ${product.name}`,
@@ -730,6 +743,7 @@ export default function POSEnhanced() {
         return;
       }
 
+      console.log('➕ Updating existing item quantity');
       setCart(cart.map(item =>
         item.id === product.id
           ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * parseFloat(item.price) }
@@ -742,8 +756,12 @@ export default function POSEnhanced() {
         total: parseFloat(product.price),
         mrp: parseFloat(product.mrp) || 0
       };
+      console.log('🆕 Adding new item to cart:', cartItem);
       console.log('📦 Adding product to cart:', product.name, 'MRP:', product.mrp, '→', cartItem.mrp);
-      setCart([...cart, cartItem]);
+      
+      const newCart = [...cart, cartItem];
+      console.log('🛒 New cart state will be:', newCart);
+      setCart(newCart);
     }
 
     toast({
