@@ -638,16 +638,18 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         </div>
       ` : ''}
       ${settings.showLogo && (!settings.logoUrl || settings.logoUrl.trim() === '') ? `
-        <div style="text-align: center; margin-bottom: 2mm;">
-          <div style="display: inline-block; border: 2px dashed #ccc; padding: 10px; background-color: #f5f5f5; color: #666; font-size: 12px; border-radius: 4px;">
-            📷 Logo Not Configured
+        <div style="text-align: center; margin-bottom: 2mm; width: 100%; display: flex; justify-content: center;">
+          <div style="font-weight: bold; color: #d4af37; font-size: ${settings.paperWidth === 'thermal58' ? '22px' : '26px'}; margin-bottom: 1mm; letter-spacing: 3px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); text-align: center; font-family: 'Impact', 'Arial Black', sans-serif;">
+            🏆 ${settings.businessName || 'M MART'} 🏆
           </div>
         </div>
       ` : ''}
 
-      <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
-        ${settings.businessName || 'M MART'}
-      </div>
+      ${!settings.showLogo ? `
+        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
+          ${settings.businessName || 'M MART'}
+        </div>
+      ` : ''}
 
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 1mm;">
         Professional Retail Solution
