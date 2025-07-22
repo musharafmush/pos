@@ -5102,21 +5102,39 @@ export default function POSEnhanced() {
                 {paymentMethod !== "split" && (
                   <>
                     {amountPaid && parseFloat(amountPaid) < total && (
-                      <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                      <div className="mt-3 p-4 bg-red-50 rounded-lg border-2 border-red-300 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-red-500 font-bold text-lg">⚠️</span>
+                          <p className="text-red-800 font-bold text-lg">Insufficient Payment</p>
+                        </div>
                         <p className="text-red-700 font-semibold">
-                          Insufficient amount. Need at least {formatCurrency(total)}
+                          Need additional: {formatCurrency(total - parseFloat(amountPaid))}
+                        </p>
+                        <p className="text-red-600 text-sm mt-1">
+                          Required: {formatCurrency(total)} | Received: {formatCurrency(parseFloat(amountPaid))}
                         </p>
                       </div>
                     )}
                     {amountPaid && parseFloat(amountPaid) > total && (
-                      <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-blue-700 font-semibold">
-                          Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
+                      <div className="mt-3 p-4 bg-blue-50 rounded-lg border-2 border-blue-300 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-blue-500 font-bold text-lg">💰</span>
+                          <p className="text-blue-800 font-bold text-lg">Change Due</p>
+                        </div>
+                        <p className="text-blue-700 font-bold text-2xl">
+                          {formatCurrency(parseFloat(amountPaid) - total)}
+                        </p>
+                        <p className="text-blue-600 text-sm mt-1">
+                          Received: {formatCurrency(parseFloat(amountPaid))} | Total: {formatCurrency(total)}
                         </p>
                       </div>
                     )}
                     {amountPaid && parseFloat(amountPaid) === total && (
-                      <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="mt-3 p-4 bg-green-50 rounded-lg border-2 border-green-300 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-green-500 font-bold text-lg">✅</span>
+                          <p className="text-green-800 font-bold text-lg">Perfect Payment</p>
+                        </div>
                         <p className="text-green-700 font-semibold">
                           Exact amount - No change required
                         </p>
