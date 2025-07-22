@@ -2712,9 +2712,16 @@ export default function POSEnhanced() {
                       <SelectItem key={customer.id} value={customer.id.toString()}>
                         <div>
                           <div className="font-medium">{customer.name}</div>
-                          {customer.phone && (
-                            <div className="text-sm text-gray-500">{customer.phone}</div>
-                          )}
+                          <div className="flex items-center gap-3 text-sm text-gray-500">
+                            {customer.phone && (
+                              <span>{customer.phone}</span>
+                            )}
+                            {customer.tax_id && (
+                              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono text-xs">
+                                GST: {customer.tax_id}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -2723,15 +2730,24 @@ export default function POSEnhanced() {
               </div>
 
               <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Contact</label>
-                <div className="flex items-center text-gray-600">
-                  {selectedCustomer?.phone ? (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      {selectedCustomer.phone}
-                    </>
-                  ) : (
-                    <span className="text-gray-400">No contact info</span>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Contact & GST</label>
+                <div className="space-y-1">
+                  <div className="flex items-center text-gray-600">
+                    {selectedCustomer?.phone ? (
+                      <>
+                        <Phone className="h-4 w-4 mr-2" />
+                        {selectedCustomer.phone}
+                      </>
+                    ) : (
+                      <span className="text-gray-400">No contact</span>
+                    )}
+                  </div>
+                  {selectedCustomer?.tax_id && (
+                    <div className="flex items-center text-blue-700 text-xs">
+                      <span className="bg-blue-100 px-2 py-0.5 rounded font-mono">
+                        GST: {selectedCustomer.tax_id}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -3270,6 +3286,14 @@ export default function POSEnhanced() {
                       <div className="text-xs text-green-600 mt-1">
                         Customer: {selectedCustomer.name}
                       </div>
+                      {selectedCustomer.tax_id && (
+                        <div className="text-xs text-blue-600 mt-1 flex items-center">
+                          <span className="font-medium">GST No:</span>
+                          <span className="ml-1 font-mono bg-blue-100 px-2 py-0.5 rounded">
+                            {selectedCustomer.tax_id}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
