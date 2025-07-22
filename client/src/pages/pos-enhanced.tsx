@@ -2914,8 +2914,14 @@ export default function POSEnhanced() {
                         }
                       })()}
                     </div>
-                    <div className="text-blue-100 text-lg font-medium">
-                      Subtotal: {formatCurrency(subtotal)}
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+                      <div className="text-white/80 text-sm font-medium mb-1">💰 Total Item Cost</div>
+                      <div className="text-white text-3xl font-bold">
+                        {formatCurrency(subtotal)}
+                      </div>
+                      <div className="text-white/70 text-xs mt-1">
+                        for {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3035,12 +3041,15 @@ export default function POSEnhanced() {
                               </div>
                             )}
 
-                            <div className="text-right min-w-24">
-                              <div className="font-bold text-xl text-green-600">
-                                {formatCurrency(item.total)}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                Total
+                            <div className="text-right min-w-32">
+                              <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                <div className="text-xs text-green-600 font-medium mb-1">💰 Item Total</div>
+                                <div className="font-bold text-2xl text-green-700">
+                                  {formatCurrency(item.total)}
+                                </div>
+                                <div className="text-xs text-green-600 mt-1">
+                                  {item.quantity > 1 ? `${formatCurrency(parseFloat(item.price))} each` : 'Final cost'}
+                                </div>
                               </div>
                             </div>
 
@@ -3056,6 +3065,34 @@ export default function POSEnhanced() {
                         </div>
                       </Card>
                     ))}
+                  </div>
+                )}
+                
+                {/* Cart Total Summary */}
+                {cart.length > 0 && (
+                  <div className="mt-6 bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-2xl shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mr-4">
+                          <Receipt className="h-8 w-8" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold">Cart Summary</h3>
+                          <p className="text-white/80 text-sm">{cart.length} different products</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+                          <div className="text-white/80 text-sm font-medium mb-1">💰 Total Item Cost Amount</div>
+                          <div className="text-white text-4xl font-bold">
+                            {formatCurrency(subtotal)}
+                          </div>
+                          <div className="text-white/70 text-sm mt-1">
+                            for {cart.reduce((sum, item) => sum + item.quantity, 0)} total items
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

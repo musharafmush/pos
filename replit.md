@@ -135,6 +135,17 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - **Data Backup**: Automated backup system before deployments
 - **Multi-Environment**: Support for SQLite (dev) and MySQL (prod)
 
+### Enhanced Item Total Cost Amount Display System (July 22, 2025)
+- Redesigned Shopping Cart header with prominent Total Item Cost display featuring large 3xl font and professional styling
+- Enhanced individual cart items with green-highlighted Item Total boxes showing large 2xl font for each product cost
+- Added comprehensive Cart Summary section at bottom with gradient background and 4xl font for maximum visibility
+- Implemented multiple cost display levels: header subtotal, individual item totals, and final cart summary
+- Enhanced visual hierarchy with emoji icons (💰), backdrop blur effects, and color-coded cost indicators
+- Added contextual cost descriptions showing "for X items" and "Y different products" for complete transparency
+- Created professional cost breakdown with white/transparent overlays and rounded borders for premium appearance
+- All cost displays update in real-time as items are added, removed, or quantities changed in the cart
+- Integrated seamlessly with existing payment, discount, and ocean freight calculation systems
+
 ## Recent Changes
 
 ### Accounts Dashboard Deposit and Withdrawal System (July 17, 2025)
