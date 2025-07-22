@@ -3212,7 +3212,7 @@ export default function POSEnhanced() {
                     <span className="text-gray-600">Total Qty:</span>
                     <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                     <span className="text-blue-800 font-medium text-lg">Gross Amount:</span>
                     <span className="font-bold text-xl text-blue-900">{formatCurrency(subtotal)}</span>
                   </div>
@@ -3278,49 +3278,33 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              {/* Total Cost Amount & Profit Display */}
+              {/* Total Cost Amount Display */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="text-center">
-                  <div className="text-sm font-medium opacity-90 mb-2">Total Cost Amount</div>
+                  <div className="text-sm font-medium opacity-90 mb-2">Total Amount</div>
                   <div className="text-5xl font-bold mb-2">{formatCurrency(total)}</div>
-                  <div className="text-sm opacity-90">
+                  <div className="text-sm opacity-90 mb-3">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   
-                  {/* Profit Information */}
+                  {/* Simple Profit Display - Only if profit exists */}
                   {cart.some(item => item.cost) && (
-                    <div className="mt-4 p-3 bg-white bg-opacity-20 rounded-lg">
-                      <div className="text-sm font-medium mb-2">Profit Breakdown</div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="opacity-90">Total Cost:</div>
-                          <div className="font-bold">
-                            {formatCurrency(cart.reduce((sum, item) => sum + (parseFloat(item.cost || '0') * item.quantity), 0))}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="opacity-90">Total Profit:</div>
-                          <div className="font-bold text-yellow-200">
-                            {formatCurrency(cart.reduce((sum, item) => {
-                              const cost = parseFloat(item.cost || '0') * item.quantity;
-                              const revenue = item.total;
-                              return sum + (revenue - cost);
-                            }, 0))}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs opacity-80">
-                        Profit Margin: {cart.reduce((sum, item) => {
+                    <div className="flex justify-center items-center gap-4 text-sm opacity-90">
+                      <span>💰 Profit: {formatCurrency(cart.reduce((sum, item) => {
+                        const cost = parseFloat(item.cost || '0') * item.quantity;
+                        const revenue = item.total;
+                        return sum + (revenue - cost);
+                      }, 0))}</span>
+                      <span>📊 Margin: {cart.reduce((sum, item) => {
+                        const cost = parseFloat(item.cost || '0') * item.quantity;
+                        const revenue = item.total;
+                        return sum + (revenue - cost);
+                      }, 0) > 0 ? 
+                        Math.round((cart.reduce((sum, item) => {
                           const cost = parseFloat(item.cost || '0') * item.quantity;
                           const revenue = item.total;
                           return sum + (revenue - cost);
-                        }, 0) > 0 ? 
-                          Math.round((cart.reduce((sum, item) => {
-                            const cost = parseFloat(item.cost || '0') * item.quantity;
-                            const revenue = item.total;
-                            return sum + (revenue - cost);
-                          }, 0) / total) * 100) + '%' : '0%'}
-                      </div>
+                        }, 0) / total) * 100) + '%' : '0%'}</span>
                     </div>
                   )}
                   
