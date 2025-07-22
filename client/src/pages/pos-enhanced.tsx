@@ -3212,9 +3212,9 @@ export default function POSEnhanced() {
                     <span className="text-gray-600">Total Qty:</span>
                     <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Gross Amount:</span>
-                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-blue-800 font-medium text-lg">Gross Amount:</span>
+                    <span className="font-bold text-xl text-blue-900">{formatCurrency(subtotal)}</span>
                   </div>
 
 
@@ -3278,11 +3278,23 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              {/* Net Amount Payable */}
+              {/* Total Cost Amount Display */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="text-center">
-                  <div className="text-sm font-medium opacity-90 mb-2">Net Amount Payable</div>
-                  <div className="text-4xl font-bold">{formatCurrency(total)}</div>
+                  <div className="text-sm font-medium opacity-90 mb-2">Total Cost Amount</div>
+                  <div className="text-5xl font-bold mb-2">{formatCurrency(total)}</div>
+                  <div className="text-sm opacity-90">
+                    {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </div>
+                  {(discountAmount + loyaltyDiscount) > 0 && (
+                    <div className="mt-3 p-2 bg-white bg-opacity-20 rounded-lg">
+                      <div className="text-sm">
+                        <div>Gross: {formatCurrency(subtotal)}</div>
+                        <div>Discount: -{formatCurrency(discountAmount + loyaltyDiscount)}</div>
+                        <div className="font-bold">Final: {formatCurrency(total)}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
