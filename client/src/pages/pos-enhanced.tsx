@@ -96,6 +96,9 @@ export default function POSEnhanced() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
+  const [showSplitPayment, setShowSplitPayment] = useState(false);
+  const [cashAmount, setCashAmount] = useState("");
+  const [upiAmount, setUpiAmount] = useState("");
   const [discount, setDiscount] = useState(0);
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [weightProduct, setWeightProduct] = useState<Product | null>(null);
@@ -176,7 +179,6 @@ export default function POSEnhanced() {
 
   // Form state
   const [cashOperation, setCashOperation] = useState<'add' | 'remove'>('add');
-  const [cashAmount, setCashAmount] = useState("");
   const [cashReason, setCashReason] = useState("");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [withdrawalNote, setWithdrawalNote] = useState("");
@@ -1389,12 +1391,16 @@ export default function POSEnhanced() {
         discount: (discountAmount + loyaltyDiscount).toFixed(2),
         discountPercent: discount,
         total: total.toFixed(2),
-        paymentMethod,
+        paymentMethod: paymentMethod === "split" ? "cash+upi" : paymentMethod,
         amountPaid: paidAmount.toFixed(2),
         change: (paidAmount - total).toFixed(2),
-        notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}`,
+        notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}${paymentMethod === "split" ? `, Cash: ₹${cashAmount}, UPI: ₹${upiAmount}` : ''}`,
         billNumber: billNumber,
-        status: "completed"
+        status: "completed",
+        ...(paymentMethod === "split" && {
+          cashAmount: parseFloat(cashAmount) || 0,
+          upiAmount: parseFloat(upiAmount) || 0
+        })
       };
 
       console.log("Processing sale with data:", saleData);
@@ -5005,6 +5011,7 @@ export default function POSEnhanced() {
                     <SelectContent>
                       <SelectItem value="cash">💵 Cash Payment</SelectItem>
                       <SelectItem value="upi">📱 UPI Payment</SelectItem>
+                      <SelectItem value="split">💰 Cash + UPI Split</SelectItem>
                       <SelectItem value="card">💳 Card Payment</SelectItem>
                       <SelectItem value="bank">🏦 Bank Transfer</SelectItem>
                       <SelectItem value="cheque">📝 Cheque Payment</SelectItem>
@@ -5013,46 +5020,136 @@ export default function POSEnhanced() {
                   </Select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
-                  <Input
-                    type="number"
-                    placeholder={`Enter amount (min: ${formatCurrency(total)})`}
-                    value={amountPaid}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow empty string or valid decimal numbers
-                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                        setAmountPaid(value);
-                      }
-                    }}
-                    step="0.01"
-                    min={0}
-                    className="text-lg p-3"
-                    autoFocus
-                  />
-                  {amountPaid && parseFloat(amountPaid) < total && (
-                    <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
-                      <p className="text-red-700 font-semibold">
-                        Insufficient amount. Need at least {formatCurrency(total)}
-                      </p>
+                {paymentMethod === "split" ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h3 className="font-semibold text-blue-800 mb-3">Split Payment: Cash + UPI</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">💵 Cash Amount</label>
+                          <Input
+                            type="number"
+                            placeholder="Cash amount"
+                            value={cashAmount}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                                setCashAmount(value);
+                                const cash = parseFloat(value) || 0;
+                                const remaining = Math.max(0, total - cash);
+                                setUpiAmount(remaining > 0 ? remaining.toFixed(2) : "");
+                                setAmountPaid((cash + remaining).toFixed(2));
+                              }
+                            }}
+                            step="0.01"
+                            min={0}
+                            className="text-lg p-3"
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">📱 UPI Amount</label>
+                          <Input
+                            type="number"
+                            placeholder="UPI amount"
+                            value={upiAmount}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                                setUpiAmount(value);
+                                const upi = parseFloat(value) || 0;
+                                const remaining = Math.max(0, total - upi);
+                                setCashAmount(remaining > 0 ? remaining.toFixed(2) : "");
+                                setAmountPaid((upi + remaining).toFixed(2));
+                              }
+                            }}
+                            step="0.01"
+                            min={0}
+                            className="text-lg p-3"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-white rounded border">
+                        <div className="flex justify-between text-sm">
+                          <span>Cash: {formatCurrency(parseFloat(cashAmount) || 0)}</span>
+                          <span>UPI: {formatCurrency(parseFloat(upiAmount) || 0)}</span>
+                          <span className="font-semibold">Total: {formatCurrency((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0))}</span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {amountPaid && parseFloat(amountPaid) > total && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-blue-700 font-semibold">
-                        Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
-                      </p>
-                    </div>
-                  )}
-                  {amountPaid && parseFloat(amountPaid) === total && (
-                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-green-700 font-semibold">
-                        Exact amount - No change required
-                      </p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received</label>
+                    <Input
+                      type="number"
+                      placeholder={`Enter amount (min: ${formatCurrency(total)})`}
+                      value={amountPaid}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow empty string or valid decimal numbers
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          setAmountPaid(value);
+                        }
+                      }}
+                      step="0.01"
+                      min={0}
+                      className="text-lg p-3"
+                      autoFocus
+                    />
+                  </div>
+                )}
+                {paymentMethod !== "split" && (
+                  <>
+                    {amountPaid && parseFloat(amountPaid) < total && (
+                      <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-red-700 font-semibold">
+                          Insufficient amount. Need at least {formatCurrency(total)}
+                        </p>
+                      </div>
+                    )}
+                    {amountPaid && parseFloat(amountPaid) > total && (
+                      <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-blue-700 font-semibold">
+                          Change to return: {formatCurrency(parseFloat(amountPaid) - total)}
+                        </p>
+                      </div>
+                    )}
+                    {amountPaid && parseFloat(amountPaid) === total && (
+                      <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-green-700 font-semibold">
+                          Exact amount - No change required
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {paymentMethod === "split" && (
+                  <>
+                    {((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)) < total && (
+                      <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <p className="text-red-700 font-semibold">
+                          Insufficient amount. Need {formatCurrency(total - ((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)))} more
+                        </p>
+                      </div>
+                    )}
+                    {((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)) > total && (
+                      <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-blue-700 font-semibold">
+                          Change to return: {formatCurrency(((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)) - total)}
+                        </p>
+                      </div>
+                    )}
+                    {((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)) === total && (
+                      <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-green-700 font-semibold">
+                          ✅ Perfect split payment - No change required
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {/* Detailed Payment Options */}
                 {paymentMethod === "cash" && (
@@ -5094,7 +5191,13 @@ export default function POSEnhanced() {
                   </Button>
                   <Button
                     onClick={processSale}
-                    disabled={isProcessing || !amountPaid || parseFloat(amountPaid) < total}
+                    disabled={
+                      isProcessing || 
+                      (paymentMethod === "split" 
+                        ? ((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0)) < total
+                        : !amountPaid || parseFloat(amountPaid) < total
+                      )
+                    }
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     {isProcessing ? "Processing..." : `Complete Sale ${formatCurrency(total)}`}
