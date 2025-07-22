@@ -3278,7 +3278,7 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              {/* Total Cost Amount Display */}
+              {/* Total Cost Amount & Profit Display */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
                 <div className="text-center">
                   <div className="text-sm font-medium opacity-90 mb-2">Total Cost Amount</div>
@@ -3286,6 +3286,44 @@ export default function POSEnhanced() {
                   <div className="text-sm opacity-90">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
+                  
+                  {/* Profit Information */}
+                  {cart.some(item => item.cost) && (
+                    <div className="mt-4 p-3 bg-white bg-opacity-20 rounded-lg">
+                      <div className="text-sm font-medium mb-2">Profit Breakdown</div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="opacity-90">Total Cost:</div>
+                          <div className="font-bold">
+                            {formatCurrency(cart.reduce((sum, item) => sum + (parseFloat(item.cost || '0') * item.quantity), 0))}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="opacity-90">Total Profit:</div>
+                          <div className="font-bold text-yellow-200">
+                            {formatCurrency(cart.reduce((sum, item) => {
+                              const cost = parseFloat(item.cost || '0') * item.quantity;
+                              const revenue = item.total;
+                              return sum + (revenue - cost);
+                            }, 0))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs opacity-80">
+                        Profit Margin: {cart.reduce((sum, item) => {
+                          const cost = parseFloat(item.cost || '0') * item.quantity;
+                          const revenue = item.total;
+                          return sum + (revenue - cost);
+                        }, 0) > 0 ? 
+                          Math.round((cart.reduce((sum, item) => {
+                            const cost = parseFloat(item.cost || '0') * item.quantity;
+                            const revenue = item.total;
+                            return sum + (revenue - cost);
+                          }, 0) / total) * 100) + '%' : '0%'}
+                      </div>
+                    </div>
+                  )}
+                  
                   {(discountAmount + loyaltyDiscount) > 0 && (
                     <div className="mt-3 p-2 bg-white bg-opacity-20 rounded-lg">
                       <div className="text-sm">
