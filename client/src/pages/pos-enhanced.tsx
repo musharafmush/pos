@@ -5151,33 +5151,61 @@ export default function POSEnhanced() {
                   </>
                 )}
 
-                {/* Detailed Payment Options */}
+                {/* Quick Payment Options */}
                 {paymentMethod === "cash" && (
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAmountPaid(total.toString())}
-                      className="text-sm"
-                    >
-                      Exact Amount
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAmountPaid((total + 100).toString())}
-                      className="text-sm"
-                    >
-                      +₹100
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAmountPaid((total + 500).toString())}
-                      className="text-sm"
-                    >
-                      +₹500
-                    </Button>
+                  <div className="space-y-3 mt-4">
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid(total.toString())}
+                        className="text-sm bg-green-50 hover:bg-green-100"
+                      >
+                        Exact ₹{total}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid((total + 50).toString())}
+                        className="text-sm"
+                      >
+                        +₹50
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid((total + 100).toString())}
+                        className="text-sm"
+                      >
+                        +₹100
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid("200")}
+                        className="text-sm"
+                      >
+                        ₹200
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid("500")}
+                        className="text-sm"
+                      >
+                        ₹500
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAmountPaid("1000")}
+                        className="text-sm"
+                      >
+                        ₹1000
+                      </Button>
+                    </div>
                   </div>
                 )}
 
