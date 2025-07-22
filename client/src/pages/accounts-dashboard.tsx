@@ -58,6 +58,7 @@ import {
 import { format } from "date-fns";
 import { useFormatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Account {
   id: string;
@@ -118,6 +119,7 @@ export default function AccountsDashboard() {
   const formatCurrency = useFormatCurrency();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
 
   // Fetch real-time data from POS system
   const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
@@ -308,8 +310,12 @@ export default function AccountsDashboard() {
   // Deposit mutation
   const depositMutation = useMutation({
     mutationFn: async (data: typeof depositData) => {
+      if (!user) {
+        throw new Error("Please log in to perform deposit operations");
+      }
+
       if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found");
+        throw new Error("No active cash register found. Please open a cash register first.");
       }
 
       const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
@@ -317,6 +323,7 @@ export default function AccountsDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           type: 'deposit',
           amount: parseFloat(data.amount),
@@ -327,7 +334,11 @@ export default function AccountsDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process deposit');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to process deposit');
       }
 
       return response.json();
@@ -354,8 +365,19 @@ export default function AccountsDashboard() {
   // Withdrawal mutation
   const withdrawalMutation = useMutation({
     mutationFn: async (data: typeof withdrawalData) => {
+      if (!user) {
+        throw new Error("Please log in to perform withdrawal operations");
+      }
+
       if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found");
+        throw new Error("No active cash register found. Please open a cash register first.");
+      }
+
+      const availableBalance = parseFloat(cashRegisterData.currentCash || "0");
+      const withdrawalAmount = parseFloat(data.amount);
+      
+      if (withdrawalAmount > availableBalance) {
+        throw new Error(`Insufficient funds. Available: ${formatCurrency(availableBalance)}`);
       }
 
       const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
@@ -363,9 +385,10 @@ export default function AccountsDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           type: 'withdrawal',
-          amount: parseFloat(data.amount),
+          amount: withdrawalAmount,
           paymentMethod: 'cash',
           reason: data.reason || 'Manual withdrawal',
           notes: data.notes
@@ -373,7 +396,11 @@ export default function AccountsDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process withdrawal');
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        }
+        throw new Error(errorData.message || 'Failed to process withdrawal');
       }
 
       return response.json();
@@ -429,6 +456,36 @@ export default function AccountsDashboard() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Accounts Dashboard</h1>
             <p className="text-gray-600 mt-1">Real-time financial tracking with POS Enhanced integration</p>
+            
+            {/* Status Indicators */}
+            <div className="flex items-center gap-4 mt-3">
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                user ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-500' : 'bg-red-500'}`} />
+                {user ? `Logged in as ${user.name}` : (
+                  <>
+                    Not authenticated - 
+                    <button 
+                      onClick={() => window.location.href = '/auth'}
+                      className="underline hover:no-underline ml-1"
+                    >
+                      Please log in
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                cashRegisterData?.id ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${cashRegisterData?.id ? 'bg-blue-500' : 'bg-yellow-500'}`} />
+                {cashRegisterData?.id 
+                  ? `Cash Register Active: ${formatCurrency(parseFloat(cashRegisterData.currentCash || "0"))}` 
+                  : 'No active cash register'
+                }
+              </div>
+            </div>
           </div>
           <div className="flex items-center space-x-3">
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -460,22 +517,46 @@ export default function AccountsDashboard() {
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Transaction
             </Button>
-            <Button 
-              onClick={() => setShowDepositDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
-              disabled={!cashRegisterData?.id}
-            >
-              <ArrowUpIcon className="h-4 w-4 mr-2" />
-              Amount Deposit
-            </Button>
-            <Button 
-              onClick={() => setShowWithdrawDialog(true)}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={!cashRegisterData?.id}
-            >
-              <ArrowDownIcon className="h-4 w-4 mr-2" />
-              Amount Withdrawal
-            </Button>
+            <div className="relative">
+              <Button 
+                onClick={() => setShowDepositDialog(true)}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={!user || !cashRegisterData?.id || authLoading || cashRegisterLoading}
+                title={
+                  !user ? "Please log in to perform deposits" :
+                  !cashRegisterData?.id ? "No active cash register found" :
+                  "Make a deposit to cash register"
+                }
+              >
+                <ArrowUpIcon className="h-4 w-4 mr-2" />
+                Amount Deposit
+              </Button>
+              {(!user || !cashRegisterData?.id) && (
+                <div className="absolute -top-2 -right-2">
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
+                </div>
+              )}
+            </div>
+            <div className="relative">
+              <Button 
+                onClick={() => setShowWithdrawDialog(true)}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={!user || !cashRegisterData?.id || authLoading || cashRegisterLoading}
+                title={
+                  !user ? "Please log in to perform withdrawals" :
+                  !cashRegisterData?.id ? "No active cash register found" :
+                  "Make a withdrawal from cash register"
+                }
+              >
+                <ArrowDownIcon className="h-4 w-4 mr-2" />
+                Amount Withdrawal
+              </Button>
+              {(!user || !cashRegisterData?.id) && (
+                <div className="absolute -top-2 -right-2">
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
