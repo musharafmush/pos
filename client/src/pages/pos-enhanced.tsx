@@ -2716,9 +2716,9 @@ export default function POSEnhanced() {
                             {customer.phone && (
                               <span>{customer.phone}</span>
                             )}
-                            {customer.tax_id && (
+                            {customer.taxId && (
                               <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono text-xs">
-                                GST: {customer.tax_id}
+                                GST: {customer.taxId}
                               </span>
                             )}
                           </div>
@@ -2742,10 +2742,10 @@ export default function POSEnhanced() {
                       <span className="text-gray-400">No contact</span>
                     )}
                   </div>
-                  {selectedCustomer?.tax_id && (
+                  {selectedCustomer?.taxId && (
                     <div className="flex items-center text-blue-700 text-xs">
                       <span className="bg-blue-100 px-2 py-0.5 rounded font-mono">
-                        GST: {selectedCustomer.tax_id}
+                        GST: {selectedCustomer.taxId}
                       </span>
                     </div>
                   )}
@@ -3286,11 +3286,11 @@ export default function POSEnhanced() {
                       <div className="text-xs text-green-600 mt-1">
                         Customer: {selectedCustomer.name}
                       </div>
-                      {selectedCustomer.tax_id && (
+                      {selectedCustomer.taxId && (
                         <div className="text-xs text-blue-600 mt-1 flex items-center">
                           <span className="font-medium">GST No:</span>
                           <span className="ml-1 font-mono bg-blue-100 px-2 py-0.5 rounded">
-                            {selectedCustomer.tax_id}
+                            {selectedCustomer.taxId}
                           </span>
                         </div>
                       )}
