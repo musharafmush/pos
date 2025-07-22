@@ -100,6 +100,8 @@ export default function POSEnhanced() {
   const [cashAmount, setCashAmount] = useState("");
   const [upiAmount, setUpiAmount] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [gstRate, setGstRate] = useState(18); // Default 18% GST
+  const [includeGst, setIncludeGst] = useState(false);
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [weightProduct, setWeightProduct] = useState<Product | null>(null);
   const [enteredWeight, setEnteredWeight] = useState("");
@@ -1026,11 +1028,12 @@ export default function POSEnhanced() {
     return freight + insurance + customs + handling;
   };
 
-  // Calculate totals with ocean freight and loyalty discount
+  // Calculate totals with ocean freight, loyalty discount, and GST
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const discountAmount = (subtotal * discount) / 100;
   const oceanTotal = calculateOceanTotal();
-  const total = subtotal - discountAmount - loyaltyDiscount + oceanTotal;
+  const gstAmount = includeGst ? ((subtotal - discountAmount - loyaltyDiscount) * gstRate) / 100 : 0;
+  const total = subtotal - discountAmount - loyaltyDiscount + gstAmount + oceanTotal;
 
   // Register opening
   const handleOpenRegister = async () => {
@@ -1390,11 +1393,14 @@ export default function POSEnhanced() {
         subtotal: subtotal.toFixed(2),
         discount: (discountAmount + loyaltyDiscount).toFixed(2),
         discountPercent: discount,
+        gstRate: includeGst ? gstRate : 0,
+        gstAmount: gstAmount.toFixed(2),
+        includeGst: includeGst,
         total: total.toFixed(2),
         paymentMethod: paymentMethod === "split" ? "cash+upi" : paymentMethod,
         amountPaid: paidAmount.toFixed(2),
         change: (paidAmount - total).toFixed(2),
-        notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}${paymentMethod === "split" ? `, Cash: ₹${cashAmount}, UPI: ₹${upiAmount}` : ''}`,
+        notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}${includeGst ? `, GST: ${gstRate}% (₹${gstAmount.toFixed(2)})` : ''}${paymentMethod === "split" ? `, Cash: ₹${cashAmount}, UPI: ₹${upiAmount}` : ''}`,
         billNumber: billNumber,
         status: "completed",
         ...(paymentMethod === "split" && {
@@ -3258,6 +3264,39 @@ export default function POSEnhanced() {
                     </div>
                   )}
 
+                  {/* GST Controls */}
+                  <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="flex items-center text-orange-800 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={includeGst}
+                          onChange={(e) => setIncludeGst(e.target.checked)}
+                          className="mr-2 w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500"
+                        />
+                        Include GST
+                      </label>
+                      {includeGst && (
+                        <select
+                          value={gstRate}
+                          onChange={(e) => setGstRate(Number(e.target.value))}
+                          className="text-sm border border-orange-300 rounded px-2 py-1 bg-white text-orange-800"
+                        >
+                          <option value={5}>5% GST</option>
+                          <option value={12}>12% GST</option>
+                          <option value={18}>18% GST</option>
+                          <option value={28}>28% GST</option>
+                        </select>
+                      )}
+                    </div>
+                    {includeGst && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>GST ({gstRate}%):</span>
+                        <span>+{formatCurrency(gstAmount)}</span>
+                      </div>
+                    )}
+                  </div>
+
                   {selectedCustomer && total > 0 && (
                     <div className="bg-green-50 p-3 rounded-lg border border-green-200 mt-3">
                       <div className="flex justify-between items-center text-sm">
@@ -3308,11 +3347,16 @@ export default function POSEnhanced() {
                     </div>
                   )}
                   
-                  {(discountAmount + loyaltyDiscount) > 0 && (
+                  {(discountAmount + loyaltyDiscount + gstAmount) > 0 && (
                     <div className="mt-3 p-2 bg-white bg-opacity-20 rounded-lg">
                       <div className="text-sm">
                         <div>Gross: {formatCurrency(subtotal)}</div>
-                        <div>Discount: -{formatCurrency(discountAmount + loyaltyDiscount)}</div>
+                        {(discountAmount + loyaltyDiscount) > 0 && (
+                          <div>Discount: -{formatCurrency(discountAmount + loyaltyDiscount)}</div>
+                        )}
+                        {gstAmount > 0 && (
+                          <div>GST ({gstRate}%): +{formatCurrency(gstAmount)}</div>
+                        )}
                         <div className="font-bold">Final: {formatCurrency(total)}</div>
                       </div>
                     </div>
