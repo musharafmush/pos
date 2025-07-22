@@ -3212,12 +3212,46 @@ export default function POSEnhanced() {
                     <span className="text-gray-600">Total Qty:</span>
                     <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-gray-600">Gross Amount:</span>
-                    <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                  
+                  {/* Enhanced Gross Amount Display */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-800 font-medium text-lg">💰 Gross Amount:</span>
+                      <span className="font-bold text-2xl text-blue-900">{formatCurrency(subtotal)}</span>
+                    </div>
+                    {cart.length > 0 && (
+                      <div className="text-sm text-blue-600 mt-2">
+                        Total item cost for {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+                      </div>
+                    )}
                   </div>
 
-
+                  {/* Individual Item Cost Breakdown */}
+                  {cart.length > 0 && (
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div className="text-sm font-medium text-gray-700 mb-2">📋 Item Cost Breakdown:</div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {cart.map((item) => (
+                          <div key={item.id} className="flex justify-between text-sm">
+                            <span className="text-gray-600 truncate max-w-[200px]">
+                              {item.name} (x{item.quantity})
+                            </span>
+                            <span className="font-medium text-gray-800 ml-2">
+                              {formatCurrency(item.total)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Total Summary */}
+                      <div className="border-t border-gray-300 pt-2 mt-2">
+                        <div className="flex justify-between font-bold text-base">
+                          <span className="text-gray-700">Subtotal Amount:</span>
+                          <span className="text-green-600">{formatCurrency(subtotal)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Discount:</span>
