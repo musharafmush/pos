@@ -8080,6 +8080,214 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Bank Accounts API
+  app.get('/api/bank-accounts', isAuthenticated, async (req, res) => {
+    try {
+      console.log('🏦 Fetching bank accounts...');
+      const accounts = await storage.getAllBankAccounts();
+      res.json(accounts);
+    } catch (error) {
+      console.error('❌ Error fetching bank accounts:', error);
+      res.status(500).json({ message: 'Failed to fetch bank accounts' });
+    }
+  });
+
+  app.get('/api/bank-accounts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+
+      console.log(`🏦 Fetching bank account ${id}...`);
+      const account = await storage.getBankAccountById(id);
+      
+      if (!account) {
+        return res.status(404).json({ message: 'Bank account not found' });
+      }
+
+      res.json(account);
+    } catch (error) {
+      console.error('❌ Error fetching bank account:', error);
+      res.status(500).json({ message: 'Failed to fetch bank account' });
+    }
+  });
+
+  app.post('/api/bank-accounts', isAuthenticated, async (req, res) => {
+    try {
+      console.log('🏦 Creating new bank account:', req.body);
+      
+      // Validate required fields
+      const { accountName, accountNumber, bankName, accountType } = req.body;
+      if (!accountName || !accountNumber || !bankName || !accountType) {
+        return res.status(400).json({ 
+          message: 'Account name, account number, bank name, and account type are required' 
+        });
+      }
+
+      const accountData = {
+        ...req.body,
+        createdBy: req.user?.id || null
+      };
+
+      const account = await storage.createBankAccount(accountData);
+      console.log('✅ Bank account created successfully:', account.id);
+      res.status(201).json(account);
+    } catch (error) {
+      console.error('❌ Error creating bank account:', error);
+      res.status(500).json({ 
+        message: 'Failed to create bank account',
+        error: error.message 
+      });
+    }
+  });
+
+  app.put('/api/bank-accounts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+
+      console.log(`🏦 Updating bank account ${id}:`, req.body);
+      const account = await storage.updateBankAccount(id, req.body);
+      
+      if (!account) {
+        return res.status(404).json({ message: 'Bank account not found' });
+      }
+
+      console.log('✅ Bank account updated successfully');
+      res.json(account);
+    } catch (error) {
+      console.error('❌ Error updating bank account:', error);
+      res.status(500).json({ 
+        message: 'Failed to update bank account',
+        error: error.message 
+      });
+    }
+  });
+
+  app.delete('/api/bank-accounts/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+
+      console.log(`🏦 Deleting bank account ${id}...`);
+      const success = await storage.deleteBankAccount(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Bank account not found' });
+      }
+
+      console.log('✅ Bank account deleted successfully');
+      res.json({ success: true, message: 'Bank account deleted successfully' });
+    } catch (error) {
+      console.error('❌ Error deleting bank account:', error);
+      res.status(500).json({ 
+        message: 'Failed to delete bank account',
+        error: error.message 
+      });
+    }
+  });
+
+  // Bank Transactions API
+  app.get('/api/bank-transactions', isAuthenticated, async (req, res) => {
+    try {
+      const { accountId, limit } = req.query;
+      console.log('💳 Fetching bank transactions...');
+      
+      let transactions;
+      if (accountId) {
+        transactions = await storage.getBankTransactionsByAccountId(
+          parseInt(accountId as string), 
+          limit ? parseInt(limit as string) : undefined
+        );
+      } else {
+        transactions = await storage.getAllBankTransactions();
+      }
+      
+      res.json(transactions);
+    } catch (error) {
+      console.error('❌ Error fetching bank transactions:', error);
+      res.status(500).json({ message: 'Failed to fetch bank transactions' });
+    }
+  });
+
+  app.post('/api/bank-transactions', isAuthenticated, async (req, res) => {
+    try {
+      console.log('💳 Creating new bank transaction:', req.body);
+      
+      // Validate required fields
+      const { accountId, transactionId, transactionType, transactionMode, amount, description, transactionDate } = req.body;
+      if (!accountId || !transactionId || !transactionType || !transactionMode || !amount || !description || !transactionDate) {
+        return res.status(400).json({ 
+          message: 'Account ID, transaction ID, type, mode, amount, description, and date are required' 
+        });
+      }
+
+      // Get current account balance to calculate balance after transaction
+      const account = await storage.getBankAccountById(accountId);
+      if (!account) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+
+      const currentBalance = account.currentBalance || 0;
+      const transactionAmount = parseFloat(amount);
+      let balanceAfter;
+
+      if (transactionType === 'credit') {
+        balanceAfter = currentBalance + transactionAmount;
+      } else if (transactionType === 'debit') {
+        balanceAfter = currentBalance - transactionAmount;
+      } else {
+        return res.status(400).json({ message: 'Transaction type must be credit or debit' });
+      }
+
+      const transactionData = {
+        ...req.body,
+        amount: transactionAmount,
+        balanceAfter,
+        processedBy: req.user?.id || null
+      };
+
+      const transaction = await storage.createBankTransaction(transactionData);
+      console.log('✅ Bank transaction created successfully:', transaction.id);
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error('❌ Error creating bank transaction:', error);
+      res.status(500).json({ 
+        message: 'Failed to create bank transaction',
+        error: error.message 
+      });
+    }
+  });
+
+  // Bank Account Summary and Analytics
+  app.get('/api/bank-accounts/summary', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Generating bank accounts summary...');
+      const summary = await storage.getBankAccountSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('❌ Error generating bank account summary:', error);
+      res.status(500).json({ message: 'Failed to generate bank account summary' });
+    }
+  });
+
+  // Bank Account Categories
+  app.get('/api/bank-account-categories', isAuthenticated, async (req, res) => {
+    try {
+      console.log('🏷️ Fetching bank account categories...');
+      const categories = await storage.getBankAccountCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('❌ Error fetching bank account categories:', error);
+      res.status(500).json({ message: 'Failed to fetch bank account categories' });
+    }
+  });
+
   // Import and mount label printing routes
   const labelPrintingRoutes = await import('./label-printing-routes.js');
   app.use('/api', labelPrintingRoutes.default);

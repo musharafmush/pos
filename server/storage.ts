@@ -26,6 +26,10 @@ import {
   rawMaterials,
   manufacturingRecipes,
   recipeIngredients,
+  bankAccounts,
+  bankTransactions,
+  bankAccountCategories,
+  bankAccountCategoryLinks,
   User,
   Product,
   Category,
@@ -52,6 +56,12 @@ import {
   RawMaterial,
   ManufacturingRecipe,
   RecipeIngredient,
+  BankAccount,
+  BankTransaction,
+  BankAccountCategory,
+  BankAccountInsert,
+  BankTransactionInsert,
+  BankAccountCategoryInsert,
   InsertUser,
   InsertProduct,
   InsertCategory,
@@ -5165,6 +5175,335 @@ export const storage = {
     } catch (error) {
       console.error('Error deleting raw material:', error);
       return false;
+    }
+  },
+
+  // Bank Accounts Management
+  async getAllBankAccounts(): Promise<BankAccount[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const accounts = sqlite.prepare(`
+        SELECT ba.*, u.name as createdByName
+        FROM bank_accounts ba
+        LEFT JOIN users u ON ba.created_by = u.id
+        ORDER BY ba.is_default DESC, ba.created_at DESC
+      `).all();
+      
+      return accounts.map(account => ({
+        ...account,
+        isDefault: Boolean(account.is_default),
+        createdAt: new Date(account.created_at),
+        updatedAt: new Date(account.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching bank accounts:', error);
+      return [];
+    }
+  },
+
+  async getBankAccountById(id: number): Promise<BankAccount | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const account = sqlite.prepare(`
+        SELECT ba.*, u.name as createdByName
+        FROM bank_accounts ba
+        LEFT JOIN users u ON ba.created_by = u.id
+        WHERE ba.id = ?
+      `).get(id);
+      
+      if (!account) return null;
+      
+      return {
+        ...account,
+        isDefault: Boolean(account.is_default),
+        createdAt: new Date(account.created_at),
+        updatedAt: new Date(account.updated_at)
+      };
+    } catch (error) {
+      console.error('Error fetching bank account:', error);
+      return null;
+    }
+  },
+
+  async createBankAccount(accountData: BankAccountInsert): Promise<BankAccount> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      // If this account is set as default, unset all other defaults
+      if (accountData.isDefault) {
+        sqlite.prepare('UPDATE bank_accounts SET is_default = 0').run();
+      }
+      
+      const result = sqlite.prepare(`
+        INSERT INTO bank_accounts (
+          account_name, account_number, ifsc_code, bank_name, branch_name,
+          account_type, currency, current_balance, available_balance,
+          minimum_balance, interest_rate, status, is_default, opening_date,
+          description, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        accountData.accountName,
+        accountData.accountNumber,
+        accountData.ifscCode || null,
+        accountData.bankName,
+        accountData.branchName || null,
+        accountData.accountType,
+        accountData.currency || 'INR',
+        accountData.currentBalance || 0,
+        accountData.availableBalance || 0,
+        accountData.minimumBalance || 0,
+        accountData.interestRate || 0,
+        accountData.status || 'active',
+        accountData.isDefault ? 1 : 0,
+        accountData.openingDate || null,
+        accountData.description || null,
+        accountData.createdBy || null
+      );
+      
+      const account = sqlite.prepare('SELECT * FROM bank_accounts WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...account,
+        isDefault: Boolean(account.is_default),
+        createdAt: new Date(account.created_at),
+        updatedAt: new Date(account.updated_at)
+      };
+    } catch (error) {
+      console.error('Error creating bank account:', error);
+      throw error;
+    }
+  },
+
+  async updateBankAccount(id: number, accountData: Partial<BankAccountInsert>): Promise<BankAccount | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      // If this account is set as default, unset all other defaults
+      if (accountData.isDefault) {
+        sqlite.prepare('UPDATE bank_accounts SET is_default = 0').run();
+      }
+      
+      const fields = [];
+      const values = [];
+      
+      if (accountData.accountName !== undefined) {
+        fields.push('account_name = ?');
+        values.push(accountData.accountName);
+      }
+      if (accountData.bankName !== undefined) {
+        fields.push('bank_name = ?');
+        values.push(accountData.bankName);
+      }
+      if (accountData.accountType !== undefined) {
+        fields.push('account_type = ?');
+        values.push(accountData.accountType);
+      }
+      if (accountData.currentBalance !== undefined) {
+        fields.push('current_balance = ?');
+        values.push(accountData.currentBalance);
+      }
+      if (accountData.status !== undefined) {
+        fields.push('status = ?');
+        values.push(accountData.status);
+      }
+      if (accountData.isDefault !== undefined) {
+        fields.push('is_default = ?');
+        values.push(accountData.isDefault ? 1 : 0);
+      }
+      
+      fields.push('updated_at = datetime(\'now\')');
+      values.push(id);
+      
+      const result = sqlite.prepare(`
+        UPDATE bank_accounts SET ${fields.join(', ')} WHERE id = ?
+      `).run(...values);
+      
+      if (result.changes === 0) return null;
+      
+      return await this.getBankAccountById(id);
+    } catch (error) {
+      console.error('Error updating bank account:', error);
+      return null;
+    }
+  },
+
+  async deleteBankAccount(id: number): Promise<boolean> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const result = sqlite.prepare('DELETE FROM bank_accounts WHERE id = ?').run(id);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting bank account:', error);
+      return false;
+    }
+  },
+
+  // Bank Transactions Management
+  async getAllBankTransactions(): Promise<BankTransaction[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const transactions = sqlite.prepare(`
+        SELECT bt.*, ba.account_name, ba.bank_name, u.name as processedByName
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.account_id = ba.id
+        LEFT JOIN users u ON bt.processed_by = u.id
+        ORDER BY bt.transaction_date DESC, bt.created_at DESC
+      `).all();
+      
+      return transactions.map(txn => ({
+        ...txn,
+        isReconciled: Boolean(txn.is_reconciled),
+        createdAt: new Date(txn.created_at),
+        transactionDate: new Date(txn.transaction_date),
+        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null
+      }));
+    } catch (error) {
+      console.error('Error fetching bank transactions:', error);
+      return [];
+    }
+  },
+
+  async getBankTransactionsByAccountId(accountId: number, limit: number = 50): Promise<BankTransaction[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const transactions = sqlite.prepare(`
+        SELECT bt.*, ba.account_name, ba.bank_name, u.name as processedByName
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.account_id = ba.id
+        LEFT JOIN users u ON bt.processed_by = u.id
+        WHERE bt.account_id = ?
+        ORDER BY bt.transaction_date DESC, bt.created_at DESC
+        LIMIT ?
+      `).all(accountId, limit);
+      
+      return transactions.map(txn => ({
+        ...txn,
+        isReconciled: Boolean(txn.is_reconciled),
+        createdAt: new Date(txn.created_at),
+        transactionDate: new Date(txn.transaction_date),
+        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null
+      }));
+    } catch (error) {
+      console.error('Error fetching bank transactions:', error);
+      return [];
+    }
+  },
+
+  async createBankTransaction(transactionData: BankTransactionInsert): Promise<BankTransaction> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO bank_transactions (
+          account_id, transaction_id, transaction_type, transaction_mode, amount,
+          balance_after, description, reference_number, beneficiary_name,
+          beneficiary_account, transfer_account_id, category, tags,
+          is_reconciled, receipt_path, notes, processed_by, transaction_date, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `).run(
+        transactionData.accountId,
+        transactionData.transactionId,
+        transactionData.transactionType,
+        transactionData.transactionMode,
+        transactionData.amount,
+        transactionData.balanceAfter,
+        transactionData.description,
+        transactionData.referenceNumber || null,
+        transactionData.beneficiaryName || null,
+        transactionData.beneficiaryAccount || null,
+        transactionData.transferAccountId || null,
+        transactionData.category || null,
+        transactionData.tags || null,
+        transactionData.isReconciled ? 1 : 0,
+        transactionData.receiptPath || null,
+        transactionData.notes || null,
+        transactionData.processedBy || null,
+        transactionData.transactionDate
+      );
+      
+      // Update account balance
+      sqlite.prepare(`
+        UPDATE bank_accounts 
+        SET current_balance = ?, available_balance = ?, last_transaction_date = datetime('now'), updated_at = datetime('now')
+        WHERE id = ?
+      `).run(transactionData.balanceAfter, transactionData.balanceAfter, transactionData.accountId);
+      
+      const transaction = sqlite.prepare('SELECT * FROM bank_transactions WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...transaction,
+        isReconciled: Boolean(transaction.is_reconciled),
+        createdAt: new Date(transaction.created_at),
+        transactionDate: new Date(transaction.transaction_date),
+        reconciledAt: transaction.reconciled_at ? new Date(transaction.reconciled_at) : null
+      };
+    } catch (error) {
+      console.error('Error creating bank transaction:', error);
+      throw error;
+    }
+  },
+
+  async getBankAccountSummary() {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const accounts = sqlite.prepare(`
+        SELECT ba.*, 
+               COUNT(bt.id) as transaction_count,
+               COALESCE(SUM(CASE WHEN bt.transaction_type = 'credit' THEN bt.amount ELSE 0 END), 0) as total_credits,
+               COALESCE(SUM(CASE WHEN bt.transaction_type = 'debit' THEN bt.amount ELSE 0 END), 0) as total_debits
+        FROM bank_accounts ba
+        LEFT JOIN bank_transactions bt ON ba.id = bt.account_id
+        GROUP BY ba.id
+        ORDER BY ba.is_default DESC, ba.created_at DESC
+      `).all();
+      
+      const totalBalance = accounts.reduce((sum, account) => sum + (account.current_balance || 0), 0);
+      const activeAccounts = accounts.filter(account => account.status === 'active').length;
+      
+      return {
+        totalAccounts: accounts.length,
+        activeAccounts,
+        totalBalance,
+        accounts: accounts.map(account => ({
+          id: account.id,
+          name: account.account_name,
+          balance: account.current_balance,
+          bank: account.bank_name,
+          type: account.account_type,
+          status: account.status,
+          transactionCount: account.transaction_count,
+          totalCredits: account.total_credits,
+          totalDebits: account.total_debits,
+          isDefault: Boolean(account.is_default)
+        }))
+      };
+    } catch (error) {
+      console.error('Error generating bank account summary:', error);
+      return {
+        totalAccounts: 0,
+        activeAccounts: 0,
+        totalBalance: 0,
+        accounts: []
+      };
+    }
+  },
+
+  async getBankAccountCategories(): Promise<BankAccountCategory[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const categories = sqlite.prepare(`
+        SELECT * FROM bank_account_categories 
+        WHERE is_active = 1 
+        ORDER BY name
+      `).all();
+      
+      return categories.map(category => ({
+        ...category,
+        isActive: Boolean(category.is_active),
+        createdAt: new Date(category.created_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching bank account categories:', error);
+      return [];
     }
   }
 };

@@ -722,6 +722,126 @@ export const selectManufacturingRecipeSchema = createSelectSchema(manufacturingR
 export const insertRecipeIngredientSchema = createInsertSchema(recipeIngredients).omit({ id: true, createdAt: true });
 export const selectRecipeIngredientSchema = createSelectSchema(recipeIngredients);
 
+// Bank Accounts table for comprehensive banking system
+export const bankAccounts = sqliteTable('bank_accounts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountName: text('account_name').notNull(),
+  accountNumber: text('account_number').notNull().unique(),
+  ifscCode: text('ifsc_code'),
+  bankName: text('bank_name').notNull(),
+  branchName: text('branch_name'),
+  accountType: text('account_type').notNull(), // current, savings, fixed_deposit, loan
+  currency: text('currency').notNull().default('INR'),
+  currentBalance: real('current_balance').notNull().default(0),
+  availableBalance: real('available_balance').notNull().default(0),
+  minimumBalance: real('minimum_balance').default(0),
+  interestRate: real('interest_rate').default(0),
+  status: text('status').notNull().default('active'), // active, inactive, frozen, closed
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  openingDate: text('opening_date'),
+  lastTransactionDate: text('last_transaction_date'),
+  description: text('description'),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Bank Transactions table for detailed transaction tracking
+export const bankTransactions = sqliteTable('bank_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').references(() => bankAccounts.id).notNull(),
+  transactionId: text('transaction_id').notNull().unique(), // Bank reference number
+  transactionType: text('transaction_type').notNull(), // debit, credit, transfer, fee, interest
+  transactionMode: text('transaction_mode').notNull(), // online, atm, cheque, upi, neft, rtgs, imps
+  amount: real('amount').notNull(),
+  balanceAfter: real('balance_after').notNull(),
+  description: text('description').notNull(),
+  referenceNumber: text('reference_number'),
+  beneficiaryName: text('beneficiary_name'),
+  beneficiaryAccount: text('beneficiary_account'),
+  transferAccountId: integer('transfer_account_id').references(() => bankAccounts.id), // For internal transfers
+  category: text('category'), // business, personal, tax, salary, etc.
+  tags: text('tags'), // JSON array of tags
+  isReconciled: integer('is_reconciled', { mode: 'boolean' }).default(false),
+  reconciledAt: text('reconciled_at'),
+  receiptPath: text('receipt_path'), // Path to uploaded receipt/document
+  notes: text('notes'),
+  processedBy: integer('processed_by').references(() => users.id),
+  transactionDate: text('transaction_date').notNull(),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Bank Account Categories for better organization
+export const bankAccountCategories = sqliteTable('bank_account_categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  color: text('color').default('#3B82F6'), // Hex color for UI
+  icon: text('icon').default('Banknote'), // Lucide icon name
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Link bank accounts to categories
+export const bankAccountCategoryLinks = sqliteTable('bank_account_category_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  accountId: integer('account_id').references(() => bankAccounts.id).notNull(),
+  categoryId: integer('category_id').references(() => bankAccountCategories.id).notNull(),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull()
+});
+
+// Bank Account Relations
+export const bankAccountsRelations = relations(bankAccounts, ({ many, one }) => ({
+  transactions: many(bankTransactions),
+  categoryLinks: many(bankAccountCategoryLinks),
+  createdByUser: one(users, {
+    fields: [bankAccounts.createdBy],
+    references: [users.id]
+  })
+}));
+
+export const bankTransactionsRelations = relations(bankTransactions, ({ one }) => ({
+  account: one(bankAccounts, {
+    fields: [bankTransactions.accountId],
+    references: [bankAccounts.id]
+  }),
+  transferAccount: one(bankAccounts, {
+    fields: [bankTransactions.transferAccountId],
+    references: [bankAccounts.id]
+  }),
+  processedByUser: one(users, {
+    fields: [bankTransactions.processedBy],
+    references: [users.id]
+  })
+}));
+
+export const bankAccountCategoryLinksRelations = relations(bankAccountCategoryLinks, ({ one }) => ({
+  account: one(bankAccounts, {
+    fields: [bankAccountCategoryLinks.accountId],
+    references: [bankAccounts.id]
+  }),
+  category: one(bankAccountCategories, {
+    fields: [bankAccountCategoryLinks.categoryId],
+    references: [bankAccountCategories.id]
+  })
+}));
+
+// Bank Account Schemas for validation
+export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectBankAccountSchema = createSelectSchema(bankAccounts);
+export const insertBankTransactionSchema = createInsertSchema(bankTransactions).omit({ id: true, createdAt: true });
+export const selectBankTransactionSchema = createSelectSchema(bankTransactions);
+export const insertBankAccountCategorySchema = createInsertSchema(bankAccountCategories).omit({ id: true, createdAt: true });
+export const selectBankAccountCategorySchema = createSelectSchema(bankAccountCategories);
+
+// TypeScript types
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type BankAccountInsert = typeof bankAccounts.$inferInsert;
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type BankTransactionInsert = typeof bankTransactions.$inferInsert;
+export type BankAccountCategory = typeof bankAccountCategories.$inferSelect;
+export type BankAccountCategoryInsert = typeof bankAccountCategories.$inferInsert;
+
 // Manufacturing table types
 export type ManufacturingOrder = typeof manufacturingOrders.$inferSelect;
 export type ManufacturingOrderInsert = z.infer<typeof insertManufacturingOrderSchema>;
