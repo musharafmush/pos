@@ -172,7 +172,8 @@ export default function AccountsDashboard() {
     }).format(amount);
   };
 
-  const getTransactionIcon = (type: string) => {
+  const getTransactionIcon = (type: string | undefined) => {
+    if (!type) return <CreditCard className="h-4 w-4 text-gray-500" />;
     return type === 'credit' ? (
       <TrendingUp className="h-4 w-4 text-green-600" />
     ) : (
@@ -634,13 +635,13 @@ export default function AccountsDashboard() {
                               variant={transaction.transactionType === 'credit' ? 'default' : 'secondary'}
                               className="text-xs"
                             >
-                              {transaction.transactionType.toUpperCase()}
+                              {transaction.transactionType?.toUpperCase() || 'UNKNOWN'}
                             </Badge>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {transaction.transactionMode.replace('_', ' ').toUpperCase()}
+                            {transaction.transactionMode?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
@@ -653,11 +654,11 @@ export default function AccountsDashboard() {
                               : 'text-red-600 font-semibold'
                           }>
                             {transaction.transactionType === 'credit' ? '+' : '-'}
-                            {formatCurrency(transaction.amount)}
+                            {formatCurrency(transaction.amount || 0)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {formatCurrency(transaction.balanceAfter)}
+                          {formatCurrency(transaction.balanceAfter || 0)}
                         </TableCell>
                       </TableRow>
                     ))}
