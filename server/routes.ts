@@ -8189,17 +8189,22 @@ app.post("/api/customers", async (req, res) => {
       console.log(`🏦 Deleting bank account ${id}...`);
       const success = await storage.deleteBankAccount(id);
       
-      if (!success) {
-        return res.status(404).json({ message: 'Bank account not found' });
-      }
-
       console.log('✅ Bank account deleted successfully');
       res.json({ success: true, message: 'Bank account deleted successfully' });
     } catch (error) {
       console.error('❌ Error deleting bank account:', error);
+      
+      // Handle specific error cases
+      if (error.message === 'Bank account not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      if (error.message.includes('Cannot delete account with') && error.message.includes('existing transactions')) {
+        return res.status(400).json({ message: error.message });
+      }
+      
       res.status(500).json({ 
-        message: 'Failed to delete bank account',
-        error: error.message 
+        message: error.message || 'Failed to delete bank account'
       });
     }
   });

@@ -5362,11 +5362,32 @@ export const storage = {
   async deleteBankAccount(id: number): Promise<boolean> {
     try {
       const { sqlite } = await import('../db/index.js');
+      
+      // Check if account exists
+      const account = sqlite.prepare('SELECT id FROM bank_accounts WHERE id = ?').get(id);
+      if (!account) {
+        throw new Error('Bank account not found');
+      }
+      
+      // Check if account has transactions
+      const transactionCount = sqlite.prepare('SELECT COUNT(*) as count FROM bank_transactions WHERE account_id = ?').get(id);
+      if (transactionCount.count > 0) {
+        throw new Error(`Cannot delete account with ${transactionCount.count} existing transactions. Please delete all transactions first or contact support.`);
+      }
+      
+      // Check if account has category links
+      const categoryLinks = sqlite.prepare('SELECT COUNT(*) as count FROM bank_account_category_links WHERE account_id = ?').get(id);
+      if (categoryLinks.count > 0) {
+        // Delete category links first
+        sqlite.prepare('DELETE FROM bank_account_category_links WHERE account_id = ?').run(id);
+      }
+      
+      // Now delete the account
       const result = sqlite.prepare('DELETE FROM bank_accounts WHERE id = ?').run(id);
       return result.changes > 0;
     } catch (error) {
       console.error('Error deleting bank account:', error);
-      return false;
+      throw error; // Re-throw to let the API handle the error message
     }
   },
 
