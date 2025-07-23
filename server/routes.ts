@@ -8092,6 +8092,18 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Bank Account Summary and Analytics (MUST come before :id route)
+  app.get('/api/bank-accounts/summary', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Generating bank accounts summary...');
+      const summary = await storage.getBankAccountSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('❌ Error generating bank account summary:', error);
+      res.status(500).json({ message: 'Failed to generate bank account summary' });
+    }
+  });
+
   app.get('/api/bank-accounts/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -8264,17 +8276,7 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
-  // Bank Account Summary and Analytics
-  app.get('/api/bank-accounts/summary', isAuthenticated, async (req, res) => {
-    try {
-      console.log('📊 Generating bank accounts summary...');
-      const summary = await storage.getBankAccountSummary();
-      res.json(summary);
-    } catch (error) {
-      console.error('❌ Error generating bank account summary:', error);
-      res.status(500).json({ message: 'Failed to generate bank account summary' });
-    }
-  });
+
 
   // Bank Account Categories
   app.get('/api/bank-account-categories', isAuthenticated, async (req, res) => {

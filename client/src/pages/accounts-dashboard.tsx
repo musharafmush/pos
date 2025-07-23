@@ -1,1098 +1,705 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  PieChart,
-  Pie,
-  ResponsiveContainer,
-  Cell,
-  Tooltip,
-  Legend
-} from "recharts";
-import {
-  TrendingUpIcon,
-  TrendingDownIcon,
-  PlusIcon,
-  RefreshCw,
-  Database,
-  Wifi,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  DollarSignIcon,
-  CreditCardIcon,
-  BanknoteIcon,
-  WalletIcon,
-  FileTextIcon,
-  DownloadIcon,
-  CalendarIcon,
-  FilterIcon,
-  Settings,
-  Eye,
-  ChevronUp,
-  ChevronDown,
-  MinusIcon
-} from "lucide-react";
-import { format } from "date-fns";
-import { useFormatCurrency } from "@/lib/currency";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-
-interface Account {
-  id: string;
-  name: string;
-  type: "cash" | "bank" | "asset" | "liability" | "revenue";
-  balance: number;
-  status: "active" | "inactive";
-  registerId?: string;
-}
-
-interface Transaction {
-  id: string;
-  date: string;
-  type: "income" | "expense";
-  category: string;
-  account: string;
-  amount: number;
-  description: string;
-  reference: string;
-  paymentMethod?: string;
-}
+import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import type { 
+  BankAccount, 
+  BankTransaction, 
+  BankAccountInsert, 
+  BankTransactionInsert 
+} from "@/shared/sqlite-schema";
 
 export default function AccountsDashboard() {
-  const [selectedTab, setSelectedTab] = useState("accounts");
-  const [showNewAccountDialog, setShowNewAccountDialog] = useState(false);
-  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
-  const [showDepositDialog, setShowDepositDialog] = useState(false);
-  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
-  const [newAccount, setNewAccount] = useState({
-    name: "",
-    type: "bank",
-    balance: "0",
-    accountNumber: ""
-  });
-
-  const [newTransaction, setNewTransaction] = useState({
-    type: "income",
-    category: "",
-    account: "",
-    amount: "",
-    description: "",
-    reference: ""
-  });
-
-  const [depositData, setDepositData] = useState({
-    amount: "",
-    paymentMethod: "cash",
-    reason: "",
-    notes: ""
-  });
-
-  const [withdrawalData, setWithdrawalData] = useState({
-    amount: "",
-    reason: "",
-    notes: ""
-  });
-
-  const formatCurrency = useFormatCurrency();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isLoading: authLoading } = useAuth();
-
-  // Fetch real-time data from POS system
-  const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useQuery({
-    queryKey: ['/api/sales'],
-    queryFn: async () => {
-      const response = await fetch('/api/sales');
-      if (!response.ok) throw new Error('Failed to fetch sales');
-      return response.json();
-    },
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true
+  
+  const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [newAccount, setNewAccount] = useState<BankAccountInsert>({
+    accountName: "",
+    accountNumber: "",
+    bankName: "",
+    accountType: "savings",
+    ifscCode: "",
+    branchName: "",
+    currentBalance: 0,
+    description: "",
+    isDefault: false
+  });
+  const [newTransaction, setNewTransaction] = useState<BankTransactionInsert>({
+    accountId: 0,
+    transactionId: "",
+    transactionType: "credit",
+    transactionMode: "cash",
+    amount: 0,
+    description: "",
+    transactionDate: new Date().toISOString().split('T')[0]
   });
 
-  const { data: purchasesData, isLoading: purchasesLoading, refetch: refetchPurchases } = useQuery({
-    queryKey: ['/api/purchases'],
-    queryFn: async () => {
-      const response = await fetch('/api/purchases');
-      if (!response.ok) throw new Error('Failed to fetch purchases');
-      return response.json();
-    },
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true
+  // Fetch bank accounts
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ['/api/bank-accounts'],
+    staleTime: 30000
   });
 
-  const { data: cashRegisterData, isLoading: cashRegisterLoading, refetch: refetchCashRegister } = useQuery({
-    queryKey: ['/api/cash-register/active'],
-    queryFn: async () => {
-      const response = await fetch('/api/cash-register/active');
-      if (!response.ok) throw new Error('Failed to fetch cash register');
-      return response.json();
-    },
-    refetchInterval: 3000,
-    refetchOnWindowFocus: true
+  // Fetch bank account summary
+  const { data: summary } = useQuery({
+    queryKey: ['/api/bank-accounts/summary'],
+    staleTime: 30000
   });
 
-  // Calculate financial metrics
-  const calculateMetrics = () => {
-    const totalSalesRevenue = salesData?.reduce((sum: number, sale: any) => {
-      return sum + parseFloat(sale.total || 0);
-    }, 0) || 0;
+  // Fetch bank transactions
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['/api/bank-transactions'],
+    staleTime: 30000
+  });
 
-    const totalPurchasesCost = purchasesData?.reduce((sum: number, purchase: any) => {
-      return sum + parseFloat(purchase.total || 0);
-    }, 0) || 0;
+  // Fetch account categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/api/bank-account-categories'],
+    staleTime: 60000
+  });
 
-    const todaysSales = salesData?.filter((sale: any) => {
-      const saleDate = new Date(sale.created_at || sale.createdAt);
-      const today = new Date();
-      return saleDate.toDateString() === today.toDateString();
-    }).reduce((sum: number, sale: any) => sum + parseFloat(sale.total || 0), 0) || 0;
-
-    return {
-      totalAssets: totalSalesRevenue,
-      totalLiabilities: 0,
-      netWorth: totalSalesRevenue - totalPurchasesCost,
-      todaysPnL: todaysSales,
-      totalRevenue: totalSalesRevenue,
-      totalExpenses: totalPurchasesCost
-    };
-  };
-
-  const metrics = calculateMetrics();
-
-  // Generate accounts from real data
-  const generateAccounts = (): Account[] => {
-    const accounts: Account[] = [];
-
-    // Cash Register Account
-    if (cashRegisterData) {
-      accounts.push({
-        id: "cash-register",
-        name: `Cash Register (${cashRegisterData.registerId || 'REG1752219071011'})`,
-        type: "cash",
-        balance: parseFloat(cashRegisterData.balance || 0),
-        status: "active",
-        registerId: cashRegisterData.registerId
+  // Create bank account mutation
+  const createAccountMutation = useMutation({
+    mutationFn: (data: BankAccountInsert) => 
+      apiRequest('/api/bank-accounts', { method: 'POST', body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      setIsAddAccountOpen(false);
+      setNewAccount({
+        accountName: "",
+        accountNumber: "",
+        bankName: "",
+        accountType: "savings",
+        ifscCode: "",
+        branchName: "",
+        currentBalance: 0,
+        description: "",
+        isDefault: false
+      });
+      toast({
+        title: "Success",
+        description: "Bank account created successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create bank account",
+        variant: "destructive"
       });
     }
+  });
 
-    // Business Revenue Account
-    accounts.push({
-      id: "business-revenue",
-      name: "Business Revenue Account",
-      type: "bank",
-      balance: metrics.totalRevenue,
-      status: "active"
-    });
-
-    // Inventory Investment Account
-    accounts.push({
-      id: "inventory-investment",
-      name: "Inventory Investment",
-      type: "asset",
-      balance: metrics.totalExpenses,
-      status: "active"
-    });
-
-    // Net Profit/Loss Account
-    accounts.push({
-      id: "net-profit",
-      name: "Net Profit/Loss",
-      type: "asset",
-      balance: metrics.netWorth,
-      status: "active"
-    });
-
-    return accounts;
-  };
-
-  const accounts = generateAccounts();
-
-  // Generate transactions from sales and purchases
-  const generateTransactions = (): Transaction[] => {
-    const transactions: Transaction[] = [];
-
-    // Sales transactions
-    salesData?.forEach((sale: any) => {
-      transactions.push({
-        id: `sale-${sale.id}`,
-        date: sale.created_at || sale.createdAt || new Date().toISOString(),
-        type: "income",
-        category: "Sales",
-        account: sale.paymentMethod === 'cash' ? "Cash Register" : "Business Revenue Account",
-        amount: parseFloat(sale.total || 0),
-        description: `Sale #${sale.orderNumber || sale.id} - ${sale.customerName || 'Walk-in Customer'}`,
-        reference: sale.orderNumber || `SAL-${sale.id}`,
-        paymentMethod: sale.paymentMethod || 'cash'
+  // Create bank transaction mutation
+  const createTransactionMutation = useMutation({
+    mutationFn: (data: BankTransactionInsert) => 
+      apiRequest('/api/bank-transactions', { method: 'POST', body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      setIsAddTransactionOpen(false);
+      setNewTransaction({
+        accountId: 0,
+        transactionId: "",
+        transactionType: "credit",
+        transactionMode: "cash",
+        amount: 0,
+        description: "",
+        transactionDate: new Date().toISOString().split('T')[0]
       });
-    });
-
-    // Purchase transactions
-    purchasesData?.forEach((purchase: any) => {
-      transactions.push({
-        id: `purchase-${purchase.id}`,
-        date: purchase.created_at || purchase.createdAt || new Date().toISOString(),
-        type: "expense",
-        category: "Inventory",
-        account: "Business Revenue Account",
-        amount: parseFloat(purchase.total || 0),
-        description: `Purchase #${purchase.orderNumber || purchase.id}`,
-        reference: purchase.orderNumber || `PUR-${purchase.id}`
+      toast({
+        title: "Success",
+        description: "Transaction recorded successfully"
       });
-    });
-
-    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
-
-  const transactions = generateTransactions();
-
-  // Chart data for account distribution
-  const chartData = accounts.map(acc => ({
-    name: acc.name,
-    value: Math.abs(acc.balance),
-    color: acc.type === 'cash' ? '#10b981' : acc.type === 'bank' ? '#3b82f6' : '#f59e0b'
-  }));
-
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record transaction",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleCreateAccount = () => {
-    console.log("Creating account:", newAccount);
-    setShowNewAccountDialog(false);
-    setNewAccount({ name: "", type: "bank", balance: "0", accountNumber: "" });
-  };
-
-  const handleAddTransaction = () => {
-    setShowTransactionDialog(true);
+    if (!newAccount.accountName || !newAccount.accountNumber || !newAccount.bankName) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    createAccountMutation.mutate(newAccount);
   };
 
   const handleCreateTransaction = () => {
-    console.log("Creating transaction:", newTransaction);
-    setShowTransactionDialog(false);
-    setNewTransaction({
-      type: "income",
-      category: "",
-      account: "",
-      amount: "",
-      description: "",
-      reference: ""
+    if (!newTransaction.accountId || !newTransaction.transactionId || !newTransaction.amount || !newTransaction.description) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    createTransactionMutation.mutate({
+      ...newTransaction,
+      transactionId: `TXN${Date.now()}`
     });
   };
 
-  const refreshAllData = () => {
-    refetchSales();
-    refetchPurchases();
-    refetchCashRegister();
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    }).format(amount);
   };
 
-  // Deposit mutation
-  const depositMutation = useMutation({
-    mutationFn: async (data: typeof depositData) => {
-      if (!user) {
-        throw new Error("Please log in to perform deposit operations");
-      }
-
-      if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found. Please open a cash register first.");
-      }
-
-      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          type: 'deposit',
-          amount: parseFloat(data.amount),
-          paymentMethod: data.paymentMethod,
-          reason: data.reason || 'Manual deposit',
-          notes: data.notes
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please log in again.');
-        }
-        throw new Error(errorData.message || 'Failed to process deposit');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Deposit Successful",
-        description: `Amount ${formatCurrency(parseFloat(depositData.amount))} has been deposited to the cash register.`,
-      });
-      setShowDepositDialog(false);
-      setDepositData({ amount: "", paymentMethod: "cash", reason: "", notes: "" });
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
-      refreshAllData();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Deposit Failed",
-        description: error.message || "Failed to process deposit",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Withdrawal mutation
-  const withdrawalMutation = useMutation({
-    mutationFn: async (data: typeof withdrawalData) => {
-      if (!user) {
-        throw new Error("Please log in to perform withdrawal operations");
-      }
-
-      if (!cashRegisterData?.id) {
-        throw new Error("No active cash register found. Please open a cash register first.");
-      }
-
-      const availableBalance = parseFloat(cashRegisterData.currentCash || "0");
-      const withdrawalAmount = parseFloat(data.amount);
-      
-      if (withdrawalAmount > availableBalance) {
-        throw new Error(`Insufficient funds. Available: ${formatCurrency(availableBalance)}`);
-      }
-
-      const response = await fetch(`/api/cash-register/${cashRegisterData.id}/transaction`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          type: 'withdrawal',
-          amount: withdrawalAmount,
-          paymentMethod: 'cash',
-          reason: data.reason || 'Manual withdrawal',
-          notes: data.notes
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          throw new Error('Authentication required. Please log in again.');
-        }
-        throw new Error(errorData.message || 'Failed to process withdrawal');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Withdrawal Successful",
-        description: `Amount ${formatCurrency(parseFloat(withdrawalData.amount))} has been withdrawn from the cash register.`,
-      });
-      setShowWithdrawDialog(false);
-      setWithdrawalData({ amount: "", reason: "", notes: "" });
-      queryClient.invalidateQueries({ queryKey: ['/api/cash-register/active'] });
-      refreshAllData();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Withdrawal Failed",
-        description: error.message || "Failed to process withdrawal",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleDeposit = () => {
-    if (!depositData.amount || parseFloat(depositData.amount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid deposit amount",
-        variant: "destructive"
-      });
-      return;
-    }
-    depositMutation.mutate(depositData);
+  const getTransactionIcon = (type: string) => {
+    return type === 'credit' ? (
+      <TrendingUp className="h-4 w-4 text-green-600" />
+    ) : (
+      <TrendingDown className="h-4 w-4 text-red-600" />
+    );
   };
 
-  const handleWithdrawal = () => {
-    if (!withdrawalData.amount || parseFloat(withdrawalData.amount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid withdrawal amount",
-        variant: "destructive"
-      });
-      return;
+  const getAccountTypeIcon = (type: string) => {
+    switch (type) {
+      case 'current': return <Building2 className="h-4 w-4" />;
+      case 'savings': return <Wallet className="h-4 w-4" />;
+      default: return <CreditCard className="h-4 w-4" />;
     }
-    withdrawalMutation.mutate(withdrawalData);
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Accounts Dashboard</h1>
-            <p className="text-gray-600 mt-1">Real-time financial tracking with POS Enhanced integration</p>
-            
-            {/* Status Indicators */}
-            <div className="flex items-center gap-4 mt-3">
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                user ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-500' : 'bg-red-500'}`} />
-                {user ? `Logged in as ${user.name}` : (
-                  <>
-                    Not authenticated - 
-                    <button 
-                      onClick={() => window.location.href = '/auth'}
-                      className="underline hover:no-underline ml-1"
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Bank Accounts Dashboard</h1>
+          <p className="text-muted-foreground">
+            Manage your POS bank accounts, track settlements, and monitor financial transactions
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                Record Payment
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Record Bank Transaction</DialogTitle>
+                <DialogDescription>
+                  Record a payment from POS to bank or vice versa
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="account">Bank Account</Label>
+                  <Select 
+                    value={newTransaction.accountId.toString()} 
+                    onValueChange={(value) => setNewTransaction(prev => ({ ...prev, accountId: parseInt(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account: BankAccount) => (
+                        <SelectItem key={account.id} value={account.id.toString()}>
+                          {account.accountName} - {account.bankName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Transaction Type</Label>
+                    <Select 
+                      value={newTransaction.transactionType} 
+                      onValueChange={(value) => setNewTransaction(prev => ({ ...prev, transactionType: value as 'credit' | 'debit' }))}
                     >
-                      Please log in
-                    </button>
-                  </>
-                )}
-              </div>
-              
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                cashRegisterData?.id ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${cashRegisterData?.id ? 'bg-blue-500' : 'bg-yellow-500'}`} />
-                {cashRegisterData?.id 
-                  ? `Cash Register Active: ${formatCurrency(parseFloat(cashRegisterData.currentCash || "0"))}` 
-                  : 'No active cash register'
-                }
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <Wifi className="w-3 h-3 mr-1" />
-              Live Data - Updates every 5s
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshAllData}
-              disabled={salesLoading || purchasesLoading || cashRegisterLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${salesLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open('/pos-enhanced', '_blank')}
-            >
-              <Database className="h-4 w-4 mr-2" />
-              POS System
-            </Button>
-            <Button onClick={() => setShowNewAccountDialog(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              New Account
-            </Button>
-            <Button onClick={handleAddTransaction}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Transaction
-            </Button>
-            <div className="relative">
-              <Button 
-                onClick={() => setShowDepositDialog(true)}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={!user || !cashRegisterData?.id || authLoading || cashRegisterLoading}
-                title={
-                  !user ? "Please log in to perform deposits" :
-                  !cashRegisterData?.id ? "No active cash register found" :
-                  "Make a deposit to cash register"
-                }
-              >
-                <ArrowUpIcon className="h-4 w-4 mr-2" />
-                Amount Deposit
-              </Button>
-              {(!user || !cashRegisterData?.id) && (
-                <div className="absolute -top-2 -right-2">
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="credit">Credit (Money In)</SelectItem>
+                        <SelectItem value="debit">Debit (Money Out)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Payment Mode</Label>
+                    <Select 
+                      value={newTransaction.transactionMode} 
+                      onValueChange={(value) => setNewTransaction(prev => ({ ...prev, transactionMode: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="card">Card</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="cheque">Cheque</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="amount">Amount (₹)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={newTransaction.amount}
+                    onChange={(e) => setNewTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    placeholder="POS settlement, cash deposit, etc."
+                    value={newTransaction.description}
+                    onChange={(e) => setNewTransaction(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="date">Transaction Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newTransaction.transactionDate}
+                    onChange={(e) => setNewTransaction(prev => ({ ...prev, transactionDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddTransactionOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateTransaction}
+                  disabled={createTransactionMutation.isPending}
+                >
+                  {createTransactionMutation.isPending ? "Recording..." : "Record Transaction"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddAccountOpen} onOpenChange={setIsAddAccountOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Bank Account
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add New Bank Account</DialogTitle>
+                <DialogDescription>
+                  Add a bank account to track POS settlements and payments
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="accountName">Account Name *</Label>
+                  <Input
+                    id="accountName"
+                    placeholder="e.g., POS Business Account"
+                    value={newAccount.accountName}
+                    onChange={(e) => setNewAccount(prev => ({ ...prev, accountName: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="accountNumber">Account Number *</Label>
+                    <Input
+                      id="accountNumber"
+                      placeholder="123456789012"
+                      value={newAccount.accountNumber}
+                      onChange={(e) => setNewAccount(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Account Type</Label>
+                    <Select 
+                      value={newAccount.accountType} 
+                      onValueChange={(value) => setNewAccount(prev => ({ ...prev, accountType: value as 'savings' | 'current' | 'business' }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="savings">Savings</SelectItem>
+                        <SelectItem value="current">Current</SelectItem>
+                        <SelectItem value="business">Business</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="bankName">Bank Name *</Label>
+                  <Input
+                    id="bankName"
+                    placeholder="e.g., State Bank of India"
+                    value={newAccount.bankName}
+                    onChange={(e) => setNewAccount(prev => ({ ...prev, bankName: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="ifscCode">IFSC Code</Label>
+                    <Input
+                      id="ifscCode"
+                      placeholder="SBIN0001234"
+                      value={newAccount.ifscCode || ""}
+                      onChange={(e) => setNewAccount(prev => ({ ...prev, ifscCode: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="branchName">Branch Name</Label>
+                    <Input
+                      id="branchName"
+                      placeholder="Main Branch"
+                      value={newAccount.branchName || ""}
+                      onChange={(e) => setNewAccount(prev => ({ ...prev, branchName: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="currentBalance">Opening Balance (₹)</Label>
+                  <Input
+                    id="currentBalance"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={newAccount.currentBalance}
+                    onChange={(e) => setNewAccount(prev => ({ ...prev, currentBalance: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    placeholder="Optional description"
+                    value={newAccount.description || ""}
+                    onChange={(e) => setNewAccount(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isDefault"
+                    checked={newAccount.isDefault}
+                    onChange={(e) => setNewAccount(prev => ({ ...prev, isDefault: e.target.checked }))}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="isDefault">Set as default account</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddAccountOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateAccount}
+                  disabled={createAccountMutation.isPending}
+                >
+                  {createAccountMutation.isPending ? "Creating..." : "Create Account"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary?.totalAccounts || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {summary?.activeAccounts || 0} active
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(summary?.totalBalance || 0)}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all accounts
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Transactions</CardTitle>
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {transactions.filter((t: BankTransaction) => 
+                new Date(t.transactionDate).toDateString() === new Date().toDateString()
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Transactions today
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Flow Today</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                transactions
+                  .filter((t: BankTransaction) => 
+                    new Date(t.transactionDate).toDateString() === new Date().toDateString()
+                  )
+                  .reduce((sum: number, t: BankTransaction) => 
+                    sum + (t.transactionType === 'credit' ? t.amount : -t.amount), 0
+                  )
               )}
             </div>
-            <div className="relative">
-              <Button 
-                onClick={() => setShowWithdrawDialog(true)}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={!user || !cashRegisterData?.id || authLoading || cashRegisterLoading}
-                title={
-                  !user ? "Please log in to perform withdrawals" :
-                  !cashRegisterData?.id ? "No active cash register found" :
-                  "Make a withdrawal from cash register"
-                }
-              >
-                <ArrowDownIcon className="h-4 w-4 mr-2" />
-                Amount Withdrawal
-              </Button>
-              {(!user || !cashRegisterData?.id) && (
-                <div className="absolute -top-2 -right-2">
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+            <p className="text-xs text-muted-foreground">
+              Credit - Debit
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Main Content */}
+      <Tabs defaultValue="accounts" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="accounts">Bank Accounts</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="settlements">Settlements</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="accounts" className="space-y-4">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Assets</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.totalAssets)}</p>
+            <CardHeader>
+              <CardTitle>Bank Accounts</CardTitle>
+              <CardDescription>
+                Manage your business bank accounts for POS settlements
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {accountsLoading ? (
+                <div className="text-center py-8">Loading accounts...</div>
+              ) : accounts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No bank accounts found. Add your first account to get started.
                 </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <TrendingUpIcon className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ChevronUp className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+12.5%</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Liabilities</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.totalLiabilities)}</p>
-                </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <TrendingDownIcon className="h-6 w-6 text-red-600" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ChevronDown className="h-4 w-4 text-red-500 mr-1" />
-                <span className="text-sm text-red-600">-2.3%</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Net Worth</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.netWorth)}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <WalletIcon className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ChevronUp className="h-4 w-4 text-blue-500 mr-1" />
-                <span className="text-sm text-blue-600">+8.1%</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Today's P&L</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.todaysPnL)}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <DollarSignIcon className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ChevronUp className="h-4 w-4 text-purple-500 mr-1" />
-                <span className="text-sm text-purple-600">+15.2%</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="accounts">Accounts</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="accounts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Balances</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {accounts.map((account) => (
-                    <div key={account.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                          {account.type === 'cash' ? (
-                            <BanknoteIcon className="h-5 w-5 text-gray-600" />
-                          ) : account.type === 'bank' ? (
-                            <CreditCardIcon className="h-5 w-5 text-gray-600" />
-                          ) : (
-                            <WalletIcon className="h-5 w-5 text-gray-600" />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {accounts.map((account: BankAccount) => (
+                    <Card key={account.id} className="relative">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getAccountTypeIcon(account.accountType)}
+                            <CardTitle className="text-lg">{account.accountName}</CardTitle>
+                          </div>
+                          {account.isDefault && (
+                            <Badge variant="secondary">Default</Badge>
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{account.name}</p>
-                          {account.registerId && (
-                            <p className="text-sm text-gray-500">ID: {account.registerId}</p>
+                        <CardDescription>{account.bankName}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Account No:</span>
+                            <span className="font-mono">{account.accountNumber}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Balance:</span>
+                            <span className="font-semibold text-green-600">
+                              {formatCurrency(account.currentBalance || 0)}
+                            </span>
+                          </div>
+                          {account.ifscCode && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">IFSC:</span>
+                              <span className="font-mono">{account.ifscCode}</span>
+                            </div>
                           )}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Type:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {account.accountType.toUpperCase()}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">{formatCurrency(account.balance)}</p>
-                        <Badge 
-                          variant={account.status === 'active' ? 'default' : 'secondary'}
-                          className={account.status === 'active' ? 'bg-green-100 text-green-800' : ''}
-                        >
-                          {account.status}
-                        </Badge>
-                      </div>
-                    </div>
+                        <Separator className="my-3" />
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="transactions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
+        <TabsContent value="transactions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bank Transactions</CardTitle>
+              <CardDescription>
+                Track all inflow and outflow transactions across your bank accounts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {transactionsLoading ? (
+                <div className="text-center py-8">Loading transactions...</div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No transactions found. Record your first transaction to get started.
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
                       <TableHead>Account</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Reference</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.slice(0, 10).map((transaction) => (
+                    {transactions.map((transaction: BankTransaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
-                          {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                          {new Date(transaction.transactionDate).toLocaleDateString('en-IN')}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>
-                            {transaction.type}
+                          <div className="font-medium">{transaction.accountName}</div>
+                          <div className="text-sm text-muted-foreground">{transaction.bankName}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getTransactionIcon(transaction.transactionType)}
+                            <Badge 
+                              variant={transaction.transactionType === 'credit' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {transaction.transactionType.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {transaction.transactionMode.replace('_', ' ').toUpperCase()}
                           </Badge>
                         </TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                        <TableCell>{transaction.account}</TableCell>
-                        <TableCell className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                        <TableCell className="max-w-xs truncate">
+                          {transaction.description}
                         </TableCell>
-                        <TableCell>{transaction.reference}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={
+                            transaction.transactionType === 'credit' 
+                              ? 'text-green-600 font-semibold' 
+                              : 'text-red-600 font-semibold'
+                          }>
+                            {transaction.transactionType === 'credit' ? '+' : '-'}
+                            {formatCurrency(transaction.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(transaction.balanceAfter)}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+        <TabsContent value="settlements" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>POS Settlements</CardTitle>
+              <CardDescription>
+                Track settlements between your POS sales and bank deposits
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Settlement tracking feature coming soon. This will help you reconcile POS sales with bank credits.
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Business Revenue Account</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-green-600 mb-2">
-                      {formatCurrency(metrics.totalRevenue)}
-                    </p>
-                    <p className="text-gray-600">Total Revenue</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Reports</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center">
-                    <FileTextIcon className="h-8 w-8 mb-2" />
-                    <span>Balance Sheet</span>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center">
-                    <FileTextIcon className="h-8 w-8 mb-2" />
-                    <span>Profit & Loss</span>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col items-center justify-center">
-                    <FileTextIcon className="h-8 w-8 mb-2" />
-                    <span>Cash Flow</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* New Account Dialog */}
-        <Dialog open={showNewAccountDialog} onOpenChange={setShowNewAccountDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Account</DialogTitle>
-              <DialogDescription>
-                Add a new financial account to track balances and transactions.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="accountName">Account Name</Label>
-                <Input
-                  id="accountName"
-                  value={newAccount.name}
-                  onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
-                  placeholder="Enter account name"
-                />
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Reports</CardTitle>
+              <CardDescription>
+                Generate reports and analytics for your bank account transactions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                Financial reports and analytics coming soon. This will include transaction summaries, balance trends, and payment method analysis.
               </div>
-              <div>
-                <Label htmlFor="accountType">Account Type</Label>
-                <Select
-                  value={newAccount.type}
-                  onValueChange={(value) => setNewAccount({ ...newAccount, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bank">Bank Account</SelectItem>
-                    <SelectItem value="cash">Cash Account</SelectItem>
-                    <SelectItem value="asset">Asset Account</SelectItem>
-                    <SelectItem value="liability">Liability Account</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="initialBalance">Initial Balance</Label>
-                <Input
-                  id="initialBalance"
-                  type="number"
-                  value={newAccount.balance}
-                  onChange={(e) => setNewAccount({ ...newAccount, balance: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="accountNumber">Account Number (Optional)</Label>
-                <Input
-                  id="accountNumber"
-                  value={newAccount.accountNumber}
-                  onChange={(e) => setNewAccount({ ...newAccount, accountNumber: e.target.value })}
-                  placeholder="****1234"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowNewAccountDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateAccount}>Create Account</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Transaction Dialog */}
-        <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Transaction</DialogTitle>
-              <DialogDescription>
-                Record a new financial transaction for your business.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="transactionType">Transaction Type</Label>
-                <Select
-                  value={newTransaction.type}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="transactionCategory">Category</Label>
-                <Select
-                  value={newTransaction.category}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, category: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sales">Sales</SelectItem>
-                    <SelectItem value="Inventory">Inventory</SelectItem>
-                    <SelectItem value="Utilities">Utilities</SelectItem>
-                    <SelectItem value="Rent">Rent</SelectItem>
-                    <SelectItem value="Salary">Salary</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="transactionAccount">Account</Label>
-                <Select
-                  value={newTransaction.account}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, account: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.name}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="transactionAmount">Amount</Label>
-                <Input
-                  id="transactionAmount"
-                  type="number"
-                  value={newTransaction.amount}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="transactionDescription">Description</Label>
-                <Input
-                  id="transactionDescription"
-                  value={newTransaction.description}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
-                  placeholder="Enter transaction description"
-                />
-              </div>
-              <div>
-                <Label htmlFor="transactionReference">Reference (Optional)</Label>
-                <Input
-                  id="transactionReference"
-                  value={newTransaction.reference}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, reference: e.target.value })}
-                  placeholder="REF-001"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowTransactionDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateTransaction}>Add Transaction</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Deposit Dialog */}
-        <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Amount Deposit</DialogTitle>
-              <DialogDescription>
-                Add money to the cash register from external sources.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="depositAmount">Deposit Amount</Label>
-                <Input
-                  id="depositAmount"
-                  type="number"
-                  value={depositData.amount}
-                  onChange={(e) => setDepositData({ ...depositData, amount: e.target.value })}
-                  placeholder="Enter amount to deposit"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="depositPaymentMethod">Payment Method</Label>
-                <Select
-                  value={depositData.paymentMethod}
-                  onValueChange={(value) => setDepositData({ ...depositData, paymentMethod: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="depositReason">Reason</Label>
-                <Input
-                  id="depositReason"
-                  value={depositData.reason}
-                  onChange={(e) => setDepositData({ ...depositData, reason: e.target.value })}
-                  placeholder="e.g., Bank deposit, Owner contribution"
-                />
-              </div>
-              <div>
-                <Label htmlFor="depositNotes">Notes (Optional)</Label>
-                <Input
-                  id="depositNotes"
-                  value={depositData.notes}
-                  onChange={(e) => setDepositData({ ...depositData, notes: e.target.value })}
-                  placeholder="Additional notes"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowDepositDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleDeposit}
-                  disabled={depositMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {depositMutation.isPending ? 'Processing...' : 'Deposit Amount'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Withdrawal Dialog */}
-        <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Amount Withdrawal</DialogTitle>
-              <DialogDescription>
-                Remove money from the cash register for expenses or other purposes.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="withdrawalAmount">Withdrawal Amount</Label>
-                <Input
-                  id="withdrawalAmount"
-                  type="number"
-                  value={withdrawalData.amount}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, amount: e.target.value })}
-                  placeholder="Enter amount to withdraw"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="withdrawalReason">Reason</Label>
-                <Input
-                  id="withdrawalReason"
-                  value={withdrawalData.reason}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, reason: e.target.value })}
-                  placeholder="e.g., Office expenses, Petty cash"
-                />
-              </div>
-              <div>
-                <Label htmlFor="withdrawalNotes">Notes (Optional)</Label>
-                <Input
-                  id="withdrawalNotes"
-                  value={withdrawalData.notes}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, notes: e.target.value })}
-                  placeholder="Additional notes"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleWithdrawal}
-                  disabled={withdrawalMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {withdrawalMutation.isPending ? 'Processing...' : 'Withdraw Amount'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
