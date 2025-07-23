@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import type { 
   BankAccount, 
   BankTransaction, 
@@ -363,15 +364,16 @@ export default function AccountsDashboard() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bank Accounts Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your POS bank accounts, track settlements, and monitor financial transactions
-          </p>
-        </div>
+    <DashboardLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Bank Accounts Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage your POS bank accounts, track settlements, and monitor financial transactions
+            </p>
+          </div>
         <div className="flex gap-3">
           <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
             <DialogTrigger asChild>
@@ -1144,6 +1146,7 @@ export default function AccountsDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
