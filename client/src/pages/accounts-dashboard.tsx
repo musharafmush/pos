@@ -18,7 +18,7 @@ import type {
   BankTransaction, 
   BankAccountInsert, 
   BankTransactionInsert 
-} from "@/shared/sqlite-schema";
+} from "../../../shared/sqlite-schema";
 
 export default function AccountsDashboard() {
   const { toast } = useToast();
@@ -74,8 +74,45 @@ export default function AccountsDashboard() {
 
   // Create bank account mutation
   const createAccountMutation = useMutation({
-    mutationFn: (data: BankAccountInsert) => 
-      apiRequest('/api/bank-accounts', { method: 'POST', body: data }),
+    mutationFn: async (data: any) => {
+      console.log('🏦 Creating bank account with data:', data);
+      
+      try {
+        const response = await fetch('/api/bank-accounts', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+        
+        console.log('📡 Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error:', errorText);
+          let errorMessage = 'Failed to create bank account';
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Bank account created:', result);
+        return result;
+      } catch (error) {
+        console.error('🚨 Network error:', error);
+        throw error;
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
@@ -107,8 +144,19 @@ export default function AccountsDashboard() {
 
   // Create bank transaction mutation
   const createTransactionMutation = useMutation({
-    mutationFn: (data: BankTransactionInsert) => 
-      apiRequest('/api/bank-transactions', { method: 'POST', body: data }),
+    mutationFn: async (data: BankTransactionInsert) => {
+      const response = await fetch('/api/bank-transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create transaction');
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
