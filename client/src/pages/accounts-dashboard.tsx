@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import type { 
@@ -34,6 +34,7 @@ export default function AccountsDashboard() {
   const [viewingAccount, setViewingAccount] = useState<any>(null);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [deletingAccount, setDeletingAccount] = useState<any>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [newAccount, setNewAccount] = useState<BankAccountInsert>({
     accountName: "",
     accountNumber: "",
@@ -55,29 +56,47 @@ export default function AccountsDashboard() {
     transactionDate: new Date().toISOString().split('T')[0]
   });
 
-  // Fetch bank accounts
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+  // Fetch bank accounts with real-time updates
+  const { data: accounts = [], isLoading: accountsLoading, isFetching: accountsFetching } = useQuery({
     queryKey: ['/api/bank-accounts'],
-    staleTime: 30000
+    staleTime: 5000, // 5 seconds for real-time feel
+    refetchInterval: 15000, // Auto-refresh every 15 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
-  // Fetch bank account summary
-  const { data: summary } = useQuery({
+  // Fetch bank account summary with real-time updates
+  const { data: summary, isFetching: summaryFetching } = useQuery({
     queryKey: ['/api/bank-accounts/summary'],
-    staleTime: 30000
+    staleTime: 3000, // 3 seconds for fastest updates
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
-  // Fetch bank transactions
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+  // Fetch bank transactions with real-time updates
+  const { data: transactions = [], isLoading: transactionsLoading, isFetching: transactionsFetching } = useQuery({
     queryKey: ['/api/bank-transactions'],
-    staleTime: 30000
+    staleTime: 5000, // 5 seconds for real-time feel
+    refetchInterval: 12000, // Auto-refresh every 12 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
-  // Fetch account categories
+  // Fetch account categories (less frequent updates needed)
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/bank-account-categories'],
-    staleTime: 60000
+    staleTime: 60000, // 1 minute
+    refetchInterval: 300000, // Auto-refresh every 5 minutes
+    refetchOnWindowFocus: true
   });
+
+  // Update last refresh time when data changes
+  useEffect(() => {
+    if (accounts.length > 0 || Object.keys(summary).length > 0 || transactions.length > 0) {
+      setLastUpdate(new Date());
+    }
+  }, [accounts, summary, transactions]);
 
   // Create bank account mutation
   const createAccountMutation = useMutation({
@@ -369,8 +388,26 @@ export default function AccountsDashboard() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Bank Accounts Dashboard</h1>
-            <p className="text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight">Bank Accounts Dashboard</h1>
+              {(summaryFetching || accountsFetching || transactionsFetching) && (
+                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                  <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-blue-600 font-medium">Live Data</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                <Zap className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-green-600 font-medium">Real-time Updates</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full">
+                <Clock className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-600 font-medium">
+                  Last: {lastUpdate.toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+            <p className="text-muted-foreground mt-1">
               Manage your POS bank accounts, track settlements, and monitor financial transactions
             </p>
           </div>
@@ -619,7 +656,10 @@ export default function AccountsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {summaryFetching && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary?.totalAccounts || 0}</div>
@@ -631,7 +671,10 @@ export default function AccountsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {summaryFetching && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalBalance || 0)}</div>
@@ -643,7 +686,10 @@ export default function AccountsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Transactions</CardTitle>
-            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {transactionsFetching && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -659,7 +705,10 @@ export default function AccountsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Net Flow Today</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {transactionsFetching && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -692,10 +741,20 @@ export default function AccountsDashboard() {
         <TabsContent value="accounts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Bank Accounts</CardTitle>
-              <CardDescription>
-                Manage your business bank accounts for POS settlements
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Bank Accounts
+                    {accountsFetching && <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />}
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your business bank accounts for POS settlements ({accounts.length} accounts)
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                  <span className="text-sm text-blue-600 font-medium">Auto-refresh: 15s</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {accountsLoading ? (
