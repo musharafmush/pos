@@ -29,8 +29,10 @@ export default function AccountsDashboard() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isViewAccountOpen, setIsViewAccountOpen] = useState(false);
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [viewingAccount, setViewingAccount] = useState<any>(null);
   const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [deletingAccount, setDeletingAccount] = useState<any>(null);
   const [newAccount, setNewAccount] = useState<BankAccountInsert>({
     accountName: "",
     accountNumber: "",
@@ -201,6 +203,65 @@ export default function AccountsDashboard() {
       toast({
         title: "Error",
         description: error.message || "Failed to update bank account",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete bank account mutation
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      console.log('🗑️ Deleting bank account with ID:', accountId);
+      
+      try {
+        const response = await fetch(`/api/bank-accounts/${accountId}`, {
+          method: 'DELETE',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include'
+        });
+        
+        console.log('📡 Delete response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Delete API Error:', errorText);
+          let errorMessage = 'Failed to delete bank account';
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Bank account deleted:', result);
+        return result;
+      } catch (error) {
+        console.error('🚨 Delete network error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      setIsDeleteAccountOpen(false);
+      setDeletingAccount(null);
+      toast({
+        title: "Success",
+        description: "Bank account deleted successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete bank account",
         variant: "destructive"
       });
     }
@@ -683,7 +744,7 @@ export default function AccountsDashboard() {
                           </div>
                         </div>
                         <Separator className="my-3" />
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -707,6 +768,18 @@ export default function AccountsDashboard() {
                           >
                             <Edit className="h-3 w-3 mr-1" />
                             Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                              setDeletingAccount(account);
+                              setIsDeleteAccountOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </CardContent>
@@ -1013,6 +1086,60 @@ export default function AccountsDashboard() {
               disabled={updateAccountMutation.isPending}
             >
               {updateAccountMutation.isPending ? 'Updating...' : 'Update Account'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={isDeleteAccountOpen} onOpenChange={setIsDeleteAccountOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Bank Account</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this bank account? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {deletingAccount && (
+            <div className="py-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-red-800">
+                      {deletingAccount.accountName || 'Unknown Account'}
+                    </h4>
+                    <p className="text-sm text-red-600">
+                      {deletingAccount.bankName} • {deletingAccount.accountNumber}
+                    </p>
+                    <p className="text-sm text-red-600 mt-1">
+                      Current Balance: {formatCurrency(deletingAccount.currentBalance || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p>⚠️ Deleting this account will:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Remove the account permanently from your system</li>
+                  <li>Delete all associated transaction history</li>
+                  <li>Update your total balance calculations</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteAccountOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => deleteAccountMutation.mutate(deletingAccount?.id)}
+              disabled={deleteAccountMutation.isPending}
+            >
+              {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
             </Button>
           </DialogFooter>
         </DialogContent>
