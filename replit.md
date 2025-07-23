@@ -137,7 +137,7 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
-### Accounts Dashboard Deposit and Withdrawal System (July 17, 2025)
+### Accounts Dashboard Deposit and Withdrawal System (July 23, 2025)
 - Added Amount Deposit and Amount Withdrawal functionality to accounts dashboard
 - Implemented professional deposit dialog with amount input, payment method selection, reason, and notes
 - Created withdrawal dialog with amount input, reason, and notes fields
@@ -152,6 +152,21 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Deposits support multiple payment methods (cash, bank transfer, cheque, other)
 - Withdrawals automatically deduct from current cash register balance
 - All operations logged in cash register transactions with proper audit trail
+
+### Authentication Integration for Deposit/Withdrawal Fix (July 23, 2025)
+- Fixed critical authentication requirement issue preventing deposit/withdrawal functionality
+- Added comprehensive authentication checking to all deposit/withdrawal operations
+- Enhanced error handling with clear messages for authentication issues (401 errors)
+- Added visual status indicators showing real-time login status and cash register status
+- Implemented helpful tooltips and button state notifications for better user experience
+- Created direct login link when user is not authenticated with "Please log in" button
+- Added real-time validation for withdrawal amounts against available cash register balance
+- Enhanced UI with authentication status badges showing user name when logged in
+- Added insufficient funds validation preventing withdrawals exceeding available balance
+- Added credentials: 'include' for proper session cookie handling in API requests
+- System now clearly displays authentication requirements and provides guided user flow
+- Verified backend API functionality: deposit/withdrawal operations work correctly when authenticated
+- Available user accounts: admin/admin123, mushu, testuser for testing deposit/withdrawal functionality
 
 ### Products Manufacturing System Implementation (July 17, 2025)
 - Created comprehensive products manufacturing page with product-centric interface for intuitive manufacturing workflow
