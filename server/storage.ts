@@ -5190,8 +5190,25 @@ export const storage = {
       `).all();
       
       return accounts.map(account => ({
-        ...account,
+        id: account.id,
+        accountName: account.account_name,
+        accountNumber: account.account_number,
+        ifscCode: account.ifsc_code,
+        bankName: account.bank_name,
+        branchName: account.branch_name,
+        accountType: account.account_type,
+        currency: account.currency,
+        currentBalance: account.current_balance,
+        availableBalance: account.available_balance,
+        minimumBalance: account.minimum_balance,
+        interestRate: account.interest_rate,
+        status: account.status,
         isDefault: Boolean(account.is_default),
+        openingDate: account.opening_date,
+        lastTransactionDate: account.last_transaction_date,
+        description: account.description,
+        createdBy: account.created_by,
+        createdByName: account.createdByName,
         createdAt: new Date(account.created_at),
         updatedAt: new Date(account.updated_at)
       }));
@@ -5262,8 +5279,24 @@ export const storage = {
       
       const account = sqlite.prepare('SELECT * FROM bank_accounts WHERE id = ?').get(result.lastInsertRowid);
       return {
-        ...account,
+        id: account.id,
+        accountName: account.account_name,
+        accountNumber: account.account_number,
+        ifscCode: account.ifsc_code,
+        bankName: account.bank_name,
+        branchName: account.branch_name,
+        accountType: account.account_type,
+        currency: account.currency,
+        currentBalance: account.current_balance,
+        availableBalance: account.available_balance,
+        minimumBalance: account.minimum_balance,
+        interestRate: account.interest_rate,
+        status: account.status,
         isDefault: Boolean(account.is_default),
+        openingDate: account.opening_date,
+        lastTransactionDate: account.last_transaction_date,
+        description: account.description,
+        createdBy: account.created_by,
         createdAt: new Date(account.created_at),
         updatedAt: new Date(account.updated_at)
       };
@@ -5350,11 +5383,30 @@ export const storage = {
       `).all();
       
       return transactions.map(txn => ({
-        ...txn,
+        id: txn.id,
+        accountId: txn.account_id,
+        transactionId: txn.transaction_id,
+        transactionType: txn.transaction_type,
+        transactionMode: txn.transaction_mode,
+        amount: txn.amount,
+        balanceAfter: txn.balance_after,
+        description: txn.description,
+        referenceNumber: txn.reference_number,
+        beneficiaryName: txn.beneficiary_name,
+        beneficiaryAccount: txn.beneficiary_account,
+        transferAccountId: txn.transfer_account_id,
+        category: txn.category,
+        tags: txn.tags,
         isReconciled: Boolean(txn.is_reconciled),
-        createdAt: new Date(txn.created_at),
+        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null,
+        receiptPath: txn.receipt_path,
+        notes: txn.notes,
+        processedBy: txn.processed_by,
+        processedByName: txn.processedByName,
+        accountName: txn.account_name,
+        bankName: txn.bank_name,
         transactionDate: new Date(txn.transaction_date),
-        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null
+        createdAt: new Date(txn.created_at)
       }));
     } catch (error) {
       console.error('Error fetching bank transactions:', error);
@@ -5376,11 +5428,30 @@ export const storage = {
       `).all(accountId, limit);
       
       return transactions.map(txn => ({
-        ...txn,
+        id: txn.id,
+        accountId: txn.account_id,
+        transactionId: txn.transaction_id,
+        transactionType: txn.transaction_type,
+        transactionMode: txn.transaction_mode,
+        amount: txn.amount,
+        balanceAfter: txn.balance_after,
+        description: txn.description,
+        referenceNumber: txn.reference_number,
+        beneficiaryName: txn.beneficiary_name,
+        beneficiaryAccount: txn.beneficiary_account,
+        transferAccountId: txn.transfer_account_id,
+        category: txn.category,
+        tags: txn.tags,
         isReconciled: Boolean(txn.is_reconciled),
-        createdAt: new Date(txn.created_at),
+        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null,
+        receiptPath: txn.receipt_path,
+        notes: txn.notes,
+        processedBy: txn.processed_by,
+        processedByName: txn.processedByName,
+        accountName: txn.account_name,
+        bankName: txn.bank_name,
         transactionDate: new Date(txn.transaction_date),
-        reconciledAt: txn.reconciled_at ? new Date(txn.reconciled_at) : null
+        createdAt: new Date(txn.created_at)
       }));
     } catch (error) {
       console.error('Error fetching bank transactions:', error);
