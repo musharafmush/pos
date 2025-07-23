@@ -856,5 +856,280 @@ export type ManufacturingRecipeInsert = z.infer<typeof insertManufacturingRecipe
 export type RecipeIngredient = typeof recipeIngredients.$inferSelect;
 export type RecipeIngredientInsert = z.infer<typeof insertRecipeIngredientSchema>;
 
+// Payroll Management System Tables
+
+// Employee table extending users for payroll-specific data
+export const employees = sqliteTable('employees', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  employeeId: text('employee_id').notNull().unique(),
+  department: text('department').notNull(),
+  designation: text('designation').notNull(),
+  dateOfJoining: text('date_of_joining').notNull(),
+  dateOfBirth: text('date_of_birth'),
+  gender: text('gender'), // male, female, other
+  maritalStatus: text('marital_status'), // single, married, divorced, widowed
+  address: text('address'),
+  phoneNumber: text('phone_number'),
+  emergencyContact: text('emergency_contact'),
+  emergencyPhone: text('emergency_phone'),
+  bankAccountNumber: text('bank_account_number'),
+  bankName: text('bank_name'),
+  ifscCode: text('ifsc_code'),
+  panNumber: text('pan_number'),
+  aadharNumber: text('aadhar_number'),
+  pfNumber: text('pf_number'),
+  esiNumber: text('esi_number'),
+  employmentType: text('employment_type').default('full_time'), // full_time, part_time, contract, intern
+  status: text('status').default('active'), // active, inactive, terminated
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Salary Structure table for defining employee compensation
+export const salaryStructures = sqliteTable('salary_structures', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  employeeId: integer('employee_id').references(() => employees.id).notNull(),
+  basicSalary: real('basic_salary').notNull(),
+  hra: real('hra').default(0), // House Rent Allowance
+  da: real('da').default(0), // Dearness Allowance
+  conveyanceAllowance: real('conveyance_allowance').default(0),
+  medicalAllowance: real('medical_allowance').default(0),
+  specialAllowance: real('special_allowance').default(0),
+  otherAllowances: real('other_allowances').default(0),
+  pfEmployeeContribution: real('pf_employee_contribution').default(0),
+  pfEmployerContribution: real('pf_employer_contribution').default(0),
+  esiEmployeeContribution: real('esi_employee_contribution').default(0),
+  esiEmployerContribution: real('esi_employer_contribution').default(0),
+  professionalTax: real('professional_tax').default(0),
+  incomeTax: real('income_tax').default(0),
+  otherDeductions: real('other_deductions').default(0),
+  grossSalary: real('gross_salary').notNull(),
+  netSalary: real('net_salary').notNull(),
+  effectiveFrom: text('effective_from').notNull(),
+  effectiveTo: text('effective_to'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdBy: integer('created_by').references(() => users.id),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Attendance table for tracking employee work hours
+export const attendance = sqliteTable('attendance', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  employeeId: integer('employee_id').references(() => employees.id).notNull(),
+  date: text('date').notNull(),
+  checkInTime: text('check_in_time'),
+  checkOutTime: text('check_out_time'),
+  totalHours: real('total_hours').default(0),
+  overtimeHours: real('overtime_hours').default(0),
+  status: text('status').default('present'), // present, absent, half_day, leave, holiday
+  notes: text('notes'),
+  location: text('location'), // office, remote, field
+  isManualEntry: integer('is_manual_entry', { mode: 'boolean' }).default(false),
+  approvedBy: integer('approved_by').references(() => users.id),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Leave Management table
+export const leaveApplications = sqliteTable('leave_applications', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  employeeId: integer('employee_id').references(() => employees.id).notNull(),
+  leaveType: text('leave_type').notNull(), // casual, sick, earned, maternity, paternity, comp_off
+  fromDate: text('from_date').notNull(),
+  toDate: text('to_date').notNull(),
+  totalDays: real('total_days').notNull(),
+  reason: text('reason').notNull(),
+  status: text('status').default('pending'), // pending, approved, rejected, cancelled
+  appliedDate: text('applied_date').default(new Date().toISOString()).notNull(),
+  reviewedBy: integer('reviewed_by').references(() => users.id),
+  reviewedDate: text('reviewed_date'),
+  reviewComments: text('review_comments'),
+  emergencyContact: text('emergency_contact'),
+  isHalfDay: integer('is_half_day', { mode: 'boolean' }).default(false),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Payroll Records table for monthly salary processing
+export const payrollRecords = sqliteTable('payroll_records', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  employeeId: integer('employee_id').references(() => employees.id).notNull(),
+  salaryStructureId: integer('salary_structure_id').references(() => salaryStructures.id).notNull(),
+  payrollMonth: text('payroll_month').notNull(), // YYYY-MM format
+  workingDays: real('working_days').notNull(),
+  presentDays: real('present_days').notNull(),
+  absentDays: real('absent_days').default(0),
+  leaveDays: real('leave_days').default(0),
+  halfDays: real('half_days').default(0),
+  overtimeHours: real('overtime_hours').default(0),
+  overtimeAmount: real('overtime_amount').default(0),
+  basicSalaryEarned: real('basic_salary_earned').notNull(),
+  allowancesEarned: real('allowances_earned').notNull(),
+  deductionsApplied: real('deductions_applied').notNull(),
+  grossSalaryEarned: real('gross_salary_earned').notNull(),
+  netSalaryEarned: real('net_salary_earned').notNull(),
+  bonusAmount: real('bonus_amount').default(0),
+  incentiveAmount: real('incentive_amount').default(0),
+  advanceTaken: real('advance_taken').default(0),
+  loanDeduction: real('loan_deduction').default(0),
+  status: text('status').default('draft'), // draft, processed, paid, cancelled
+  processedDate: text('processed_date'),
+  paidDate: text('paid_date'),
+  paymentMethod: text('payment_method'), // bank_transfer, cash, cheque
+  bankTransactionId: text('bank_transaction_id'),
+  notes: text('notes'),
+  processedBy: integer('processed_by').references(() => users.id),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Employee Advances table for tracking salary advances
+export const employeeAdvances = sqliteTable('employee_advances', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  employeeId: integer('employee_id').references(() => employees.id).notNull(),
+  advanceAmount: real('advance_amount').notNull(),
+  reason: text('reason').notNull(),
+  approvedAmount: real('approved_amount'),
+  installments: integer('installments').default(1),
+  installmentAmount: real('installment_amount'),
+  paidInstallments: integer('paid_installments').default(0),
+  remainingAmount: real('remaining_amount'),
+  status: text('status').default('pending'), // pending, approved, rejected, partially_paid, fully_paid
+  requestDate: text('request_date').default(new Date().toISOString()).notNull(),
+  approvedDate: text('approved_date'),
+  approvedBy: integer('approved_by').references(() => users.id),
+  notes: text('notes'),
+  createdAt: text('created_at').default(new Date().toISOString()).notNull(),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Payroll Settings table for company-wide payroll configuration
+export const payrollSettings = sqliteTable('payroll_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  companyName: text('company_name').notNull(),
+  payrollFrequency: text('payroll_frequency').default('monthly'), // monthly, bi_weekly, weekly
+  standardWorkingDays: real('standard_working_days').default(26),
+  standardWorkingHours: real('standard_working_hours').default(8),
+  overtimeRate: real('overtime_rate').default(1.5), // multiplier for overtime
+  pfRate: real('pf_rate').default(12), // percentage
+  esiRate: real('esi_rate').default(3.25), // percentage
+  professionalTaxSlab: text('professional_tax_slab'), // JSON array of tax slabs
+  leavePolicy: text('leave_policy'), // JSON object with leave rules
+  probationPeriod: integer('probation_period').default(90), // days
+  noticePeriod: integer('notice_period').default(30), // days
+  financialYearStart: text('financial_year_start').default('04-01'), // MM-DD format
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  updatedBy: integer('updated_by').references(() => users.id),
+  updatedAt: text('updated_at').default(new Date().toISOString()).notNull()
+});
+
+// Payroll Relations
+export const employeesRelations = relations(employees, ({ one, many }) => ({
+  user: one(users, {
+    fields: [employees.userId],
+    references: [users.id]
+  }),
+  salaryStructures: many(salaryStructures),
+  attendance: many(attendance),
+  leaveApplications: many(leaveApplications),
+  payrollRecords: many(payrollRecords),
+  advances: many(employeeAdvances)
+}));
+
+export const salaryStructuresRelations = relations(salaryStructures, ({ one, many }) => ({
+  employee: one(employees, {
+    fields: [salaryStructures.employeeId],
+    references: [employees.id]
+  }),
+  createdByUser: one(users, {
+    fields: [salaryStructures.createdBy],
+    references: [users.id]
+  }),
+  payrollRecords: many(payrollRecords)
+}));
+
+export const attendanceRelations = relations(attendance, ({ one }) => ({
+  employee: one(employees, {
+    fields: [attendance.employeeId],
+    references: [employees.id]
+  }),
+  approvedByUser: one(users, {
+    fields: [attendance.approvedBy],
+    references: [users.id]
+  })
+}));
+
+export const leaveApplicationsRelations = relations(leaveApplications, ({ one }) => ({
+  employee: one(employees, {
+    fields: [leaveApplications.employeeId],
+    references: [employees.id]
+  }),
+  reviewedByUser: one(users, {
+    fields: [leaveApplications.reviewedBy],
+    references: [users.id]
+  })
+}));
+
+export const payrollRecordsRelations = relations(payrollRecords, ({ one }) => ({
+  employee: one(employees, {
+    fields: [payrollRecords.employeeId],
+    references: [employees.id]
+  }),
+  salaryStructure: one(salaryStructures, {
+    fields: [payrollRecords.salaryStructureId],
+    references: [salaryStructures.id]
+  }),
+  processedByUser: one(users, {
+    fields: [payrollRecords.processedBy],
+    references: [users.id]
+  })
+}));
+
+export const employeeAdvancesRelations = relations(employeeAdvances, ({ one }) => ({
+  employee: one(employees, {
+    fields: [employeeAdvances.employeeId],
+    references: [employees.id]
+  }),
+  approvedByUser: one(users, {
+    fields: [employeeAdvances.approvedBy],
+    references: [users.id]
+  })
+}));
+
+// Payroll Schema validation
+export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectEmployeeSchema = createSelectSchema(employees);
+export const insertSalaryStructureSchema = createInsertSchema(salaryStructures).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectSalaryStructureSchema = createSelectSchema(salaryStructures);
+export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAttendanceSchema = createSelectSchema(attendance);
+export const insertLeaveApplicationSchema = createInsertSchema(leaveApplications).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectLeaveApplicationSchema = createSelectSchema(leaveApplications);
+export const insertPayrollRecordSchema = createInsertSchema(payrollRecords).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPayrollRecordSchema = createSelectSchema(payrollRecords);
+export const insertEmployeeAdvanceSchema = createInsertSchema(employeeAdvances).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectEmployeeAdvanceSchema = createSelectSchema(employeeAdvances);
+export const insertPayrollSettingsSchema = createInsertSchema(payrollSettings).omit({ id: true, updatedAt: true });
+export const selectPayrollSettingsSchema = createSelectSchema(payrollSettings);
+
+// Payroll TypeScript types
+export type Employee = typeof employees.$inferSelect;
+export type EmployeeInsert = z.infer<typeof insertEmployeeSchema>;
+export type SalaryStructure = typeof salaryStructures.$inferSelect;
+export type SalaryStructureInsert = z.infer<typeof insertSalaryStructureSchema>;
+export type Attendance = typeof attendance.$inferSelect;
+export type AttendanceInsert = z.infer<typeof insertAttendanceSchema>;
+export type LeaveApplication = typeof leaveApplications.$inferSelect;
+export type LeaveApplicationInsert = z.infer<typeof insertLeaveApplicationSchema>;
+export type PayrollRecord = typeof payrollRecords.$inferSelect;
+export type PayrollRecordInsert = z.infer<typeof insertPayrollRecordSchema>;
+export type EmployeeAdvance = typeof employeeAdvances.$inferSelect;
+export type EmployeeAdvanceInsert = z.infer<typeof insertEmployeeAdvanceSchema>;
+export type PayrollSettings = typeof payrollSettings.$inferSelect;
+export type PayrollSettingsInsert = z.infer<typeof insertPayrollSettingsSchema>;
+
 
 

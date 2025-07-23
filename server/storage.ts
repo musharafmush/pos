@@ -5576,5 +5576,551 @@ export const storage = {
       console.error('Error fetching bank account categories:', error);
       return [];
     }
+  },
+
+  // Payroll Management Methods
+
+  // Employee Management
+  async getAllEmployees(): Promise<Employee[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const employees = sqlite.prepare(`
+        SELECT e.*, u.name as userName, u.email, u.username
+        FROM employees e
+        LEFT JOIN users u ON e.user_id = u.id
+        WHERE e.is_active = 1
+        ORDER BY e.created_at DESC
+      `).all();
+      
+      return employees.map(emp => ({
+        id: emp.id,
+        userId: emp.user_id,
+        employeeId: emp.employee_id,
+        department: emp.department,
+        designation: emp.designation,
+        dateOfJoining: emp.date_of_joining,
+        dateOfBirth: emp.date_of_birth,
+        gender: emp.gender,
+        maritalStatus: emp.marital_status,
+        address: emp.address,
+        phoneNumber: emp.phone_number,
+        emergencyContact: emp.emergency_contact,
+        emergencyPhone: emp.emergency_phone,
+        bankAccountNumber: emp.bank_account_number,
+        bankName: emp.bank_name,
+        ifscCode: emp.ifsc_code,
+        panNumber: emp.pan_number,
+        aadharNumber: emp.aadhar_number,
+        pfNumber: emp.pf_number,
+        esiNumber: emp.esi_number,
+        employmentType: emp.employment_type,
+        status: emp.status,
+        isActive: Boolean(emp.is_active),
+        userName: emp.userName,
+        email: emp.email,
+        username: emp.username,
+        createdAt: new Date(emp.created_at),
+        updatedAt: new Date(emp.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      return [];
+    }
+  },
+
+  async createEmployee(employeeData: EmployeeInsert): Promise<Employee> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO employees (
+          user_id, employee_id, department, designation, date_of_joining,
+          date_of_birth, gender, marital_status, address, phone_number,
+          emergency_contact, emergency_phone, bank_account_number, bank_name,
+          ifsc_code, pan_number, aadhar_number, pf_number, esi_number,
+          employment_type, status, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        employeeData.userId,
+        employeeData.employeeId,
+        employeeData.department,
+        employeeData.designation,
+        employeeData.dateOfJoining,
+        employeeData.dateOfBirth || null,
+        employeeData.gender || null,
+        employeeData.maritalStatus || null,
+        employeeData.address || null,
+        employeeData.phoneNumber || null,
+        employeeData.emergencyContact || null,
+        employeeData.emergencyPhone || null,
+        employeeData.bankAccountNumber || null,
+        employeeData.bankName || null,
+        employeeData.ifscCode || null,
+        employeeData.panNumber || null,
+        employeeData.aadharNumber || null,
+        employeeData.pfNumber || null,
+        employeeData.esiNumber || null,
+        employeeData.employmentType || 'full_time',
+        employeeData.status || 'active',
+        employeeData.isActive ? 1 : 0
+      );
+      
+      const employee = sqlite.prepare('SELECT * FROM employees WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...employee,
+        isActive: Boolean(employee.is_active),
+        createdAt: new Date(employee.created_at),
+        updatedAt: new Date(employee.updated_at)
+      };
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      throw error;
+    }
+  },
+
+  async updateEmployee(id: number, employeeData: Partial<EmployeeInsert>): Promise<Employee | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const fields = [];
+      const values = [];
+      
+      Object.entries(employeeData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          // Convert camelCase to snake_case for database
+          const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          fields.push(`${dbField} = ?`);
+          values.push(value);
+        }
+      });
+      
+      if (fields.length === 0) return null;
+      
+      fields.push('updated_at = datetime(\'now\')');
+      values.push(id);
+      
+      const result = sqlite.prepare(`
+        UPDATE employees SET ${fields.join(', ')} WHERE id = ?
+      `).run(...values);
+      
+      if (result.changes === 0) return null;
+      
+      const employee = sqlite.prepare('SELECT * FROM employees WHERE id = ?').get(id);
+      return {
+        ...employee,
+        isActive: Boolean(employee.is_active),
+        createdAt: new Date(employee.created_at),
+        updatedAt: new Date(employee.updated_at)
+      };
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      return null;
+    }
+  },
+
+  // Salary Structure Management
+  async createSalaryStructure(salaryData: SalaryStructureInsert): Promise<SalaryStructure> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO salary_structures (
+          employee_id, basic_salary, hra, da, conveyance_allowance, medical_allowance,
+          special_allowance, other_allowances, pf_employee_contribution, pf_employer_contribution,
+          esi_employee_contribution, esi_employer_contribution, professional_tax, income_tax,
+          other_deductions, gross_salary, net_salary, effective_from, effective_to,
+          is_active, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        salaryData.employeeId,
+        salaryData.basicSalary,
+        salaryData.hra || 0,
+        salaryData.da || 0,
+        salaryData.conveyanceAllowance || 0,
+        salaryData.medicalAllowance || 0,
+        salaryData.specialAllowance || 0,
+        salaryData.otherAllowances || 0,
+        salaryData.pfEmployeeContribution || 0,
+        salaryData.pfEmployerContribution || 0,
+        salaryData.esiEmployeeContribution || 0,
+        salaryData.esiEmployerContribution || 0,
+        salaryData.professionalTax || 0,
+        salaryData.incomeTax || 0,
+        salaryData.otherDeductions || 0,
+        salaryData.grossSalary,
+        salaryData.netSalary,
+        salaryData.effectiveFrom,
+        salaryData.effectiveTo || null,
+        salaryData.isActive ? 1 : 0,
+        salaryData.createdBy || null
+      );
+      
+      const salary = sqlite.prepare('SELECT * FROM salary_structures WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...salary,
+        isActive: Boolean(salary.is_active),
+        createdAt: new Date(salary.created_at),
+        updatedAt: new Date(salary.updated_at)
+      };
+    } catch (error) {
+      console.error('Error creating salary structure:', error);
+      throw error;
+    }
+  },
+
+  async getSalaryStructureByEmployeeId(employeeId: number): Promise<SalaryStructure | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const salary = sqlite.prepare(`
+        SELECT * FROM salary_structures 
+        WHERE employee_id = ? AND is_active = 1 
+        ORDER BY effective_from DESC LIMIT 1
+      `).get(employeeId);
+      
+      if (!salary) return null;
+      
+      return {
+        ...salary,
+        isActive: Boolean(salary.is_active),
+        createdAt: new Date(salary.created_at),
+        updatedAt: new Date(salary.updated_at)
+      };
+    } catch (error) {
+      console.error('Error fetching salary structure:', error);
+      return null;
+    }
+  },
+
+  // Attendance Management
+  async markAttendance(attendanceData: AttendanceInsert): Promise<Attendance> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO attendance (
+          employee_id, date, check_in_time, check_out_time, total_hours,
+          overtime_hours, status, notes, location, is_manual_entry,
+          approved_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        attendanceData.employeeId,
+        attendanceData.date,
+        attendanceData.checkInTime || null,
+        attendanceData.checkOutTime || null,
+        attendanceData.totalHours || 0,
+        attendanceData.overtimeHours || 0,
+        attendanceData.status || 'present',
+        attendanceData.notes || null,
+        attendanceData.location || null,
+        attendanceData.isManualEntry ? 1 : 0,
+        attendanceData.approvedBy || null
+      );
+      
+      const attendance = sqlite.prepare('SELECT * FROM attendance WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...attendance,
+        isManualEntry: Boolean(attendance.is_manual_entry),
+        createdAt: new Date(attendance.created_at),
+        updatedAt: new Date(attendance.updated_at)
+      };
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      throw error;
+    }
+  },
+
+  async getAttendanceByEmployeeAndMonth(employeeId: number, month: string): Promise<Attendance[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const attendance = sqlite.prepare(`
+        SELECT * FROM attendance 
+        WHERE employee_id = ? AND date LIKE ?
+        ORDER BY date DESC
+      `).all(employeeId, `${month}%`);
+      
+      return attendance.map(att => ({
+        ...att,
+        isManualEntry: Boolean(att.is_manual_entry),
+        createdAt: new Date(att.created_at),
+        updatedAt: new Date(att.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      return [];
+    }
+  },
+
+  // Leave Management
+  async applyLeave(leaveData: LeaveApplicationInsert): Promise<LeaveApplication> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO leave_applications (
+          employee_id, leave_type, from_date, to_date, total_days, reason,
+          status, applied_date, emergency_contact, is_half_day,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        leaveData.employeeId,
+        leaveData.leaveType,
+        leaveData.fromDate,
+        leaveData.toDate,
+        leaveData.totalDays,
+        leaveData.reason,
+        leaveData.status || 'pending',
+        leaveData.appliedDate || new Date().toISOString(),
+        leaveData.emergencyContact || null,
+        leaveData.isHalfDay ? 1 : 0
+      );
+      
+      const leave = sqlite.prepare('SELECT * FROM leave_applications WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...leave,
+        isHalfDay: Boolean(leave.is_half_day),
+        createdAt: new Date(leave.created_at),
+        updatedAt: new Date(leave.updated_at)
+      };
+    } catch (error) {
+      console.error('Error applying leave:', error);
+      throw error;
+    }
+  },
+
+  async getPendingLeaveApplications(): Promise<LeaveApplication[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const leaves = sqlite.prepare(`
+        SELECT la.*, e.employee_id, u.name as employeeName
+        FROM leave_applications la
+        LEFT JOIN employees e ON la.employee_id = e.id
+        LEFT JOIN users u ON e.user_id = u.id
+        WHERE la.status = 'pending'
+        ORDER BY la.applied_date DESC
+      `).all();
+      
+      return leaves.map(leave => ({
+        ...leave,
+        isHalfDay: Boolean(leave.is_half_day),
+        createdAt: new Date(leave.created_at),
+        updatedAt: new Date(leave.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching pending leaves:', error);
+      return [];
+    }
+  },
+
+  // Payroll Processing
+  async generatePayroll(payrollData: PayrollRecordInsert): Promise<PayrollRecord> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO payroll_records (
+          employee_id, salary_structure_id, payroll_month, working_days, present_days,
+          absent_days, leave_days, half_days, overtime_hours, overtime_amount,
+          basic_salary_earned, allowances_earned, deductions_applied, gross_salary_earned,
+          net_salary_earned, bonus_amount, incentive_amount, advance_taken, loan_deduction,
+          status, notes, processed_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        payrollData.employeeId,
+        payrollData.salaryStructureId,
+        payrollData.payrollMonth,
+        payrollData.workingDays,
+        payrollData.presentDays,
+        payrollData.absentDays || 0,
+        payrollData.leaveDays || 0,
+        payrollData.halfDays || 0,
+        payrollData.overtimeHours || 0,
+        payrollData.overtimeAmount || 0,
+        payrollData.basicSalaryEarned,
+        payrollData.allowancesEarned,
+        payrollData.deductionsApplied,
+        payrollData.grossSalaryEarned,
+        payrollData.netSalaryEarned,
+        payrollData.bonusAmount || 0,
+        payrollData.incentiveAmount || 0,
+        payrollData.advanceTaken || 0,
+        payrollData.loanDeduction || 0,
+        payrollData.status || 'draft',
+        payrollData.notes || null,
+        payrollData.processedBy || null
+      );
+      
+      const payroll = sqlite.prepare('SELECT * FROM payroll_records WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...payroll,
+        createdAt: new Date(payroll.created_at),
+        updatedAt: new Date(payroll.updated_at)
+      };
+    } catch (error) {
+      console.error('Error generating payroll:', error);
+      throw error;
+    }
+  },
+
+  async getPayrollByMonth(month: string): Promise<PayrollRecord[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const payrolls = sqlite.prepare(`
+        SELECT pr.*, e.employee_id, u.name as employeeName, e.department, e.designation
+        FROM payroll_records pr
+        LEFT JOIN employees e ON pr.employee_id = e.id
+        LEFT JOIN users u ON e.user_id = u.id
+        WHERE pr.payroll_month = ?
+        ORDER BY pr.created_at DESC
+      `).all(month);
+      
+      return payrolls.map(payroll => ({
+        ...payroll,
+        createdAt: new Date(payroll.created_at),
+        updatedAt: new Date(payroll.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching payroll records:', error);
+      return [];
+    }
+  },
+
+  // Employee Advances
+  async requestAdvance(advanceData: EmployeeAdvanceInsert): Promise<EmployeeAdvance> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      const result = sqlite.prepare(`
+        INSERT INTO employee_advances (
+          employee_id, advance_amount, reason, installments, status,
+          request_date, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(
+        advanceData.employeeId,
+        advanceData.advanceAmount,
+        advanceData.reason,
+        advanceData.installments || 1,
+        advanceData.status || 'pending',
+        advanceData.requestDate || new Date().toISOString(),
+        advanceData.notes || null
+      );
+      
+      const advance = sqlite.prepare('SELECT * FROM employee_advances WHERE id = ?').get(result.lastInsertRowid);
+      return {
+        ...advance,
+        createdAt: new Date(advance.created_at),
+        updatedAt: new Date(advance.updated_at)
+      };
+    } catch (error) {
+      console.error('Error requesting advance:', error);
+      throw error;
+    }
+  },
+
+  async getPendingAdvances(): Promise<EmployeeAdvance[]> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const advances = sqlite.prepare(`
+        SELECT ea.*, e.employee_id, u.name as employeeName
+        FROM employee_advances ea
+        LEFT JOIN employees e ON ea.employee_id = e.id
+        LEFT JOIN users u ON e.user_id = u.id
+        WHERE ea.status = 'pending'
+        ORDER BY ea.request_date DESC
+      `).all();
+      
+      return advances.map(advance => ({
+        ...advance,
+        createdAt: new Date(advance.created_at),
+        updatedAt: new Date(advance.updated_at)
+      }));
+    } catch (error) {
+      console.error('Error fetching pending advances:', error);
+      return [];
+    }
+  },
+
+  // Payroll Settings
+  async getPayrollSettings(): Promise<PayrollSettings | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const settings = sqlite.prepare(`
+        SELECT * FROM payroll_settings 
+        WHERE is_active = 1 
+        ORDER BY updated_at DESC LIMIT 1
+      `).get();
+      
+      if (!settings) return null;
+      
+      return {
+        ...settings,
+        isActive: Boolean(settings.is_active),
+        updatedAt: new Date(settings.updated_at)
+      };
+    } catch (error) {
+      console.error('Error fetching payroll settings:', error);
+      return null;
+    }
+  },
+
+  async updatePayrollSettings(settingsData: Partial<PayrollSettingsInsert>): Promise<PayrollSettings | null> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      // Check if settings exist
+      const existing = await this.getPayrollSettings();
+      
+      if (existing) {
+        // Update existing settings
+        const fields = [];
+        const values = [];
+        
+        Object.entries(settingsData).forEach(([key, value]) => {
+          if (value !== undefined) {
+            const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+            fields.push(`${dbField} = ?`);
+            values.push(value);
+          }
+        });
+        
+        fields.push('updated_at = datetime(\'now\')');
+        values.push(existing.id);
+        
+        sqlite.prepare(`
+          UPDATE payroll_settings SET ${fields.join(', ')} WHERE id = ?
+        `).run(...values);
+        
+        return await this.getPayrollSettings();
+      } else {
+        // Create new settings
+        const result = sqlite.prepare(`
+          INSERT INTO payroll_settings (
+            company_name, payroll_frequency, standard_working_days, standard_working_hours,
+            overtime_rate, pf_rate, esi_rate, professional_tax_slab, leave_policy,
+            probation_period, notice_period, financial_year_start, is_active,
+            updated_by, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `).run(
+          settingsData.companyName || 'Awesome Shop',
+          settingsData.payrollFrequency || 'monthly',
+          settingsData.standardWorkingDays || 26,
+          settingsData.standardWorkingHours || 8,
+          settingsData.overtimeRate || 1.5,
+          settingsData.pfRate || 12,
+          settingsData.esiRate || 3.25,
+          settingsData.professionalTaxSlab || null,
+          settingsData.leavePolicy || null,
+          settingsData.probationPeriod || 90,
+          settingsData.noticePeriod || 30,
+          settingsData.financialYearStart || '04-01',
+          settingsData.isActive ? 1 : 0,
+          settingsData.updatedBy || null
+        );
+        
+        return await this.getPayrollSettings();
+      }
+    } catch (error) {
+      console.error('Error updating payroll settings:', error);
+      return null;
+    }
   }
 };

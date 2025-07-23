@@ -8290,6 +8290,225 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Payroll Management API Routes
+
+  // Employee Management Routes
+  app.get('/api/employees', isAuthenticated, async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      res.status(500).json({ message: 'Failed to fetch employees' });
+    }
+  });
+
+  app.post('/api/employees', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(validatedData);
+      res.status(201).json(employee);
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid employee data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to create employee' });
+      }
+    }
+  });
+
+  app.put('/api/employees/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = schema.insertEmployeeSchema.partial().parse(req.body);
+      const employee = await storage.updateEmployee(id, validatedData);
+      
+      if (!employee) {
+        return res.status(404).json({ message: 'Employee not found' });
+      }
+      
+      res.json(employee);
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid employee data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to update employee' });
+      }
+    }
+  });
+
+  // Salary Structure Routes
+  app.post('/api/salary-structures', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertSalaryStructureSchema.parse(req.body);
+      const salaryStructure = await storage.createSalaryStructure(validatedData);
+      res.status(201).json(salaryStructure);
+    } catch (error) {
+      console.error('Error creating salary structure:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid salary structure data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to create salary structure' });
+      }
+    }
+  });
+
+  app.get('/api/salary-structures/employee/:employeeId', isAuthenticated, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      const salaryStructure = await storage.getSalaryStructureByEmployeeId(employeeId);
+      
+      if (!salaryStructure) {
+        return res.status(404).json({ message: 'Salary structure not found' });
+      }
+      
+      res.json(salaryStructure);
+    } catch (error) {
+      console.error('Error fetching salary structure:', error);
+      res.status(500).json({ message: 'Failed to fetch salary structure' });
+    }
+  });
+
+  // Attendance Management Routes
+  app.post('/api/attendance', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertAttendanceSchema.parse(req.body);
+      const attendance = await storage.markAttendance(validatedData);
+      res.status(201).json(attendance);
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid attendance data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to mark attendance' });
+      }
+    }
+  });
+
+  app.get('/api/attendance/employee/:employeeId/month/:month', isAuthenticated, async (req, res) => {
+    try {
+      const employeeId = parseInt(req.params.employeeId);
+      const month = req.params.month; // YYYY-MM format
+      const attendance = await storage.getAttendanceByEmployeeAndMonth(employeeId, month);
+      res.json(attendance);
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      res.status(500).json({ message: 'Failed to fetch attendance records' });
+    }
+  });
+
+  // Leave Management Routes
+  app.post('/api/leave-applications', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertLeaveApplicationSchema.parse(req.body);
+      const leaveApplication = await storage.applyLeave(validatedData);
+      res.status(201).json(leaveApplication);
+    } catch (error) {
+      console.error('Error applying leave:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid leave application data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to apply leave' });
+      }
+    }
+  });
+
+  app.get('/api/leave-applications/pending', isAuthenticated, async (req, res) => {
+    try {
+      const pendingLeaves = await storage.getPendingLeaveApplications();
+      res.json(pendingLeaves);
+    } catch (error) {
+      console.error('Error fetching pending leave applications:', error);
+      res.status(500).json({ message: 'Failed to fetch pending leave applications' });
+    }
+  });
+
+  // Payroll Processing Routes
+  app.post('/api/payroll', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertPayrollRecordSchema.parse(req.body);
+      const payrollRecord = await storage.generatePayroll(validatedData);
+      res.status(201).json(payrollRecord);
+    } catch (error) {
+      console.error('Error generating payroll:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid payroll data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to generate payroll' });
+      }
+    }
+  });
+
+  app.get('/api/payroll/month/:month', isAuthenticated, async (req, res) => {
+    try {
+      const month = req.params.month; // YYYY-MM format
+      const payrollRecords = await storage.getPayrollByMonth(month);
+      res.json(payrollRecords);
+    } catch (error) {
+      console.error('Error fetching payroll records:', error);
+      res.status(500).json({ message: 'Failed to fetch payroll records' });
+    }
+  });
+
+  // Employee Advances Routes
+  app.post('/api/employee-advances', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = schema.insertEmployeeAdvanceSchema.parse(req.body);
+      const advance = await storage.requestAdvance(validatedData);
+      res.status(201).json(advance);
+    } catch (error) {
+      console.error('Error requesting advance:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid advance request data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to request advance' });
+      }
+    }
+  });
+
+  app.get('/api/employee-advances/pending', isAuthenticated, async (req, res) => {
+    try {
+      const pendingAdvances = await storage.getPendingAdvances();
+      res.json(pendingAdvances);
+    } catch (error) {
+      console.error('Error fetching pending advances:', error);
+      res.status(500).json({ message: 'Failed to fetch pending advances' });
+    }
+  });
+
+  // Payroll Settings Routes
+  app.get('/api/payroll-settings', isAuthenticated, async (req, res) => {
+    try {
+      const settings = await storage.getPayrollSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching payroll settings:', error);
+      res.status(500).json({ message: 'Failed to fetch payroll settings' });
+    }
+  });
+
+  app.put('/api/payroll-settings', isAdminOrManager, async (req, res) => {
+    try {
+      const validatedData = schema.insertPayrollSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updatePayrollSettings(validatedData);
+      
+      if (!settings) {
+        return res.status(404).json({ message: 'Payroll settings not found' });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error('Error updating payroll settings:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: 'Invalid payroll settings data', errors: error.errors });
+      } else {
+        res.status(500).json({ message: 'Failed to update payroll settings' });
+      }
+    }
+  });
+
   // Import and mount label printing routes
   const labelPrintingRoutes = await import('./label-printing-routes.js');
   app.use('/api', labelPrintingRoutes.default);
