@@ -536,20 +536,20 @@ export default function AccountsDashboard() {
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {getAccountTypeIcon(account.accountType)}
-                            <CardTitle className="text-lg">{account.accountName}</CardTitle>
+                            {getAccountTypeIcon(account.accountType || 'savings')}
+                            <CardTitle className="text-lg">{account.accountName || 'Unknown Account'}</CardTitle>
                           </div>
                           {account.isDefault && (
                             <Badge variant="secondary">Default</Badge>
                           )}
                         </div>
-                        <CardDescription>{account.bankName}</CardDescription>
+                        <CardDescription>{account.bankName || 'Unknown Bank'}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Account No:</span>
-                            <span className="font-mono">{account.accountNumber}</span>
+                            <span className="font-mono">{account.accountNumber || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Balance:</span>
@@ -566,7 +566,7 @@ export default function AccountsDashboard() {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Type:</span>
                             <Badge variant="outline" className="text-xs">
-                              {account.accountType.toUpperCase()}
+                              {account.accountType?.toUpperCase() || 'UNKNOWN'}
                             </Badge>
                           </div>
                         </div>
@@ -622,11 +622,11 @@ export default function AccountsDashboard() {
                     {transactions.map((transaction: BankTransaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
-                          {new Date(transaction.transactionDate).toLocaleDateString('en-IN')}
+                          {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('en-IN') : 'Invalid Date'}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{transaction.accountName}</div>
-                          <div className="text-sm text-muted-foreground">{transaction.bankName}</div>
+                          <div className="font-medium">{transaction.accountName || 'Unknown Account'}</div>
+                          <div className="text-sm text-muted-foreground">{transaction.bankName || 'Unknown Bank'}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -645,7 +645,7 @@ export default function AccountsDashboard() {
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {transaction.description}
+                          {transaction.description || 'No description'}
                         </TableCell>
                         <TableCell className="text-right">
                           <span className={
