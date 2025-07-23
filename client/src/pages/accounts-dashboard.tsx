@@ -27,6 +27,10 @@ export default function AccountsDashboard() {
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [isViewAccountOpen, setIsViewAccountOpen] = useState(false);
+  const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
+  const [viewingAccount, setViewingAccount] = useState<any>(null);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
   const [newAccount, setNewAccount] = useState<BankAccountInsert>({
     accountName: "",
     accountNumber: "",
@@ -137,6 +141,66 @@ export default function AccountsDashboard() {
       toast({
         title: "Error",
         description: error.message || "Failed to create bank account",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update bank account mutation
+  const updateAccountMutation = useMutation({
+    mutationFn: async (data: any) => {
+      console.log('🔧 Updating bank account with data:', data);
+      
+      try {
+        const response = await fetch(`/api/bank-accounts/${data.id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+        
+        console.log('📡 Update response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Update API Error:', errorText);
+          let errorMessage = 'Failed to update bank account';
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Bank account updated:', result);
+        return result;
+      } catch (error) {
+        console.error('🚨 Update network error:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      setIsEditAccountOpen(false);
+      setEditingAccount(null);
+      toast({
+        title: "Success",
+        description: "Bank account updated successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update bank account",
         variant: "destructive"
       });
     }
@@ -620,11 +684,27 @@ export default function AccountsDashboard() {
                         </div>
                         <Separator className="my-3" />
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => {
+                              setViewingAccount(account);
+                              setIsViewAccountOpen(true);
+                            }}
+                          >
                             <Eye className="h-3 w-3 mr-1" />
                             View
                           </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => {
+                              setEditingAccount(account);
+                              setIsEditAccountOpen(true);
+                            }}
+                          >
                             <Edit className="h-3 w-3 mr-1" />
                             Edit
                           </Button>
@@ -749,6 +829,194 @@ export default function AccountsDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* View Account Dialog */}
+      <Dialog open={isViewAccountOpen} onOpenChange={setIsViewAccountOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bank Account Details</DialogTitle>
+            <DialogDescription>
+              Complete information for this bank account
+            </DialogDescription>
+          </DialogHeader>
+          {viewingAccount && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Account Name</Label>
+                  <p className="font-semibold">{viewingAccount.accountName || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Bank Name</Label>
+                  <p className="font-semibold">{viewingAccount.bankName || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Account Number</Label>
+                  <p className="font-mono">{viewingAccount.accountNumber || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Account Type</Label>
+                  <Badge variant="outline">{viewingAccount.accountType?.toUpperCase() || 'UNKNOWN'}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">IFSC Code</Label>
+                  <p className="font-mono">{viewingAccount.ifscCode || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Branch Name</Label>
+                  <p>{viewingAccount.branchName || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Current Balance</Label>
+                  <p className="text-lg font-bold text-green-600">
+                    {formatCurrency(viewingAccount.currentBalance || 0)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                  <Badge variant={viewingAccount.status === 'active' ? 'default' : 'secondary'}>
+                    {viewingAccount.status?.toUpperCase() || 'UNKNOWN'}
+                  </Badge>
+                </div>
+              </div>
+              {viewingAccount.description && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                  <p className="text-sm">{viewingAccount.description}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Created</Label>
+                <p className="text-sm">
+                  {viewingAccount.createdAt ? new Date(viewingAccount.createdAt).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : 'Unknown'}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewAccountOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Account Dialog */}
+      <Dialog open={isEditAccountOpen} onOpenChange={setIsEditAccountOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Bank Account</DialogTitle>
+            <DialogDescription>
+              Update the details of this bank account
+            </DialogDescription>
+          </DialogHeader>
+          {editingAccount && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editAccountName">Account Name *</Label>
+                <Input
+                  id="editAccountName"
+                  value={editingAccount.accountName || ''}
+                  onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, accountName: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editAccountNumber">Account Number *</Label>
+                  <Input
+                    id="editAccountNumber"
+                    value={editingAccount.accountNumber || ''}
+                    onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, accountNumber: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Account Type</Label>
+                  <Select 
+                    value={editingAccount.accountType || 'savings'} 
+                    onValueChange={(value) => setEditingAccount((prev: any) => ({ ...prev, accountType: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="savings">Savings</SelectItem>
+                      <SelectItem value="current">Current</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editBankName">Bank Name *</Label>
+                <Input
+                  id="editBankName"
+                  value={editingAccount.bankName || ''}
+                  onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, bankName: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editIfscCode">IFSC Code</Label>
+                  <Input
+                    id="editIfscCode"
+                    value={editingAccount.ifscCode || ''}
+                    onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, ifscCode: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editBranchName">Branch Name</Label>
+                  <Input
+                    id="editBranchName"
+                    value={editingAccount.branchName || ''}
+                    onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, branchName: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editCurrentBalance">Current Balance (₹)</Label>
+                <Input
+                  id="editCurrentBalance"
+                  type="number"
+                  step="0.01"
+                  value={editingAccount.currentBalance || 0}
+                  onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, currentBalance: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDescription">Description</Label>
+                <Input
+                  id="editDescription"
+                  value={editingAccount.description || ''}
+                  onChange={(e) => setEditingAccount((prev: any) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditAccountOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => updateAccountMutation.mutate(editingAccount)}
+              disabled={updateAccountMutation.isPending}
+            >
+              {updateAccountMutation.isPending ? 'Updating...' : 'Update Account'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
