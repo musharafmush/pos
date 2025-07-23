@@ -5585,40 +5585,32 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
       const employees = sqlite.prepare(`
-        SELECT e.*, u.name as userName, u.email, u.username
+        SELECT e.*
         FROM employees e
-        LEFT JOIN users u ON e.user_id = u.id
-        WHERE e.is_active = 1
+        WHERE e.status = 'active'
         ORDER BY e.created_at DESC
       `).all();
       
       return employees.map(emp => ({
         id: emp.id,
-        userId: emp.user_id,
         employeeId: emp.employee_id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        email: emp.email,
+        phone: emp.phone,
+        hireDate: emp.hire_date,
         department: emp.department,
-        designation: emp.designation,
-        dateOfJoining: emp.date_of_joining,
-        dateOfBirth: emp.date_of_birth,
-        gender: emp.gender,
-        maritalStatus: emp.marital_status,
+        position: emp.position,
+        employmentType: emp.employment_type,
+        status: emp.status,
         address: emp.address,
-        phoneNumber: emp.phone_number,
-        emergencyContact: emp.emergency_contact,
-        emergencyPhone: emp.emergency_phone,
+        emergencyContactName: emp.emergency_contact_name,
+        emergencyContactPhone: emp.emergency_contact_phone,
         bankAccountNumber: emp.bank_account_number,
         bankName: emp.bank_name,
         ifscCode: emp.ifsc_code,
         panNumber: emp.pan_number,
         aadharNumber: emp.aadhar_number,
-        pfNumber: emp.pf_number,
-        esiNumber: emp.esi_number,
-        employmentType: emp.employment_type,
-        status: emp.status,
-        isActive: Boolean(emp.is_active),
-        userName: emp.userName,
-        email: emp.email,
-        username: emp.username,
         createdAt: new Date(emp.created_at),
         updatedAt: new Date(emp.updated_at)
       }));
@@ -5891,19 +5883,22 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
       const leaves = sqlite.prepare(`
-        SELECT la.*, e.employee_id, u.name as employeeName
+        SELECT la.*, e.employee_id, e.first_name, e.last_name,
+               (e.first_name || ' ' || e.last_name) as employeeName
         FROM leave_applications la
         LEFT JOIN employees e ON la.employee_id = e.id
-        LEFT JOIN users u ON e.user_id = u.id
         WHERE la.status = 'pending'
-        ORDER BY la.applied_date DESC
+        ORDER BY la.created_at DESC
       `).all();
       
       return leaves.map(leave => ({
         ...leave,
-        isHalfDay: Boolean(leave.is_half_day),
-        createdAt: new Date(leave.created_at),
-        updatedAt: new Date(leave.updated_at)
+        employeeName: leave.employeeName,
+        leaveType: leave.leave_type,
+        startDate: leave.start_date,
+        endDate: leave.end_date,
+        totalDays: leave.total_days,
+        createdAt: new Date(leave.created_at)
       }));
     } catch (error) {
       console.error('Error fetching pending leaves:', error);
@@ -6020,18 +6015,24 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
       const advances = sqlite.prepare(`
-        SELECT ea.*, e.employee_id, u.name as employeeName
+        SELECT ea.*, e.employee_id, e.first_name, e.last_name,
+               (e.first_name || ' ' || e.last_name) as employeeName
         FROM employee_advances ea
         LEFT JOIN employees e ON ea.employee_id = e.id
-        LEFT JOIN users u ON e.user_id = u.id
         WHERE ea.status = 'pending'
         ORDER BY ea.request_date DESC
       `).all();
       
       return advances.map(advance => ({
         ...advance,
-        createdAt: new Date(advance.created_at),
-        updatedAt: new Date(advance.updated_at)
+        employeeName: advance.employeeName,
+        requestDate: advance.request_date,
+        approvalDate: advance.approval_date,
+        approvedBy: advance.approved_by,
+        recoveryStartMonth: advance.recovery_start_month,
+        monthlyRecoveryAmount: advance.monthly_recovery_amount,
+        remainingAmount: advance.remaining_amount,
+        createdAt: new Date(advance.created_at)
       }));
     } catch (error) {
       console.error('Error fetching pending advances:', error);
