@@ -137,6 +137,22 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Bank Account Deposits and Withdrawals System Implementation (July 23, 2025)
+- Added comprehensive Bank Account deposit and withdrawal functionality to accounts dashboard
+- Implemented professional deposit dialog with amount input, description field, and validation
+- Created withdrawal dialog with amount input, description field, and available balance display
+- Added green "Deposit" and red "Withdraw" buttons to each bank account card for instant access
+- Integrated with bank transactions API using POST /api/bank-transactions with proper transaction types
+- Enhanced deposit operations: generates transaction ID (DEP{timestamp}), credit type, deposit mode
+- Enhanced withdrawal operations: generates transaction ID (WTH{timestamp}), debit type, withdrawal mode
+- Added real-time balance validation preventing withdrawals exceeding available account balance
+- Implemented automatic cache invalidation for accounts, summary, and transactions after each operation
+- Added comprehensive error handling and success notifications with toast messages
+- Enhanced UI with color-coded buttons (green for deposits, red for withdrawals) and proper icons
+- All operations trigger instant real-time data refresh across entire dashboard
+- Deposit/withdrawal operations fully integrated with existing authentication and banking infrastructure
+- System provides immediate visual feedback and updates account balances automatically
+
 ### Real-Time Data Updates System Implementation (July 23, 2025)
 - Successfully implemented comprehensive real-time data updates for accounts dashboard with dynamic refresh capabilities
 - Enhanced all React Query calls with reduced staleTime (3-5 seconds) and automatic refetchInterval (10-15 seconds)

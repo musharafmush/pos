@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap } from "lucide-react";
+import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import type { 
@@ -31,9 +31,14 @@ export default function AccountsDashboard() {
   const [isViewAccountOpen, setIsViewAccountOpen] = useState(false);
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [viewingAccount, setViewingAccount] = useState<any>(null);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [deletingAccount, setDeletingAccount] = useState<any>(null);
+  const [selectedAccountForTransaction, setSelectedAccountForTransaction] = useState<any>(null);
+  const [transactionAmount, setTransactionAmount] = useState<number>(0);
+  const [transactionDescription, setTransactionDescription] = useState<string>("");
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [newAccount, setNewAccount] = useState<BankAccountInsert>({
     accountName: "",
@@ -93,7 +98,7 @@ export default function AccountsDashboard() {
 
   // Update last refresh time when data changes
   useEffect(() => {
-    if (accounts.length > 0 || (summary && Object.keys(summary).length > 0) || transactions.length > 0) {
+    if ((accounts as any[])?.length > 0 || (summary && Object.keys(summary).length > 0) || (transactions as any[])?.length > 0) {
       setLastUpdate(new Date());
     }
   }, [accounts, summary, transactions]);
@@ -285,6 +290,98 @@ export default function AccountsDashboard() {
         variant: "destructive"
       });
     }
+  });
+
+  // Deposit money mutation
+  const depositMutation = useMutation({
+    mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
+      const response = await fetch('/api/bank-transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          accountId,
+          transactionId: `DEP${Date.now()}`,
+          transactionType: 'credit',
+          transactionMode: 'deposit',
+          amount,
+          balanceAfter: 0, // Will be calculated by backend
+          description: description || 'Deposit',
+          transactionDate: new Date().toISOString().split('T')[0]
+        })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to process deposit');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      toast({
+        title: "Success",
+        description: "Deposit completed successfully",
+      });
+      setIsDepositOpen(false);
+      setTransactionAmount(0);
+      setTransactionDescription("");
+      setSelectedAccountForTransaction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process deposit",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Withdraw money mutation
+  const withdrawMutation = useMutation({
+    mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
+      const response = await fetch('/api/bank-transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          accountId,
+          transactionId: `WTH${Date.now()}`,
+          transactionType: 'debit',
+          transactionMode: 'withdrawal',
+          amount,
+          balanceAfter: 0, // Will be calculated by backend
+          description: description || 'Withdrawal',
+          transactionDate: new Date().toISOString().split('T')[0]
+        })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to process withdrawal');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      toast({
+        title: "Success",
+        description: "Withdrawal completed successfully",
+      });
+      setIsWithdrawOpen(false);
+      setTransactionAmount(0);
+      setTransactionDescription("");
+      setSelectedAccountForTransaction(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process withdrawal",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create bank transaction mutation
@@ -805,6 +902,32 @@ export default function AccountsDashboard() {
                           </div>
                         </div>
                         <Separator className="my-3" />
+                        <div className="flex gap-1 mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                            onClick={() => {
+                              setSelectedAccountForTransaction(account);
+                              setIsDepositOpen(true);
+                            }}
+                          >
+                            <ArrowUpCircle className="h-3 w-3 mr-1" />
+                            Deposit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                            onClick={() => {
+                              setSelectedAccountForTransaction(account);
+                              setIsWithdrawOpen(true);
+                            }}
+                          >
+                            <ArrowDownCircle className="h-3 w-3 mr-1" />
+                            Withdraw
+                          </Button>
+                        </div>
                         <div className="flex gap-1">
                           <Button 
                             variant="outline" 
@@ -1205,6 +1328,129 @@ export default function AccountsDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+        {/* Deposit Dialog */}
+        <Dialog open={isDepositOpen} onOpenChange={setIsDepositOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deposit Money</DialogTitle>
+              <DialogDescription>
+                Add money to {selectedAccountForTransaction?.accountName || 'selected account'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="deposit-amount">Amount (₹)</Label>
+                <Input
+                  id="deposit-amount"
+                  type="number"
+                  value={transactionAmount || ''}
+                  onChange={(e) => setTransactionAmount(Number(e.target.value))}
+                  placeholder="Enter deposit amount"
+                  min="1"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="deposit-description">Description</Label>
+                <Input
+                  id="deposit-description"
+                  value={transactionDescription}
+                  onChange={(e) => setTransactionDescription(e.target.value)}
+                  placeholder="Enter description (optional)"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDepositOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedAccountForTransaction && transactionAmount > 0) {
+                    depositMutation.mutate({
+                      accountId: selectedAccountForTransaction.id,
+                      amount: transactionAmount,
+                      description: transactionDescription
+                    });
+                  }
+                }}
+                disabled={!transactionAmount || transactionAmount <= 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <ArrowUpCircle className="h-4 w-4 mr-2" />
+                Deposit ₹{transactionAmount || 0}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Withdraw Dialog */}
+        <Dialog open={isWithdrawOpen} onOpenChange={setIsWithdrawOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Withdraw Money</DialogTitle>
+              <DialogDescription>
+                Withdraw money from {selectedAccountForTransaction?.accountName || 'selected account'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="withdraw-amount">Amount (₹)</Label>
+                <Input
+                  id="withdraw-amount"
+                  type="number"
+                  value={transactionAmount || ''}
+                  onChange={(e) => setTransactionAmount(Number(e.target.value))}
+                  placeholder="Enter withdrawal amount"
+                  min="1"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="withdraw-description">Description</Label>
+                <Input
+                  id="withdraw-description"
+                  value={transactionDescription}
+                  onChange={(e) => setTransactionDescription(e.target.value)}
+                  placeholder="Enter description (optional)"
+                />
+              </div>
+              {selectedAccountForTransaction && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm text-gray-600">Available Balance</div>
+                  <div className="text-lg font-semibold">₹{selectedAccountForTransaction.currentBalance || 0}</div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsWithdrawOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedAccountForTransaction && transactionAmount > 0) {
+                    withdrawMutation.mutate({
+                      accountId: selectedAccountForTransaction.id,
+                      amount: transactionAmount,
+                      description: transactionDescription
+                    });
+                  }
+                }}
+                disabled={
+                  !transactionAmount || 
+                  transactionAmount <= 0 || 
+                  transactionAmount > (selectedAccountForTransaction?.currentBalance || 0)
+                }
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <ArrowDownCircle className="h-4 w-4 mr-2" />
+                Withdraw ₹{transactionAmount || 0}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </DashboardLayout>
   );
