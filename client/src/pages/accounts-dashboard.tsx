@@ -93,7 +93,7 @@ export default function AccountsDashboard() {
 
   // Update last refresh time when data changes
   useEffect(() => {
-    if (accounts.length > 0 || Object.keys(summary).length > 0 || transactions.length > 0) {
+    if (accounts.length > 0 || (summary && Object.keys(summary).length > 0) || transactions.length > 0) {
       setLastUpdate(new Date());
     }
   }, [accounts, summary, transactions]);
