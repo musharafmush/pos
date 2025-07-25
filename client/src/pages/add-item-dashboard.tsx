@@ -200,7 +200,7 @@ export default function AddItemDashboard() {
 
 
   // Fetch products with enhanced error handling and debugging
-  const { data: products = [], isLoading: productsLoading, refetch: refetchProducts, error: productsError } = useQuery({
+  const { data: products = [], isLoading: productsLoading, isFetching: productsFetching, refetch: refetchProducts, error: productsError } = useQuery({
     queryKey: ["/api/products"],
     queryFn: async () => {
       try {
@@ -270,8 +270,10 @@ export default function AddItemDashboard() {
         throw error;
       }
     },
-    staleTime: 30000, // 30 seconds
+    staleTime: 5000, // 5 seconds for recent updates
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
     refetchOnWindowFocus: true,
+    refetchOnMount: true,
     retry: (failureCount, error) => {
       // Don't retry server connectivity issues
       if (error.message.includes('connect to server')) {
@@ -312,6 +314,8 @@ export default function AddItemDashboard() {
   // Fetch categories for the edit form
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
+    staleTime: 60000, // Categories don't change as often
+    refetchOnWindowFocus: true,
   });
 
   // Delete product mutation
@@ -396,11 +400,12 @@ export default function AddItemDashboard() {
     },
     onSuccess: (data) => {
       console.log('Delete mutation success:', data);
+      // Force immediate refresh to show updates
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.refetchQueries({ queryKey: ["/api/products"] });
       toast({
-        title: "Success",
-        description: data?.message || "Product deleted successfully",
+        title: "Product Deleted Successfully ✅",
+        description: "The product has been removed and the list will update immediately.",
       });
     },
     onError: (error: Error) => {
@@ -613,15 +618,13 @@ export default function AddItemDashboard() {
       console.log('Product update successful:', result);
       toast({
         title: "Product updated successfully! ✅",
-        description: "The product has been updated with new information.",
+        description: "The product has been updated and will appear in the list immediately.",
       });
+      // Force immediate refresh to show latest updates
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.refetchQueries({ queryKey: ["/api/products"] });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
-
-      // Reset edit form
-
     },
     onError: (error) => {
       console.error('Product update error:', error);
@@ -1229,8 +1232,26 @@ export default function AddItemDashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Professional Add Item Dashboard</h1>
-              <p className="text-gray-600 mt-2">Manage and overview your product creation activities</p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-900">Professional Add Item Dashboard</h1>
+                {productsFetching && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
+                    <RefreshCcwIcon className="w-4 h-4 text-blue-600 animate-spin" />
+                    <span className="text-sm text-blue-700 font-medium">Refreshing...</span>
+                  </div>
+                )}
+                <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
+                  Real-time Updates
+                </Badge>
+              </div>
+              <p className="text-gray-600 mt-2">
+                Manage and overview your product creation activities
+                {products.length > 0 && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    • Auto-refresh every 10 seconds • {products.length} products loaded
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex gap-3">
               <Button 
@@ -1259,13 +1280,14 @@ export default function AddItemDashboard() {
                   console.log('🔄 Manual refresh triggered');
                   refetchProducts();
                   toast({
-                    title: "Refreshing Data",
-                    description: "Fetching latest product information...",
+                    title: "Manual Refresh",
+                    description: "Fetching latest product updates...",
                   });
                 }}
+                disabled={productsFetching}
               >
-                <RefreshCcwIcon className="w-4 h-4 mr-2" />
-                Refresh
+                <RefreshCcwIcon className={`w-4 h-4 mr-2 ${productsFetching ? 'animate-spin' : ''}`} />
+                {productsFetching ? 'Refreshing...' : 'Refresh Now'}
               </Button>
               <Button 
                 variant="outline" 

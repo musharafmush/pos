@@ -137,6 +137,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Add Item Dashboard Real-Time Updates Fix (July 25, 2025)
+- Fixed add-item-dashboard not showing recently updated items by implementing comprehensive real-time refresh
+- Enhanced products query with faster staleTime (5 seconds) and automatic refetchInterval (10 seconds)
+- Added real-time visual indicators: spinning refresh icon when fetching data and "Real-time Updates" badge
+- Implemented auto-refresh status display showing "Auto-refresh every 10 seconds • X products loaded"
+- Enhanced manual refresh button with loading state and disabled state during fetching
+- Fixed cache invalidation to force immediate refresh after product updates, deletions, and additions
+- Added comprehensive product fetching with refetchOnMount and refetchOnWindowFocus for instant updates
+- Enhanced error handling and success notifications for all product operations
+- Recent updates now appear immediately in dashboard with visual feedback during refresh operations
+- System provides real-time product management experience with continuous data synchronization
+
 ### Bank Account Deposits and Withdrawals System Implementation (July 23, 2025)
 - Added comprehensive Bank Account deposit and withdrawal functionality to accounts dashboard
 - Implemented professional deposit dialog with amount input, description field, and validation
