@@ -41,6 +41,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -61,7 +70,15 @@ import {
   Star,
   AlertTriangle,
   Check,
-  X
+  X,
+  MoreHorizontalIcon,
+  CopyIcon,
+  ArchiveIcon,
+  Trash2,
+  Eye,
+  Edit,
+  DownloadIcon,
+  SettingsIcon
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -93,8 +110,12 @@ export default function RepackingDashboardProfessional() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isRepackDialogOpen, setIsRepackDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedBulkProduct, setSelectedBulkProduct] = useState<Product | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     sku: "",
@@ -284,6 +305,31 @@ export default function RepackingDashboardProfessional() {
     return isRepacked && product.active;
   });
 
+  // Filter functions for display
+  const filteredBulkProducts = bulkProducts.filter((product: Product) => {
+    const matchesSearch = searchTerm === "" || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && product.active) ||
+      (statusFilter === "low-stock" && product.stockQuantity <= (product.alertThreshold || 10));
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredRepackedProducts = repackedProducts.filter((product: Product) => {
+    const matchesSearch = searchTerm === "" || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || 
+      (statusFilter === "active" && product.active) ||
+      (statusFilter === "low-stock" && product.stockQuantity <= (product.alertThreshold || 10));
+
+    return matchesSearch && matchesStatus;
+  });
+
   // Handle opening repack dialog
   const handleRepackProduct = (product: Product) => {
     setSelectedBulkProduct(product);
@@ -337,6 +383,247 @@ export default function RepackingDashboardProfessional() {
     setTimeout(() => {
       recalculateRepackData(initialWeight, initialUnit, false);
     }, 100);
+  };
+
+  // CRUD Operations for Repacked Products
+
+  // Create new product mutation
+  const createProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      return await apiRequest("/api/products", {
+        method: "POST",
+        body: JSON.stringify(productData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Created Successfully ✅",
+        description: "New product has been added to inventory",
+      });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Create Product",
+        description: error.message || "An error occurred while creating the product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, ...productData }: any) => {
+      return await apiRequest(`/api/products/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(productData),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Updated Successfully ✅",
+        description: "Product information has been updated",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update Product",
+        description: error.message || "An error occurred while updating the product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      return await apiRequest(`/api/products/${productId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Deleted Successfully ✅",
+        description: "Product has been removed from inventory",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Delete Product",
+        description: error.message || "An error occurred while deleting the product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Duplicate product mutation
+  const duplicateProductMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      const duplicatedProduct = {
+        ...product,
+        name: `${product.name} (Copy)`,
+        sku: `${product.sku}-COPY-${Date.now().toString().slice(-6)}`,
+        id: undefined, // Remove ID to create new product
+      };
+      return await apiRequest("/api/products", {
+        method: "POST",
+        body: JSON.stringify(duplicatedProduct),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Product Duplicated Successfully ✅",
+        description: "A copy of the product has been created",
+      });
+      setIsDuplicateDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Duplicate Product",
+        description: error.message || "An error occurred while duplicating the product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk actions handler
+  const handleBulkAction = (action: string) => {
+    if (selectedItems.size === 0) {
+      toast({
+        title: "No Items Selected",
+        description: "Please select items to perform bulk actions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    switch (action) {
+      case 'delete':
+        if (window.confirm(`Are you sure you want to delete ${selectedItems.size} selected items?`)) {
+          selectedItems.forEach(id => {
+            deleteProductMutation.mutate(id);
+          });
+          setSelectedItems(new Set());
+          setSelectAll(false);
+        }
+        break;
+      case 'activate':
+        selectedItems.forEach(id => {
+          const product = products.find(p => p.id === id);
+          if (product) {
+            updateProductMutation.mutate({ ...product, active: true });
+          }
+        });
+        setSelectedItems(new Set());
+        setSelectAll(false);
+        break;
+      case 'deactivate':
+        selectedItems.forEach(id => {
+          const product = products.find(p => p.id === id);
+          if (product) {
+            updateProductMutation.mutate({ ...product, active: false });
+          }
+        });
+        setSelectedItems(new Set());
+        setSelectAll(false);
+        break;
+    }
+  };
+
+  // Selection handlers
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } else {
+      setSelectedItems(new Set(repackedProducts.map(p => p.id)));
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectItem = (productId: number) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedItems(newSelected);
+    setSelectAll(newSelected.size === repackedProducts.length);
+  };
+
+  // Form handling functions
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      sku: "",
+      description: "",
+      price: "",
+      cost: "",
+      stockQuantity: "",
+      weight: "",
+      weightUnit: "g",
+      alertThreshold: ""
+    });
+  };
+
+  const handleEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setFormData({
+      name: product.name,
+      sku: product.sku,
+      description: product.description || "",
+      price: product.price.toString(),
+      cost: product.cost.toString(),
+      stockQuantity: product.stockQuantity.toString(),
+      weight: product.weight?.toString() || "",
+      weightUnit: product.weightUnit || "g",
+      alertThreshold: product.alertThreshold?.toString() || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleView = (product: Product) => {
+    setSelectedProduct(product);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDuplicate = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDuplicateDialogOpen(true);
+  };
+
+  // Handle repack form submission
+  const handleSubmitRepack = () => {
+    if (!selectedBulkProduct || !repackFormData.targetName || !repackFormData.unitWeight) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createRepackedProductMutation.mutate(repackFormData);
   };
 
   // Create repacked product mutation
@@ -447,42 +734,9 @@ export default function RepackingDashboardProfessional() {
     },
   });
 
-  const handleSubmitRepack = () => {
-    if (!selectedBulkProduct || !repackFormData.unitWeight || !repackFormData.targetName) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Note: handleSubmitRepack function already defined above
 
-    createRepackedProductMutation.mutate({
-      ...repackFormData,
-      selectedBulkProduct
-    });
-  };
-
-  // Filter products based on search and filters
-  const filteredBulkProducts = bulkProducts.filter((product: Product) => {
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "active" && product.active) ||
-      (statusFilter === "low-stock" && product.stockQuantity <= (product.alertThreshold || 10));
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const filteredRepackedProducts = repackedProducts.filter((product: Product) => {
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  // Note: filtered functions already defined above
 
   if (isLoading) {
     return (
@@ -694,16 +948,85 @@ export default function RepackingDashboardProfessional() {
           <TabsContent value="repacked" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Repacked Products</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Products created by repacking bulk items into smaller units
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Repacked Products</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Products created by repacking bulk items into smaller units
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedItems.size > 0 && (
+                      <div className="flex items-center gap-2 border-r pr-2 mr-2">
+                        <Badge variant="secondary">{selectedItems.size} selected</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBulkAction('activate')}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Activate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBulkAction('deactivate')}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Deactivate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleBulkAction('delete')}
+                        >
+                          <Trash className="h-4 w-4 mr-1" />
+                          Delete Selected
+                        </Button>
+                      </div>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => setIsCreateDialogOpen(true)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Add Product
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const csvContent = repackedProducts.map(p => 
+                          `"${p.name}","${p.sku}","${p.price}","${p.stockQuantity}","${p.active ? 'Active' : 'Inactive'}"`
+                        ).join('\n');
+                        const blob = new Blob([`Name,SKU,Price,Stock,Status\n${csvContent}`], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `repacked-products-${new Date().toISOString().split('T')[0]}.csv`;
+                        a.click();
+                      }}
+                    >
+                      <DownloadIcon className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="rounded border-gray-300"
+                          />
+                        </TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>SKU</TableHead>
                         <TableHead>Weight/Unit</TableHead>
@@ -711,12 +1034,13 @@ export default function RepackingDashboardProfessional() {
                         <TableHead>Price</TableHead>
                         <TableHead>MRP</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredRepackedProducts.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8">
+                          <TableCell colSpan={9} className="text-center py-8">
                             <div className="text-center">
                               <Package className="mx-auto h-12 w-12 text-gray-400" />
                               <h3 className="mt-2 text-sm font-semibold text-gray-900">No repacked products</h3>
@@ -729,6 +1053,14 @@ export default function RepackingDashboardProfessional() {
                       ) : (
                         filteredRepackedProducts.map((product: Product) => (
                           <TableRow key={product.id}>
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.has(product.id)}
+                                onChange={() => handleSelectItem(product.id)}
+                                className="rounded border-gray-300"
+                              />
+                            </TableCell>
                             <TableCell>
                               <div>
                                 <div className="font-medium">{product.name}</div>
@@ -770,6 +1102,42 @@ export default function RepackingDashboardProfessional() {
                               <Badge variant={product.active ? "default" : "secondary"}>
                                 {product.active ? "Active" : "Inactive"}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontalIcon className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[200px]">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={() => handleView(product)}>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      <span>View Details</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleEdit(product)}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      <span>Edit Product</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicate(product)}>
+                                      <CopyIcon className="mr-2 h-4 w-4" />
+                                      <span>Duplicate</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuGroup>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(product)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
@@ -1452,6 +1820,375 @@ export default function RepackingDashboardProfessional() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Create Product Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <PlusIcon className="h-5 w-5" />
+                Create New Product
+              </DialogTitle>
+              <DialogDescription>
+                Add a new product to your repacked inventory
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="sku" className="text-right">SKU</Label>
+                <Input
+                  id="sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="price" className="text-right">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cost" className="text-right">Cost</Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stock" className="text-right">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  const productData = {
+                    name: formData.name,
+                    sku: formData.sku,
+                    description: formData.description,
+                    price: parseFloat(formData.price),
+                    cost: parseFloat(formData.cost),
+                    mrp: parseFloat(formData.price) * 1.2, // Default MRP
+                    stockQuantity: parseInt(formData.stockQuantity),
+                    weight: parseFloat(formData.weight) || 0,
+                    weightUnit: formData.weightUnit,
+                    categoryId: 1,
+                    alertThreshold: parseInt(formData.alertThreshold) || 10,
+                    active: true
+                  };
+                  createProductMutation.mutate(productData);
+                }}
+                disabled={!formData.name || !formData.sku || !formData.price || createProductMutation.isPending}
+              >
+                {createProductMutation.isPending ? "Creating..." : "Create Product"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <EditIcon className="h-5 w-5" />
+                Edit Product
+              </DialogTitle>
+              <DialogDescription>
+                Update product information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-name" className="text-right">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-sku" className="text-right">SKU</Label>
+                <Input
+                  id="edit-sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-price" className="text-right">Price</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-cost" className="text-right">Cost</Label>
+                <Input
+                  id="edit-cost"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-stock" className="text-right">Stock</Label>
+                <Input
+                  id="edit-stock"
+                  type="number"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-description" className="text-right">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (selectedProduct) {
+                    const productData = {
+                      id: selectedProduct.id,
+                      name: formData.name,
+                      sku: formData.sku,
+                      description: formData.description,
+                      price: parseFloat(formData.price),
+                      cost: parseFloat(formData.cost),
+                      mrp: selectedProduct.mrp,
+                      stockQuantity: parseInt(formData.stockQuantity),
+                      weight: parseFloat(formData.weight) || selectedProduct.weight,
+                      weightUnit: formData.weightUnit || selectedProduct.weightUnit,
+                      categoryId: selectedProduct.categoryId,
+                      alertThreshold: parseInt(formData.alertThreshold) || selectedProduct.alertThreshold,
+                      active: selectedProduct.active
+                    };
+                    updateProductMutation.mutate(productData);
+                  }
+                }}
+                disabled={!formData.name || !formData.sku || !formData.price || updateProductMutation.isPending}
+              >
+                {updateProductMutation.isPending ? "Updating..." : "Update Product"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Product Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <EyeIcon className="h-5 w-5" />
+                Product Details
+              </DialogTitle>
+              <DialogDescription>
+                View complete product information
+              </DialogDescription>
+            </DialogHeader>
+            {selectedProduct && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Name:</div>
+                  <div className="col-span-2">{selectedProduct.name}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">SKU:</div>
+                  <div className="col-span-2">
+                    <code className="bg-muted px-2 py-1 rounded text-sm">{selectedProduct.sku}</code>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Price:</div>
+                  <div className="col-span-2">₹{Number(selectedProduct.price).toFixed(2)}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Cost:</div>
+                  <div className="col-span-2">₹{Number(selectedProduct.cost).toFixed(2)}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">MRP:</div>
+                  <div className="col-span-2">₹{Number(selectedProduct.mrp).toFixed(2)}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Stock:</div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    {selectedProduct.stockQuantity}
+                    {selectedProduct.stockQuantity <= (selectedProduct.alertThreshold || 10) && (
+                      <Badge variant="destructive">Low Stock</Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Weight:</div>
+                  <div className="col-span-2">
+                    {selectedProduct.weight ? 
+                      `${selectedProduct.weight}${selectedProduct.weightUnit || 'g'}` : 
+                      'Not specified'
+                    }
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="font-medium">Status:</div>
+                  <div className="col-span-2">
+                    <Badge variant={selectedProduct.active ? "default" : "secondary"}>
+                      {selectedProduct.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+                {selectedProduct.description && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="font-medium">Description:</div>
+                    <div className="col-span-2 text-sm text-muted-foreground">
+                      {selectedProduct.description}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+              <Button onClick={() => {
+                setIsViewDialogOpen(false);
+                if (selectedProduct) handleEdit(selectedProduct);
+              }}>
+                <EditIcon className="h-4 w-4 mr-2" />
+                Edit Product
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Product Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash className="h-5 w-5 text-red-500" />
+                Delete Product
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{selectedProduct?.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {selectedProduct && (
+              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="text-sm space-y-1">
+                  <div><span className="font-medium">SKU:</span> {selectedProduct.sku}</div>
+                  <div><span className="font-medium">Current Stock:</span> {selectedProduct.stockQuantity}</div>
+                  <div><span className="font-medium">Value:</span> ₹{(selectedProduct.price * selectedProduct.stockQuantity).toFixed(2)}</div>
+                </div>
+              </div>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (selectedProduct) {
+                    deleteProductMutation.mutate(selectedProduct.id);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteProductMutation.isPending ? "Deleting..." : "Delete Product"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Duplicate Product Dialog */}
+        <AlertDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <CopyIcon className="h-5 w-5" />
+                Duplicate Product
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Create a copy of "{selectedProduct?.name}" with a new SKU?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            {selectedProduct && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="text-sm space-y-1">
+                  <div><span className="font-medium">Original SKU:</span> {selectedProduct.sku}</div>
+                  <div><span className="font-medium">New SKU:</span> {selectedProduct.sku}-COPY-{Date.now().toString().slice(-6)}</div>
+                  <div><span className="font-medium">New Name:</span> {selectedProduct.name} (Copy)</div>
+                </div>
+              </div>
+            )}
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (selectedProduct) {
+                    duplicateProductMutation.mutate(selectedProduct);
+                  }
+                }}
+              >
+                {duplicateProductMutation.isPending ? "Duplicating..." : "Create Copy"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
