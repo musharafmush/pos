@@ -111,21 +111,39 @@ export default function AccountsDashboard() {
     refetchOnWindowFocus: true,
     select: (data) => {
       // Filter and transform sales data for bank integration with split payment support
-      return data?.map(sale => ({
-        id: sale.id,
-        orderNumber: sale.orderNumber || sale.order_number,
-        customerName: sale.customerName || sale.customer?.name || 'Walk-in Customer', 
-        totalAmount: parseFloat(sale.total || '0'),
-        paymentMethod: sale.paymentMethod || sale.payment_method || 'cash',
-        saleDate: sale.createdAt || sale.created_at,
-        items: sale.items || [],
-        // Split payment amounts
-        cashAmount: parseFloat(sale.cashAmount || sale.cash_amount || '0'),
-        upiAmount: parseFloat(sale.upiAmount || sale.upi_amount || '0'),
-        cardAmount: parseFloat(sale.cardAmount || sale.card_amount || '0'),
-        bankTransferAmount: parseFloat(sale.bankTransferAmount || sale.bank_transfer_amount || '0'),
-        chequeAmount: parseFloat(sale.chequeAmount || sale.cheque_amount || '0')
-      })) || [];
+      console.log('🔍 Raw sales data received:', data?.[0]); // Debug first sale
+      const transformedData = data?.map(sale => {
+        const transformed = {
+          id: sale.id,
+          orderNumber: sale.orderNumber || sale.order_number,
+          customerName: sale.customerName || sale.customer?.name || 'Walk-in Customer', 
+          totalAmount: parseFloat(sale.total || '0'),
+          paymentMethod: sale.paymentMethod || sale.payment_method || 'cash',
+          saleDate: sale.createdAt || sale.created_at,
+          items: sale.items || [],
+          // Split payment amounts
+          cashAmount: parseFloat(sale.cashAmount || sale.cash_amount || '0'),
+          upiAmount: parseFloat(sale.upiAmount || sale.upi_amount || '0'),
+          cardAmount: parseFloat(sale.cardAmount || sale.card_amount || '0'),
+          bankTransferAmount: parseFloat(sale.bankTransferAmount || sale.bank_transfer_amount || '0'),
+          chequeAmount: parseFloat(sale.chequeAmount || sale.cheque_amount || '0')
+        };
+        if (sale.id <= 19 && sale.id >= 17) { // Debug recent sales
+          console.log(`💰 Sale ${sale.id} transformed:`, transformed);
+        }
+        return transformed;
+      }) || [];
+      
+      // Calculate totals for debugging
+      const totals = {
+        cash: transformedData.reduce((sum, sale) => sum + sale.cashAmount, 0),
+        upi: transformedData.reduce((sum, sale) => sum + sale.upiAmount, 0),
+        card: transformedData.reduce((sum, sale) => sum + sale.cardAmount, 0),
+        bankTransfer: transformedData.reduce((sum, sale) => sum + sale.bankTransferAmount, 0)
+      };
+      console.log('📊 Payment totals calculated:', totals);
+      
+      return transformedData;
     }
   });
 
