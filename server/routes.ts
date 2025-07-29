@@ -7666,9 +7666,16 @@ app.post("/api/customers", async (req, res) => {
     try {
       const material = await storage.createRawMaterial(req.body);
       res.status(201).json(material);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating raw material:', error);
-      res.status(500).json({ message: 'Failed to create raw material' });
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE' && error.message.includes('raw_materials.name')) {
+        res.status(400).json({ 
+          message: `Material name "${req.body.name}" already exists. Please choose a different name.`,
+          error: 'DUPLICATE_NAME'
+        });
+      } else {
+        res.status(500).json({ message: 'Failed to create raw material' });
+      }
     }
   });
 

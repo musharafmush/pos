@@ -111,13 +111,23 @@ export default function RawMaterialsManagement() {
         description: "Raw material created successfully"
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Create material error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create raw material. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Handle duplicate name error specifically
+      if (error.status === 400 && error.message?.includes('already exists')) {
+        toast({
+          title: "Duplicate Name",
+          description: error.message || "A material with this name already exists. Please choose a different name.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create raw material. Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   });
 
