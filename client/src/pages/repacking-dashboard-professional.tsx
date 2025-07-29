@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -109,11 +110,11 @@ export default function RepackingDashboardProfessional() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isRepackDialogOpen, setIsRepackDialogOpen] = useState(false);
+  // Repack dialog removed - now redirects to dedicated repack page
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedBulkProduct, setSelectedBulkProduct] = useState<Product | null>(null);
+  // Bulk product selection removed - handled in dedicated repack page
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [formData, setFormData] = useState({
@@ -926,14 +927,29 @@ export default function RepackingDashboardProfessional() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                onClick={() => handleRepackProduct(product)}
-                                className="mr-2"
-                              >
-                                <Package className="h-4 w-4 mr-1" />
-                                Repack
-                              </Button>
+                              <Link href="/repacking-professional">
+                                <Button
+                                  size="sm"
+                                  className="mr-2"
+                                  onClick={() => {
+                                    // Store product data for repacking page
+                                    localStorage.setItem('selectedProductForRepack', JSON.stringify({
+                                      id: product.id,
+                                      name: product.name,
+                                      sku: product.sku,
+                                      weight: product.weight,
+                                      weightUnit: product.weightUnit,
+                                      price: product.price,
+                                      cost: product.cost,
+                                      mrp: product.mrp,
+                                      stockQuantity: product.stockQuantity
+                                    }));
+                                  }}
+                                >
+                                  <Package className="h-4 w-4 mr-1" />
+                                  Repack
+                                </Button>
+                              </Link>
                             </TableCell>
                           </TableRow>
                         ))
@@ -1150,7 +1166,7 @@ export default function RepackingDashboardProfessional() {
           </TabsContent>
         </Tabs>
 
-        {/* Professional Repack Dialog with kg/g Unit Support */}
+        {/* Repack dialog removed - now redirects to /repacking-professional */}
         <Dialog open={isRepackDialogOpen} onOpenChange={setIsRepackDialogOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
