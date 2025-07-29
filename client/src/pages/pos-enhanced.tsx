@@ -1397,10 +1397,12 @@ export default function POSEnhanced() {
         notes: `Bill: ${billNumber}${loyaltyPointsToRedeem > 0 ? `, Loyalty: ${loyaltyPointsToRedeem} points redeemed` : ''}${paymentMethod === "split" ? `, Cash: ₹${cashAmount}, UPI: ₹${upiAmount}` : ''}`,
         billNumber: billNumber,
         status: "completed",
-        ...(paymentMethod === "split" && {
-          cashAmount: parseFloat(cashAmount) || 0,
-          upiAmount: parseFloat(upiAmount) || 0
-        })
+        // Split payment amounts - populate based on payment method
+        cashAmount: paymentMethod === "split" ? (parseFloat(cashAmount) || 0) : (paymentMethod === "cash" ? total : 0),
+        upiAmount: paymentMethod === "split" ? (parseFloat(upiAmount) || 0) : (paymentMethod === "upi" ? total : 0),
+        cardAmount: paymentMethod === "card" ? total : 0,
+        bankTransferAmount: paymentMethod === "bank_transfer" ? total : 0,
+        chequeAmount: paymentMethod === "cheque" ? total : 0
       };
 
       console.log("Processing sale with data:", saleData);

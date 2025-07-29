@@ -1705,7 +1705,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         change,
         notes,
         billNumber,
-        status
+        status,
+        cashAmount,
+        upiAmount,
+        cardAmount,
+        bankTransferAmount,
+        chequeAmount
       } = req.body;
 
       // Validate required fields
@@ -1762,12 +1767,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = sqlite.transaction(() => {
         try {
-          // Insert the sale record
+          // Insert the sale record with split payment amounts
           const insertSale = sqlite.prepare(`
             INSERT INTO sales (
               order_number, customer_id, user_id, total, tax, discount, 
-              payment_method, status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              payment_method, status, created_at, cash_amount, upi_amount, 
+              card_amount, bank_transfer_amount, cheque_amount
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)
           `);
 
           const saleResult = insertSale.run(
@@ -1778,7 +1784,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parseFloat(tax || "0").toString(),
             parseFloat(discount || "0").toString(),
             paymentMethod || "cash",
-            status || "completed"
+            status || "completed",
+            parseFloat(cashAmount || "0"),
+            parseFloat(upiAmount || "0"),
+            parseFloat(cardAmount || "0"),
+            parseFloat(bankTransferAmount || "0"),
+            parseFloat(chequeAmount || "0")
           );
 
           const saleId = saleResult.lastInsertRowid;
@@ -1894,6 +1905,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             s.payment_method,
             s.status,
             s.created_at,
+            s.cash_amount,
+            s.upi_amount,
+            s.card_amount,
+            s.bank_transfer_amount,
+            s.cheque_amount,
             c.name as customerName, 
             c.phone as customerPhone, 
             u.name as userName,

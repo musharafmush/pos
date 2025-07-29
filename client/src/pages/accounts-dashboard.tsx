@@ -110,7 +110,7 @@ export default function AccountsDashboard() {
     refetchInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnWindowFocus: true,
     select: (data) => {
-      // Filter and transform sales data for bank integration
+      // Filter and transform sales data for bank integration with split payment support
       return data?.map(sale => ({
         id: sale.id,
         orderNumber: sale.orderNumber || sale.order_number,
@@ -118,7 +118,13 @@ export default function AccountsDashboard() {
         totalAmount: parseFloat(sale.total || '0'),
         paymentMethod: sale.paymentMethod || sale.payment_method || 'cash',
         saleDate: sale.createdAt || sale.created_at,
-        items: sale.items || []
+        items: sale.items || [],
+        // Split payment amounts
+        cashAmount: parseFloat(sale.cashAmount || sale.cash_amount || '0'),
+        upiAmount: parseFloat(sale.upiAmount || sale.upi_amount || '0'),
+        cardAmount: parseFloat(sale.cardAmount || sale.card_amount || '0'),
+        bankTransferAmount: parseFloat(sale.bankTransferAmount || sale.bank_transfer_amount || '0'),
+        chequeAmount: parseFloat(sale.chequeAmount || sale.cheque_amount || '0')
       })) || [];
     }
   });
@@ -130,29 +136,64 @@ export default function AccountsDashboard() {
     }
   }, [accounts, summary, transactions]);
 
-  // Auto-create bank transactions for POS sales mutation
+  // Auto-create bank transactions for POS sales mutation (split payment support)
   const createPosTransactionMutation = useMutation({
-    mutationFn: async ({ sale, accountId }: { sale: any, accountId: number }) => {
-      // Determine transaction mode based on payment method
-      const transactionModeMap: { [key: string]: string } = {
-        'upi': 'upi',
-        'card': 'card',
-        'bank_transfer': 'bank_transfer',
-        'cheque': 'cheque',
-        'cash': 'cash',
-        'other': 'other'
-      };
+    mutationFn: async ({ sale, accountId, paymentType }: { sale: any, accountId: number, paymentType?: string }) => {
+      // Calculate the amount based on payment type for split payments
+      let amount = sale.totalAmount;
+      let transactionMode = 'other';
+      let description = `POS Sale - ${sale.orderNumber} (${sale.customerName})`;
+      
+      if (paymentType) {
+        // Handle split payment linking
+        switch (paymentType.toLowerCase()) {
+          case 'upi':
+            amount = sale.upiAmount;
+            transactionMode = 'upi';
+            description = `POS Sale (UPI) - ${sale.orderNumber} (${sale.customerName})`;
+            break;
+          case 'card':
+            amount = sale.cardAmount;
+            transactionMode = 'card';
+            description = `POS Sale (Card) - ${sale.orderNumber} (${sale.customerName})`;
+            break;
+          case 'bank_transfer':
+            amount = sale.bankTransferAmount;
+            transactionMode = 'bank_transfer';
+            description = `POS Sale (Bank Transfer) - ${sale.orderNumber} (${sale.customerName})`;
+            break;
+          case 'cheque':
+            amount = sale.chequeAmount;
+            transactionMode = 'cheque';
+            description = `POS Sale (Cheque) - ${sale.orderNumber} (${sale.customerName})`;
+            break;
+        }
+      } else {
+        // Fallback to original payment method
+        const transactionModeMap: { [key: string]: string } = {
+          'upi': 'upi',
+          'card': 'card',
+          'bank_transfer': 'bank_transfer',
+          'cheque': 'cheque',
+          'cash': 'cash',
+          'other': 'other'
+        };
+        transactionMode = transactionModeMap[sale.paymentMethod.toLowerCase()] || 'other';
+      }
 
-      const transactionMode = transactionModeMap[sale.paymentMethod.toLowerCase()] || 'other';
+      // Skip if amount is 0 or negative
+      if (amount <= 0) {
+        throw new Error(`No ${paymentType || 'payment'} amount found for this transaction`);
+      }
       
       const response = await apiRequest('POST', '/api/bank-transactions', {
         accountId,
-        transactionId: `POS${sale.orderNumber}`,
+        transactionId: `POS${sale.orderNumber}${paymentType ? `_${paymentType.toUpperCase()}` : ''}`,
         transactionType: 'credit',
         transactionMode: transactionMode,
-        amount: sale.totalAmount,
+        amount: amount,
         balanceAfter: 0, // Backend will calculate
-        description: `POS Sale - ${sale.orderNumber} (${sale.customerName})`,
+        description: description,
         referenceNumber: sale.orderNumber,
         category: 'sales_revenue',
         transactionDate: new Date().toISOString().split('T')[0]
@@ -1101,11 +1142,24 @@ export default function AccountsDashboard() {
                         { method: 'Cash Payment', key: 'cash', icon: Wallet, color: 'text-green-600' },
                         { method: 'Bank Transfer', key: 'bank_transfer', icon: Building2, color: 'text-indigo-600' }
                       ].map(({ method, key, icon: Icon, color }) => {
-                        const methodSales = posData.filter(sale => 
-                          sale.paymentMethod?.toLowerCase().includes(key) ||
-                          sale.paymentMethod?.toLowerCase() === key
-                        );
-                        const total = methodSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                        // Calculate total amounts for each payment type from split payment data
+                        let total = 0;
+                        if (key === 'upi') {
+                          total = posData.reduce((sum, sale) => sum + sale.upiAmount, 0);
+                        } else if (key === 'card') {
+                          total = posData.reduce((sum, sale) => sum + sale.cardAmount, 0);
+                        } else if (key === 'cash') {
+                          total = posData.reduce((sum, sale) => sum + sale.cashAmount, 0);
+                        } else if (key === 'bank_transfer') {
+                          total = posData.reduce((sum, sale) => sum + sale.bankTransferAmount, 0);
+                        }
+                        const methodSales = posData.filter(sale => {
+                          if (key === 'upi') return sale.upiAmount > 0;
+                          if (key === 'card') return sale.cardAmount > 0;
+                          if (key === 'cash') return sale.cashAmount > 0;
+                          if (key === 'bank_transfer') return sale.bankTransferAmount > 0;
+                          return false;
+                        });
                         
                         return (
                           <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -1229,15 +1283,14 @@ export default function AccountsDashboard() {
                         className="w-full justify-start"
                         variant="outline"
                         onClick={() => {
-                          // Link all UPI sales to current account
-                          const upiSales = posData.filter(sale => 
-                            sale.paymentMethod?.toLowerCase() === 'upi'
-                          );
-                          if (accounts.length > 0 && upiSales.length > 0) {
-                            upiSales.forEach(sale => {
+                          // Link UPI portions of all sales to current account
+                          const salesWithUpi = posData.filter(sale => sale.upiAmount > 0);
+                          if (accounts.length > 0 && salesWithUpi.length > 0) {
+                            salesWithUpi.forEach(sale => {
                               createPosTransactionMutation.mutate({
                                 sale,
-                                accountId: accounts[0].id
+                                accountId: accounts[0].id,
+                                paymentType: 'upi'
                               });
                             });
                           }
@@ -1245,21 +1298,20 @@ export default function AccountsDashboard() {
                         disabled={createPosTransactionMutation.isPending}
                       >
                         <Smartphone className="h-4 w-4 mr-2" />
-                        Link All UPI Sales
+                        Link UPI Portions
                       </Button>
                       <Button
                         className="w-full justify-start"
                         variant="outline"
                         onClick={() => {
-                          // Link all card sales
-                          const cardSales = posData.filter(sale => 
-                            sale.paymentMethod?.toLowerCase() === 'card'
-                          );
-                          if (accounts.length > 0 && cardSales.length > 0) {
-                            cardSales.forEach(sale => {
+                          // Link card portions of all sales
+                          const salesWithCard = posData.filter(sale => sale.cardAmount > 0);
+                          if (accounts.length > 0 && salesWithCard.length > 0) {
+                            salesWithCard.forEach(sale => {
                               createPosTransactionMutation.mutate({
                                 sale,
-                                accountId: accounts[0].id
+                                accountId: accounts[0].id,
+                                paymentType: 'card'
                               });
                             });
                           }
@@ -1267,21 +1319,20 @@ export default function AccountsDashboard() {
                         disabled={createPosTransactionMutation.isPending}
                       >
                         <CreditCard className="h-4 w-4 mr-2" />
-                        Link All Card Sales
+                        Link Card Portions
                       </Button>
                       <Button
                         className="w-full justify-start"
                         variant="outline"
                         onClick={() => {
-                          // Link all bank transfer sales
-                          const bankTransferSales = posData.filter(sale => 
-                            sale.paymentMethod?.toLowerCase() === 'bank_transfer'
-                          );
-                          if (accounts.length > 0 && bankTransferSales.length > 0) {
-                            bankTransferSales.forEach(sale => {
+                          // Link bank transfer portions of all sales
+                          const salesWithBankTransfer = posData.filter(sale => sale.bankTransferAmount > 0);
+                          if (accounts.length > 0 && salesWithBankTransfer.length > 0) {
+                            salesWithBankTransfer.forEach(sale => {
                               createPosTransactionMutation.mutate({
                                 sale,
-                                accountId: accounts[1]?.id || accounts[0].id // Use savings account if available
+                                accountId: accounts[1]?.id || accounts[0].id, // Use savings account if available
+                                paymentType: 'bank_transfer'
                               });
                             });
                           }
@@ -1289,21 +1340,20 @@ export default function AccountsDashboard() {
                         disabled={createPosTransactionMutation.isPending}
                       >
                         <Building2 className="h-4 w-4 mr-2" />
-                        Link All Bank Transfers
+                        Link Bank Transfer Portions
                       </Button>
                       <Button
                         className="w-full justify-start"
                         variant="outline"
                         onClick={() => {
-                          // Link all cheque sales
-                          const chequeSales = posData.filter(sale => 
-                            sale.paymentMethod?.toLowerCase() === 'cheque'
-                          );
-                          if (accounts.length > 0 && chequeSales.length > 0) {
-                            chequeSales.forEach(sale => {
+                          // Link cheque portions of all sales
+                          const salesWithCheque = posData.filter(sale => sale.chequeAmount > 0);
+                          if (accounts.length > 0 && salesWithCheque.length > 0) {
+                            salesWithCheque.forEach(sale => {
                               createPosTransactionMutation.mutate({
                                 sale,
-                                accountId: accounts[0].id
+                                accountId: accounts[0].id,
+                                paymentType: 'cheque'
                               });
                             });
                           }
@@ -1311,7 +1361,7 @@ export default function AccountsDashboard() {
                         disabled={createPosTransactionMutation.isPending}
                       >
                         <Receipt className="h-4 w-4 mr-2" />
-                        Link All Cheque Sales
+                        Link Cheque Portions
                       </Button>
                     </div>
                   </div>

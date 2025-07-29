@@ -220,6 +220,12 @@ export const sales = sqliteTable('sales', {
   discount: real('discount').notNull().default(0),
   paymentMethod: text('payment_method').notNull(),
   status: text('status').notNull().default('completed'),
+  // Split payment fields
+  cashAmount: real('cash_amount').default(0),
+  upiAmount: real('upi_amount').default(0),
+  cardAmount: real('card_amount').default(0),
+  bankTransferAmount: real('bank_transfer_amount').default(0),
+  chequeAmount: real('cheque_amount').default(0),
   createdAt: text('created_at').default(new Date().toISOString()).notNull()
 });
 
