@@ -90,9 +90,15 @@ export default function RepackingProfessional() {
       try {
         const parsedData = JSON.parse(storedData);
         console.log('✅ Parsed integration data:', parsedData);
-        console.log('🔍 Bulk product data:', parsedData.bulkProduct);
         
-        setIntegrationData(parsedData);
+        // Wrap the product data in the expected structure
+        const integrationDataStructure = {
+          bulkProduct: parsedData,
+          newProduct: {}
+        };
+        
+        console.log('🔍 Bulk product data:', integrationDataStructure.bulkProduct);
+        setIntegrationData(integrationDataStructure);
         
         // Don't clear immediately, wait for form population
         setTimeout(() => {
@@ -313,8 +319,8 @@ export default function RepackingProfessional() {
       const newProduct = integrationData.newProduct;
       
       console.log('💰 Pricing data from integration:', {
-        costPrice: bulkProduct.costPrice,
-        sellingPrice: bulkProduct.sellingPrice,
+        cost: bulkProduct.cost,
+        price: bulkProduct.price,
         mrp: bulkProduct.mrp,
         fullBulkProduct: bulkProduct
       });
@@ -326,13 +332,13 @@ export default function RepackingProfessional() {
         console.log('✅ Found product, setting form values...');
         // Pre-fill form with integration data
         form.setValue("bulkProductId", foundProduct.id);
-        form.setValue("costPrice", parseFloat(bulkProduct.costPrice || "0"));
-        form.setValue("sellingPrice", parseFloat(bulkProduct.sellingPrice || "0"));
+        form.setValue("costPrice", parseFloat(bulkProduct.cost || bulkProduct.price || "0"));
+        form.setValue("sellingPrice", parseFloat(bulkProduct.price || "0"));
         form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
         
         console.log('💰 Form values set to:', {
-          costPrice: parseFloat(bulkProduct.costPrice || "0"),
-          sellingPrice: parseFloat(bulkProduct.sellingPrice || "0"),
+          costPrice: parseFloat(bulkProduct.cost || bulkProduct.price || "0"),
+          sellingPrice: parseFloat(bulkProduct.price || "0"),
           mrp: parseFloat(bulkProduct.mrp || "0")
         });
         
