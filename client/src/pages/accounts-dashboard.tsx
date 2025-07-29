@@ -1224,7 +1224,18 @@ export default function AccountsDashboard() {
                           <div className="text-right">
                             <div className="font-bold">₹{sale.totalAmount.toFixed(2)}</div>
                             {/* Only show Link to Bank for non-cash payments */}
-                            {sale.paymentMethod?.toLowerCase() !== 'cash' && ['upi', 'card', 'bank_transfer', 'cheque'].includes(sale.paymentMethod?.toLowerCase()) ? (
+                            {(() => {
+                              const paymentMethod = sale.paymentMethod?.toLowerCase();
+                              const isNotCash = paymentMethod !== 'cash';
+                              const isLinkable = ['upi', 'card', 'bank_transfer', 'cheque'].includes(paymentMethod);
+                              console.log(`🔗 Sale ${sale.id} linkability check:`, {
+                                paymentMethod,
+                                isNotCash,
+                                isLinkable,
+                                shouldShowLink: isNotCash && isLinkable
+                              });
+                              return isNotCash && isLinkable;
+                            })() ? (
                               <Button
                                 size="sm"
                                 variant="outline"
