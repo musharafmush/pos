@@ -71,6 +71,7 @@ import LoyaltyManagement from "@/pages/loyalty-management";
 import LoyaltyRules from "@/pages/loyalty-rules";
 import ManufacturingDashboard from "@/pages/manufacturing-dashboard";
 import CreateProductFormula from "@/pages/create-product-formula";
+import RawMaterialsManagement from "@/pages/raw-materials-management";
 import PayrollDashboard from "@/pages/payroll-dashboard";
 
 function Router() {
@@ -147,6 +148,7 @@ function Router() {
       <ProtectedRoute path="/loyalty-rules" component={LoyaltyRules} />
       <ProtectedRoute path="/manufacturing-dashboard" component={ManufacturingDashboard} />
       <ProtectedRoute path="/create-product-formula" component={CreateProductFormula} />
+      <ProtectedRoute path="/raw-materials-management" component={RawMaterialsManagement} />
       <ProtectedRoute path="/payroll-dashboard" component={PayrollDashboard} />
       <Route component={NotFound} />
     </Switch>
