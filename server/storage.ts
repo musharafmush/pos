@@ -5116,18 +5116,19 @@ export const storage = {
       const { sqlite } = await import('../db/index.js');
       const insertMaterial = sqlite.prepare(`
         INSERT INTO raw_materials (
-          name, description, unit, stock_quantity, 
-          unit_cost, supplier_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          name, description, unit, current_stock, 
+          unit_cost, min_stock_level, storage_location
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = insertMaterial.run(
         data.name,
         data.description || null,
         data.unit,
-        data.stockQuantity || 0,
-        data.unitCost || 0,
-        data.supplierId || null
+        data.current_stock || 0,
+        data.unit_cost || 0,
+        data.min_stock_level || 0,
+        data.storage_location || null
       );
 
       const getMaterial = sqlite.prepare('SELECT * FROM raw_materials WHERE id = ?');
