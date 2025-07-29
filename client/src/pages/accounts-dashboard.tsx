@@ -114,8 +114,8 @@ export default function AccountsDashboard() {
       return data?.map(sale => ({
         id: sale.id,
         orderNumber: sale.orderNumber || sale.order_number,
-        customerName: sale.customer?.name || 'Walk-in Customer',
-        totalAmount: parseFloat(sale.totalAmount || sale.total_amount || '0'),
+        customerName: sale.customerName || sale.customer?.name || 'Walk-in Customer', 
+        totalAmount: parseFloat(sale.total || '0'),
         paymentMethod: sale.paymentMethod || sale.payment_method || 'cash',
         saleDate: sale.createdAt || sale.created_at,
         items: sale.items || []
