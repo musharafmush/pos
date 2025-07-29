@@ -8215,6 +8215,44 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Set default bank account
+  app.put('/api/bank-accounts/:id/set-default', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+      }
+
+      console.log(`🏦 Setting bank account ${id} as default...`);
+      
+      // Check if account exists
+      const account = await storage.getBankAccountById(id);
+      if (!account) {
+        return res.status(404).json({ message: 'Bank account not found' });
+      }
+
+      // Set this account as default
+      const success = await storage.setDefaultBankAccount(id);
+      
+      if (!success) {
+        return res.status(500).json({ message: 'Failed to set default account' });
+      }
+
+      console.log('✅ Default bank account set successfully');
+      res.json({ 
+        success: true, 
+        message: 'Default account set successfully',
+        accountId: id
+      });
+    } catch (error) {
+      console.error('❌ Error setting default bank account:', error);
+      res.status(500).json({ 
+        message: 'Failed to set default account',
+        error: error.message 
+      });
+    }
+  });
+
   app.delete('/api/bank-accounts/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

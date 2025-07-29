@@ -5391,6 +5391,40 @@ export const storage = {
     }
   },
 
+  async setDefaultBankAccount(id: number): Promise<boolean> {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      
+      // Check if account exists
+      const account = sqlite.prepare('SELECT id FROM bank_accounts WHERE id = ?').get(id);
+      if (!account) {
+        return false;
+      }
+      
+      // Start a transaction to ensure atomicity
+      sqlite.prepare('BEGIN TRANSACTION').run();
+      
+      try {
+        // First, remove default status from all accounts
+        sqlite.prepare('UPDATE bank_accounts SET is_default = 0').run();
+        
+        // Then set the specified account as default
+        const result = sqlite.prepare('UPDATE bank_accounts SET is_default = 1 WHERE id = ?').run(id);
+        
+        sqlite.prepare('COMMIT').run();
+        
+        return result.changes > 0;
+      } catch (transactionError) {
+        sqlite.prepare('ROLLBACK').run();
+        console.error('Error in setDefaultBankAccount transaction:', transactionError);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error setting default bank account:', error);
+      return false;
+    }
+  },
+
   // Bank Transactions Management
   async getAllBankTransactions(): Promise<BankTransaction[]> {
     try {

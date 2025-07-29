@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap, ArrowUpCircle, ArrowDownCircle, ShoppingCart, Smartphone, Receipt } from "lucide-react";
+import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap, ArrowUpCircle, ArrowDownCircle, ShoppingCart, Smartphone, Receipt, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/currency";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -480,6 +480,43 @@ export default function AccountsDashboard() {
     },
   });
 
+  // Set default account mutation
+  const setDefaultAccountMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      const response = await fetch(`/api/bank-accounts/${accountId}/set-default`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to set default account');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Force immediate cache invalidation and refetch
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      
+      // Refetch immediately with fresh data
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      
+      toast({
+        title: "Success",
+        description: "Default account updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set default account",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Withdraw money mutation
   const withdrawMutation = useMutation({
     mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
@@ -602,6 +639,11 @@ export default function AccountsDashboard() {
       ...newTransaction,
       transactionId: `TXN${Date.now()}`
     });
+  };
+
+  // Set default account handler
+  const handleSetDefaultClick = (account: BankAccount) => {
+    setDefaultAccountMutation.mutate(account.id);
   };
 
   const formatCurrency = (amount: number) => {
@@ -1117,6 +1159,19 @@ export default function AccountsDashboard() {
                             Delete
                           </Button>
                         </div>
+                        {!account.isDefault && (
+                          <div className="mt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                              onClick={() => handleSetDefaultClick(account)}
+                            >
+                              <Star className="h-3 w-3 mr-1" />
+                              Set as Default
+                            </Button>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -1224,18 +1279,22 @@ export default function AccountsDashboard() {
                           </div>
                           <div className="text-right">
                             <div className="font-bold">₹{sale.totalAmount.toFixed(2)}</div>
-                            {/* Only show Link to Bank for non-cash payments */}
+                            {/* Show Link to Bank for non-cash payments or split payments with UPI amounts */}
                             {(() => {
                               const paymentMethod = sale.paymentMethod?.toLowerCase();
                               const isNotCash = paymentMethod !== 'cash';
                               const isLinkable = ['upi', 'card', 'bank_transfer', 'cheque'].includes(paymentMethod);
+                              const hasSplitUpi = sale.upiAmount > 0; // Check if there's a UPI portion in split payment
+                              const shouldShowLink = (isNotCash && isLinkable) || hasSplitUpi;
                               console.log(`🔗 Sale ${sale.id} linkability check:`, {
                                 paymentMethod,
                                 isNotCash,
                                 isLinkable,
-                                shouldShowLink: isNotCash && isLinkable
+                                hasSplitUpi,
+                                upiAmount: sale.upiAmount,
+                                shouldShowLink
                               });
-                              return isNotCash && isLinkable;
+                              return shouldShowLink;
                             })() ? (
                               <Button
                                 size="sm"
