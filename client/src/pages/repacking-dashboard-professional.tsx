@@ -713,7 +713,7 @@ export default function RepackingDashboardProfessional() {
 
   // Note: filtered functions already defined above
 
-  if (isLoading) {
+  if (isProductsLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
