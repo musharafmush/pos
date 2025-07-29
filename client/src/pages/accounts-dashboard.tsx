@@ -130,6 +130,7 @@ export default function AccountsDashboard() {
         };
         if (sale.id <= 19 && sale.id >= 17) { // Debug recent sales
           console.log(`💰 Sale ${sale.id} transformed:`, transformed);
+          console.log(`🔗 Payment method for linkability: "${transformed.paymentMethod}" (type: ${typeof transformed.paymentMethod})`);
         }
         return transformed;
       }) || [];
