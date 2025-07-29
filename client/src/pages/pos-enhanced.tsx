@@ -5136,6 +5136,54 @@ export default function POSEnhanced() {
                           <span className="font-semibold">Total: {formatCurrency((parseFloat(cashAmount) || 0) + (parseFloat(upiAmount) || 0))}</span>
                         </div>
                       </div>
+                      
+                      {/* Quick Split Options */}
+                      <div className="mt-3">
+                        <div className="text-sm font-medium text-gray-700 mb-2">Quick Split Options:</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const half = (total / 2);
+                              setCashAmount(half.toFixed(2));
+                              setUpiAmount(half.toFixed(2));
+                              setAmountPaid(total.toFixed(2));
+                            }}
+                            className="text-xs bg-blue-50 hover:bg-blue-100"
+                          >
+                            50-50 Split
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const cashPart = Math.floor(total * 0.7);
+                              const upiPart = total - cashPart;
+                              setCashAmount(cashPart.toFixed(2));
+                              setUpiAmount(upiPart.toFixed(2));
+                              setAmountPaid(total.toFixed(2));
+                            }}
+                            className="text-xs bg-green-50 hover:bg-green-100"
+                          >
+                            70% Cash
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const upiPart = Math.floor(total * 0.7);
+                              const cashPart = total - upiPart;
+                              setCashAmount(cashPart.toFixed(2));
+                              setUpiAmount(upiPart.toFixed(2));
+                              setAmountPaid(total.toFixed(2));
+                            }}
+                            className="text-xs bg-purple-50 hover:bg-purple-100"
+                          >
+                            70% UPI
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
