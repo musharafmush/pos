@@ -26,6 +26,11 @@ export default function AccountsDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
@@ -64,13 +69,81 @@ export default function AccountsDashboard() {
     transactionDate: new Date().toISOString().split('T')[0]
   });
 
+  // Check authentication status
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      setIsAuthenticated(false);
+    }
+  };
+
+  // Login function
+  const handleLogin = async () => {
+    if (!loginCredentials.username || !loginCredentials.password) {
+      toast({
+        title: "Error",
+        description: "Please enter both username and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(loginCredentials),
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
+        // Refresh all queries after login
+        queryClient.invalidateQueries();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to connect to server",
+        variant: "destructive",
+      });
+    }
+    setIsLoggingIn(false);
+  };
+
+  // Check authentication on component mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   // Fetch bank accounts with real-time updates
   const { data: accounts = [], isLoading: accountsLoading, isFetching: accountsFetching } = useQuery<BankAccount[]>({
     queryKey: ['/api/bank-accounts'],
     staleTime: 0, // Always fetch fresh data
     refetchInterval: 10000, // Auto-refresh every 10 seconds
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
+    enabled: isAuthenticated === true // Only fetch when authenticated
   });
 
   // Fetch bank account summary with real-time updates
@@ -83,7 +156,8 @@ export default function AccountsDashboard() {
     staleTime: 0, // Always fetch fresh data
     refetchInterval: 8000, // Auto-refresh every 8 seconds
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
+    enabled: isAuthenticated === true // Only fetch when authenticated
   });
 
   // Fetch bank transactions with real-time updates
@@ -92,7 +166,8 @@ export default function AccountsDashboard() {
     staleTime: 5000, // 5 seconds for real-time feel
     refetchInterval: 12000, // Auto-refresh every 12 seconds
     refetchOnWindowFocus: true,
-    refetchOnMount: true
+    refetchOnMount: true,
+    enabled: isAuthenticated === true // Only fetch when authenticated
   });
 
   // Fetch account categories (less frequent updates needed)
@@ -100,7 +175,8 @@ export default function AccountsDashboard() {
     queryKey: ['/api/bank-account-categories'],
     staleTime: 60000, // 1 minute
     refetchInterval: 300000, // Auto-refresh every 5 minutes
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    enabled: isAuthenticated === true // Only fetch when authenticated
   });
 
   // Fetch POS sales data with payment methods for bank integration
@@ -109,6 +185,7 @@ export default function AccountsDashboard() {
     staleTime: 30000, // 30 seconds stale time for sales data
     refetchInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnWindowFocus: true,
+    enabled: isAuthenticated === true, // Only fetch when authenticated
     select: (data) => {
       // Filter and transform sales data for bank integration with split payment support
       console.log('🔍 Raw sales data received:', data?.[0]); // Debug first sale
@@ -670,6 +747,76 @@ export default function AccountsDashboard() {
       default: return <CreditCard className="h-4 w-4" />;
     }
   };
+
+  // Show login interface if not authenticated
+  if (isAuthenticated === false) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="max-w-md mx-auto mt-20">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center">Login Required</CardTitle>
+                <CardDescription className="text-center">
+                  Please log in to access the Bank Accounts Dashboard
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="admin"
+                    value={loginCredentials.username}
+                    onChange={(e) => setLoginCredentials(prev => ({ ...prev, username: e.target.value }))}
+                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="admin123"
+                    value={loginCredentials.password}
+                    onChange={(e) => setLoginCredentials(prev => ({ ...prev, password: e.target.value }))}
+                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  />
+                </div>
+                <Button 
+                  onClick={handleLogin} 
+                  disabled={isLoggingIn}
+                  className="w-full"
+                >
+                  {isLoggingIn ? "Logging in..." : "Login"}
+                </Button>
+                <div className="text-center text-sm text-muted-foreground">
+                  Default credentials: admin / admin123
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show loading state while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="flex justify-center items-center h-64">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-6 w-6 animate-spin" />
+              <span>Checking authentication...</span>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
