@@ -317,45 +317,68 @@ export default function RepackingProfessional() {
     if (integrationData && products.length > 0) {
       const bulkProduct = integrationData.bulkProduct;
       const newProduct = integrationData.newProduct;
+      const isEditMode = bulkProduct.isEditMode;
       
-      console.log('💰 Pricing data from integration:', {
+      console.log('💰 Processing integration data:', {
+        isEditMode,
         cost: bulkProduct.cost,
         price: bulkProduct.price,
         mrp: bulkProduct.mrp,
         fullBulkProduct: bulkProduct
       });
       
-      // Find the bulk product in the loaded products
-      const foundProduct = products.find((p: Product) => p.id === bulkProduct.id);
-      
-      if (foundProduct) {
-        console.log('✅ Found product, setting form values...');
-        // Pre-fill form with integration data
-        form.setValue("bulkProductId", foundProduct.id);
+      if (isEditMode) {
+        // Edit mode - populate form with existing product data
+        console.log('✏️ Edit mode detected - populating form with existing product data');
+        
+        form.setValue("newProductName", bulkProduct.name);
+        form.setValue("newProductSku", bulkProduct.sku);
         form.setValue("costPrice", parseFloat(bulkProduct.cost || bulkProduct.price || "0"));
         form.setValue("sellingPrice", parseFloat(bulkProduct.price || "0"));
         form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
         
-        console.log('💰 Form values set to:', {
-          costPrice: parseFloat(bulkProduct.cost || bulkProduct.price || "0"),
-          sellingPrice: parseFloat(bulkProduct.price || "0"),
-          mrp: parseFloat(bulkProduct.mrp || "0")
-        });
-        
-        if (newProduct.itemName) {
-          form.setValue("newProductName", newProduct.itemName);
-        }
-        if (newProduct.itemCode) {
-          form.setValue("newProductSku", newProduct.itemCode);
+        if (bulkProduct.weight && bulkProduct.weightUnit) {
+          form.setValue("unitWeight", parseFloat(bulkProduct.weight.toString()));
+          form.setValue("weightUnit", bulkProduct.weightUnit as "g" | "kg");
         }
         
-        // Show success toast
         toast({
-          title: "Integration Successful",
-          description: `Pre-filled repacking details for ${bulkProduct.name}`,
+          title: "Edit Mode Active",
+          description: `Editing product: ${bulkProduct.name}`,
         });
       } else {
-        console.log('❌ Product not found in loaded products list');
+        // Repack mode - find the bulk product for repacking
+        const foundProduct = products.find((p: Product) => p.id === bulkProduct.id);
+        
+        if (foundProduct) {
+          console.log('✅ Found product for repacking, setting form values...');
+          // Pre-fill form with integration data
+          form.setValue("bulkProductId", foundProduct.id);
+          form.setValue("costPrice", parseFloat(bulkProduct.cost || bulkProduct.price || "0"));
+          form.setValue("sellingPrice", parseFloat(bulkProduct.price || "0"));
+          form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
+          
+          console.log('💰 Form values set to:', {
+            costPrice: parseFloat(bulkProduct.cost || bulkProduct.price || "0"),
+            sellingPrice: parseFloat(bulkProduct.price || "0"),
+            mrp: parseFloat(bulkProduct.mrp || "0")
+          });
+          
+          if (newProduct.itemName) {
+            form.setValue("newProductName", newProduct.itemName);
+          }
+          if (newProduct.itemCode) {
+            form.setValue("newProductSku", newProduct.itemCode);
+          }
+          
+          // Show success toast
+          toast({
+            title: "Integration Successful",
+            description: `Pre-filled repacking details for ${bulkProduct.name}`,
+          });
+        } else {
+          console.log('❌ Product not found in loaded products list');
+        }
       }
     }
   }, [integrationData, products, form, toast]);
@@ -434,34 +457,76 @@ export default function RepackingProfessional() {
   const bulkUnitsNeeded = Math.ceil(totalRepackWeightInGrams / bulkWeightInGrams);
   const currentStock = selectedProduct?.stockQuantity || 0;
 
+  // Check if we're in edit mode
+  const isEditMode = integrationData?.bulkProduct?.isEditMode || false;
+  const editProductId = integrationData?.bulkProduct?.id;
+
   const repackingMutation = useMutation({
     mutationFn: async (data: RepackingFormValues) => {
-      const response = await fetch("/api/repacking", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          totalRepackWeight: totalRepackWeightInGrams,
-          bulkUnitsNeeded,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (isEditMode && editProductId) {
+        // Update existing product
+        const response = await fetch(`/api/products/${editProductId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: data.newProductName,
+            sku: data.newProductSku,
+            cost: data.costPrice,
+            price: data.sellingPrice,
+            mrp: data.mrp,
+            weight: data.unitWeight,
+            weightUnit: data.weightUnit,
+            stockQuantity: data.repackQuantity,
+            description: `Updated product: ${data.newProductName}`,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
+      } else {
+        // Create new repack product
+        const response = await fetch("/api/repacking", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            totalRepackWeight: totalRepackWeightInGrams,
+            bulkUnitsNeeded,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
       }
-      
-      return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Repack Created", description: "Product repack has been created successfully" });
+      if (isEditMode) {
+        toast({ 
+          title: "Product Updated", 
+          description: "Product has been updated successfully" 
+        });
+      } else {
+        toast({ 
+          title: "Repack Created", 
+          description: "Product repack has been created successfully" 
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       setLocation("/repacking-dashboard-professional");
     },
     onError: (error) => {
       toast({
-        title: "Repack Creation Failed", 
+        title: isEditMode ? "Product Update Failed" : "Repack Creation Failed", 
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
@@ -479,10 +544,12 @@ export default function RepackingProfessional() {
         <div className="bg-blue-600 text-white px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold">Professional Repack Entry</h1>
+              <h1 className="text-xl font-semibold">
+                {isEditMode ? "Edit Product" : "Professional Repack Entry"}
+              </h1>
               {integrationData && (
-                <Badge className="bg-green-500 text-white px-3 py-1 text-xs font-medium">
-                  Integration Active: {integrationData.bulkProduct?.name}
+                <Badge className={`${isEditMode ? 'bg-orange-500' : 'bg-green-500'} text-white px-3 py-1 text-xs font-medium`}>
+                  {isEditMode ? `Edit Mode: ${integrationData.bulkProduct?.name}` : `Integration Active: ${integrationData.bulkProduct?.name}`}
                 </Badge>
               )}
             </div>
@@ -1132,7 +1199,7 @@ export default function RepackingProfessional() {
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <SaveIcon className="w-4 h-4 mr-2" />
-                    Save Repack
+                    {isEditMode ? "Update Product" : "Save Repack"}
                   </Button>
                 </div>
               </div>

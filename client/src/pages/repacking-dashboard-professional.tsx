@@ -557,19 +557,25 @@ export default function RepackingDashboardProfessional() {
   };
 
   const handleEdit = (product: Product) => {
-    setSelectedProduct(product);
-    setFormData({
+    console.log('📝 Redirecting to professional repacking page for editing:', product.name);
+    
+    // Store product data for professional repacking page (edit mode)
+    localStorage.setItem('repackingIntegrationData', JSON.stringify({
+      id: product.id,
       name: product.name,
       sku: product.sku,
-      description: product.description || "",
-      price: product.price.toString(),
-      cost: product.cost.toString(),
-      stockQuantity: product.stockQuantity.toString(),
-      weight: product.weight?.toString() || "",
-      weightUnit: product.weightUnit || "g",
-      alertThreshold: product.alertThreshold?.toString() || ""
-    });
-    setIsEditDialogOpen(true);
+      weight: product.weight,
+      weightUnit: product.weightUnit,
+      price: product.price,
+      cost: product.cost,
+      mrp: product.mrp,
+      stockQuantity: product.stockQuantity,
+      description: product.description,
+      isEditMode: true // Flag to indicate this is edit mode
+    }));
+    
+    // Navigate to professional repacking page
+    window.location.href = '/repacking-professional';
   };
 
   const handleView = (product: Product) => {
