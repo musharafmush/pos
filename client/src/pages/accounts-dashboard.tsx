@@ -1151,23 +1151,30 @@ export default function AccountsDashboard() {
                           </div>
                           <div className="text-right">
                             <div className="font-bold">₹{sale.totalAmount.toFixed(2)}</div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="mt-1 text-xs"
-                              onClick={() => {
-                                // Auto-link to first available account for demo
-                                if (accounts.length > 0) {
-                                  createPosTransactionMutation.mutate({
-                                    sale,
-                                    accountId: accounts[0].id
-                                  });
-                                }
-                              }}
-                              disabled={createPosTransactionMutation.isPending}
-                            >
-                              Link to Bank
-                            </Button>
+                            {/* Only show Link to Bank for non-cash payments */}
+                            {sale.paymentMethod?.toLowerCase() !== 'cash' && ['upi', 'card', 'bank_transfer', 'cheque'].includes(sale.paymentMethod?.toLowerCase()) ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-1 text-xs"
+                                onClick={() => {
+                                  // Auto-link to first available account for demo
+                                  if (accounts.length > 0) {
+                                    createPosTransactionMutation.mutate({
+                                      sale,
+                                      accountId: accounts[0].id
+                                    });
+                                  }
+                                }}
+                                disabled={createPosTransactionMutation.isPending}
+                              >
+                                Link to Bank
+                              </Button>
+                            ) : (
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                {sale.paymentMethod?.toLowerCase() === 'cash' ? 'Cash Only' : 'Not Linkable'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1201,13 +1208,17 @@ export default function AccountsDashboard() {
                         <span>Card Payments →</span>
                         <span className="font-medium">Business Current Account</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-                        <span>Cash Payments →</span>
-                        <span className="font-medium">Business Current Account</span>
-                      </div>
                       <div className="flex justify-between items-center p-2 bg-indigo-50 rounded">
                         <span>Bank Transfers →</span>
                         <span className="font-medium">Business Savings Account</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-orange-50 rounded">
+                        <span>Cheque Payments →</span>
+                        <span className="font-medium">Business Current Account</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded border border-red-200">
+                        <span>Cash Payments →</span>
+                        <span className="font-medium text-red-600">Not Linked to Bank</span>
                       </div>
                     </div>
                   </div>
@@ -1257,6 +1268,50 @@ export default function AccountsDashboard() {
                       >
                         <CreditCard className="h-4 w-4 mr-2" />
                         Link All Card Sales
+                      </Button>
+                      <Button
+                        className="w-full justify-start"
+                        variant="outline"
+                        onClick={() => {
+                          // Link all bank transfer sales
+                          const bankTransferSales = posData.filter(sale => 
+                            sale.paymentMethod?.toLowerCase() === 'bank_transfer'
+                          );
+                          if (accounts.length > 0 && bankTransferSales.length > 0) {
+                            bankTransferSales.forEach(sale => {
+                              createPosTransactionMutation.mutate({
+                                sale,
+                                accountId: accounts[1]?.id || accounts[0].id // Use savings account if available
+                              });
+                            });
+                          }
+                        }}
+                        disabled={createPosTransactionMutation.isPending}
+                      >
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Link All Bank Transfers
+                      </Button>
+                      <Button
+                        className="w-full justify-start"
+                        variant="outline"
+                        onClick={() => {
+                          // Link all cheque sales
+                          const chequeSales = posData.filter(sale => 
+                            sale.paymentMethod?.toLowerCase() === 'cheque'
+                          );
+                          if (accounts.length > 0 && chequeSales.length > 0) {
+                            chequeSales.forEach(sale => {
+                              createPosTransactionMutation.mutate({
+                                sale,
+                                accountId: accounts[0].id
+                              });
+                            });
+                          }
+                        }}
+                        disabled={createPosTransactionMutation.isPending}
+                      >
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Link All Cheque Sales
                       </Button>
                     </div>
                   </div>
