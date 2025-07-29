@@ -5484,6 +5484,20 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
       
+      // Get current account balance first
+      const account = sqlite.prepare('SELECT current_balance FROM bank_accounts WHERE id = ?').get(transactionData.accountId);
+      const currentBalance = account ? parseFloat(account.current_balance) : 0;
+      
+      // Calculate new balance based on transaction type
+      let newBalance: number;
+      if (transactionData.transactionType === 'credit') {
+        newBalance = currentBalance + parseFloat(transactionData.amount.toString());
+      } else {
+        newBalance = currentBalance - parseFloat(transactionData.amount.toString());
+      }
+      
+      console.log(`💰 Balance calculation: ${currentBalance} ${transactionData.transactionType === 'credit' ? '+' : '-'} ${transactionData.amount} = ${newBalance}`);
+      
       const result = sqlite.prepare(`
         INSERT INTO bank_transactions (
           account_id, transaction_id, transaction_type, transaction_mode, amount,
@@ -5497,7 +5511,7 @@ export const storage = {
         transactionData.transactionType,
         transactionData.transactionMode,
         transactionData.amount,
-        transactionData.balanceAfter,
+        newBalance, // Use calculated balance instead of frontend balance
         transactionData.description,
         transactionData.referenceNumber || null,
         transactionData.beneficiaryName || null,
@@ -5512,12 +5526,14 @@ export const storage = {
         transactionData.transactionDate
       );
       
-      // Update account balance
+      // Update account balance with calculated balance
       sqlite.prepare(`
         UPDATE bank_accounts 
         SET current_balance = ?, available_balance = ?, last_transaction_date = datetime('now'), updated_at = datetime('now')
         WHERE id = ?
-      `).run(transactionData.balanceAfter, transactionData.balanceAfter, transactionData.accountId);
+      `).run(newBalance, newBalance, transactionData.accountId);
+      
+      console.log(`✅ Account ${transactionData.accountId} balance updated to ${newBalance}`);
       
       const transaction = sqlite.prepare('SELECT * FROM bank_transactions WHERE id = ?').get(result.lastInsertRowid);
       return {

@@ -300,11 +300,6 @@ export default function AccountsDashboard() {
   // Deposit money mutation
   const depositMutation = useMutation({
     mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
-      // Get current account balance first
-      const account = accounts.find(acc => acc.id === accountId);
-      const currentBalance = account?.currentBalance || 0;
-      const newBalance = currentBalance + amount;
-      
       const response = await fetch('/api/bank-transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -315,7 +310,7 @@ export default function AccountsDashboard() {
           transactionType: 'credit',
           transactionMode: 'deposit',
           amount,
-          balanceAfter: newBalance, // Calculate new balance
+          balanceAfter: 0, // Backend will calculate the correct balance
           description: description || 'Deposit',
           transactionDate: new Date().toISOString().split('T')[0]
         })
@@ -358,17 +353,6 @@ export default function AccountsDashboard() {
   // Withdraw money mutation
   const withdrawMutation = useMutation({
     mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
-      // Get current account balance first
-      const account = accounts.find(acc => acc.id === accountId);
-      const currentBalance = account?.currentBalance || 0;
-      
-      // Check if sufficient balance
-      if (currentBalance < amount) {
-        throw new Error('Insufficient balance for withdrawal');
-      }
-      
-      const newBalance = currentBalance - amount;
-      
       const response = await fetch('/api/bank-transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -379,7 +363,7 @@ export default function AccountsDashboard() {
           transactionType: 'debit',
           transactionMode: 'withdrawal',
           amount,
-          balanceAfter: newBalance, // Calculate new balance
+          balanceAfter: 0, // Backend will calculate and validate the balance
           description: description || 'Withdrawal',
           transactionDate: new Date().toISOString().split('T')[0]
         })
