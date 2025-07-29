@@ -13,7 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Eye, Edit2, Trash2, Package, AlertTriangle, CheckCircle, Settings, Factory, Beaker } from "lucide-react";
+import { Plus, Eye, Edit2, Trash2, Package, AlertTriangle, CheckCircle, Settings, Factory, Beaker, ShoppingCart, Calendar, DollarSign } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 
@@ -41,16 +42,37 @@ const manufacturingOrderSchema = z.object({
   })).min(1, "At least one raw material is required")
 });
 
+// Schema for purchase entry form
+const purchaseEntrySchema = z.object({
+  supplierId: z.number({
+    required_error: "Please select a supplier",
+  }),
+  poNo: z.string().optional(),
+  poDate: z.string().min(1, "Please select a PO date"),
+  dueDate: z.string().min(1, "Please select a due date"),
+  paymentType: z.string().min(1, "Please select a payment type"),
+  remarks: z.string().optional(),
+  items: z.array(z.object({
+    materialId: z.number().min(1, "Please select a material"),
+    quantity: z.number().min(0.1, "Quantity must be positive"),
+    unitCost: z.number().min(0, "Unit cost must be positive"),
+    total: z.number().min(0, "Total must be positive")
+  })).min(1, "At least one material is required")
+});
+
 type RawMaterialFormData = z.infer<typeof rawMaterialSchema>;
 type ManufacturingOrderFormData = z.infer<typeof manufacturingOrderSchema>;
+type PurchaseEntryFormData = z.infer<typeof purchaseEntrySchema>;
 
 export default function RawMaterialsManagement() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("raw-materials");
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [isAddOrderOpen, setIsAddOrderOpen] = useState(false);
+  const [isAddPurchaseOpen, setIsAddPurchaseOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [purchaseItems, setPurchaseItems] = useState<any[]>([]);
 
   // Fetch raw materials
   const { data: rawMaterials = [], isLoading: isLoadingMaterials } = useQuery<any[]>({
@@ -64,6 +86,12 @@ export default function RawMaterialsManagement() {
     queryKey: ['/api/manufacturing/orders'],
     refetchInterval: 15000,
     staleTime: 5000
+  });
+
+  // Fetch suppliers
+  const { data: suppliers = [] } = useQuery<any[]>({
+    queryKey: ['/api/suppliers'],
+    staleTime: 30000
   });
 
   // Forms
@@ -89,6 +117,19 @@ export default function RawMaterialsManagement() {
       priority: "medium",
       status: "pending",
       raw_materials: []
+    }
+  });
+
+  const purchaseForm = useForm<PurchaseEntryFormData>({
+    resolver: zodResolver(purchaseEntrySchema),
+    defaultValues: {
+      supplierId: 0,
+      poNo: "",
+      poDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      paymentType: "Credit",
+      remarks: "",
+      items: []
     }
   });
 
@@ -257,11 +298,15 @@ export default function RawMaterialsManagement() {
       {/* Main Content */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="raw-materials" className="flex items-center space-x-2">
               <Package className="h-4 w-4" />
               <span>Raw Materials</span>
               <Badge variant="secondary">{rawMaterials.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="purchase-entry" className="flex items-center space-x-2">
+              <ShoppingCart className="h-4 w-4" />
+              <span>Purchase Entry</span>
             </TabsTrigger>
             <TabsTrigger value="manufacturing-orders" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
@@ -756,6 +801,311 @@ export default function RawMaterialsManagement() {
                   </Card>
                 ))
               )}
+            </div>
+          </TabsContent>
+
+          {/* Purchase Entry Tab */}
+          <TabsContent value="purchase-entry" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Purchase Entry</h2>
+                <p className="text-gray-600">Create purchase orders for raw materials from suppliers</p>
+              </div>
+              <Dialog open={isAddPurchaseOpen} onOpenChange={setIsAddPurchaseOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Purchase Order
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Create Purchase Order</DialogTitle>
+                    <DialogDescription>
+                      Create a new purchase order for raw materials
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...purchaseForm}>
+                    <form onSubmit={purchaseForm.handleSubmit((data) => {
+                      console.log('Purchase order data:', data);
+                      toast({
+                        title: "Success",
+                        description: "Purchase order created successfully"
+                      });
+                      setIsAddPurchaseOpen(false);
+                      purchaseForm.reset();
+                    })} className="space-y-4">
+                      
+                      {/* Purchase Order Header */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={purchaseForm.control}
+                          name="supplierId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Supplier *</FormLabel>
+                              <Select onValueChange={(value) => field.onChange(parseInt(value))}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select supplier" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {suppliers.map((supplier) => (
+                                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                      {supplier.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={purchaseForm.control}
+                          name="poNo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>PO Number</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Auto-generated if empty" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <FormField
+                          control={purchaseForm.control}
+                          name="poDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>PO Date *</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="date" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={purchaseForm.control}
+                          name="dueDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Due Date *</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="date" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={purchaseForm.control}
+                          name="paymentType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Payment Type *</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Cash">Cash</SelectItem>
+                                  <SelectItem value="Credit">Credit</SelectItem>
+                                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                  <SelectItem value="Cheque">Cheque</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Raw Materials Selection */}
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-semibold">Raw Materials</h3>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              const newItem = {
+                                materialId: 0,
+                                quantity: 1,
+                                unitCost: 0,
+                                total: 0
+                              };
+                              setPurchaseItems([...purchaseItems, newItem]);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Material
+                          </Button>
+                        </div>
+
+                        {purchaseItems.length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>No materials added yet</p>
+                            <p className="text-sm">Click "Add Material" to start</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {purchaseItems.map((item, index) => (
+                              <div key={index} className="grid grid-cols-5 gap-2 p-3 border rounded-lg">
+                                <div>
+                                  <Label className="text-xs text-gray-600">Material</Label>
+                                  <Select 
+                                    onValueChange={(value) => {
+                                      const newItems = [...purchaseItems];
+                                      newItems[index].materialId = parseInt(value);
+                                      setPurchaseItems(newItems);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue placeholder="Select material" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {rawMaterials.map((material) => (
+                                        <SelectItem key={material.id} value={material.id.toString()}>
+                                          {material.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600">Quantity</Label>
+                                  <Input 
+                                    type="number"
+                                    step="0.1"
+                                    className="h-8"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                      const newItems = [...purchaseItems];
+                                      const qty = parseFloat(e.target.value) || 0;
+                                      newItems[index].quantity = qty;
+                                      newItems[index].total = qty * newItems[index].unitCost;
+                                      setPurchaseItems(newItems);
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600">Unit Cost (₹)</Label>
+                                  <Input 
+                                    type="number"
+                                    step="0.01"
+                                    className="h-8"
+                                    value={item.unitCost}
+                                    onChange={(e) => {
+                                      const newItems = [...purchaseItems];
+                                      const cost = parseFloat(e.target.value) || 0;
+                                      newItems[index].unitCost = cost;
+                                      newItems[index].total = newItems[index].quantity * cost;
+                                      setPurchaseItems(newItems);
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600">Total (₹)</Label>
+                                  <Input 
+                                    type="number"
+                                    className="h-8 bg-gray-50"
+                                    value={item.total.toFixed(2)}
+                                    readOnly
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8"
+                                    onClick={() => {
+                                      const newItems = purchaseItems.filter((_, i) => i !== index);
+                                      setPurchaseItems(newItems);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {/* Purchase Summary */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold">Total Amount:</span>
+                                <span className="text-xl font-bold text-blue-600">
+                                  ₹{purchaseItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <FormField
+                        control={purchaseForm.control}
+                        name="remarks"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Remarks</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Additional notes or instructions" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsAddPurchaseOpen(false);
+                            setPurchaseItems([]);
+                            purchaseForm.reset();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          disabled={purchaseItems.length === 0}
+                        >
+                          Create Purchase Order
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Purchase Orders List */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6">
+                <div className="text-center py-12 text-gray-500">
+                  <ShoppingCart className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">No Purchase Orders Yet</h3>
+                  <p className="text-sm mb-4">Create your first purchase order to get started</p>
+                  <Button onClick={() => setIsAddPurchaseOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Purchase Order
+                  </Button>
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
