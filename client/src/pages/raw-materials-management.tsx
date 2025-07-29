@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Eye, Edit2, Trash2, Package, AlertTriangle, CheckCircle, Settings, Factory, Beaker } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DashboardLayout from "@/components/layout/dashboard-layout";
 
 // Schema for raw material form
 const rawMaterialSchema = z.object({
@@ -53,14 +54,14 @@ export default function RawMaterialsManagement() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   // Fetch raw materials
-  const { data: rawMaterials = [], isLoading: isLoadingMaterials } = useQuery({
+  const { data: rawMaterials = [], isLoading: isLoadingMaterials } = useQuery<any[]>({
     queryKey: ['/api/manufacturing/raw-materials'],
     refetchInterval: 15000,
     staleTime: 5000
   });
 
   // Fetch manufacturing orders
-  const { data: manufacturingOrders = [], isLoading: isLoadingOrders } = useQuery({
+  const { data: manufacturingOrders = [], isLoading: isLoadingOrders } = useQuery<any[]>({
     queryKey: ['/api/manufacturing/orders'],
     refetchInterval: 15000,
     staleTime: 5000
@@ -207,7 +208,8 @@ export default function RawMaterialsManagement() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <DashboardLayout>
+      <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -647,6 +649,7 @@ export default function RawMaterialsManagement() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
