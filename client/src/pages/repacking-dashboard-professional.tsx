@@ -907,7 +907,7 @@ export default function RepackingDashboardProfessional() {
                                   className="mr-2"
                                   onClick={() => {
                                     // Store product data for repacking page
-                                    localStorage.setItem('selectedProductForRepack', JSON.stringify({
+                                    localStorage.setItem('repackingIntegrationData', JSON.stringify({
                                       id: product.id,
                                       name: product.name,
                                       sku: product.sku,
