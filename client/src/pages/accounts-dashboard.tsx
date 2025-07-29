@@ -65,8 +65,8 @@ export default function AccountsDashboard() {
   // Fetch bank accounts with real-time updates
   const { data: accounts = [], isLoading: accountsLoading, isFetching: accountsFetching } = useQuery<BankAccount[]>({
     queryKey: ['/api/bank-accounts'],
-    staleTime: 5000, // 5 seconds for real-time feel
-    refetchInterval: 15000, // Auto-refresh every 15 seconds
+    staleTime: 0, // Always fetch fresh data
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });
@@ -78,8 +78,8 @@ export default function AccountsDashboard() {
     totalBalance: number;
   }>({
     queryKey: ['/api/bank-accounts/summary'],
-    staleTime: 3000, // 3 seconds for fastest updates
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
+    staleTime: 0, // Always fetch fresh data
+    refetchInterval: 8000, // Auto-refresh every 8 seconds
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });
@@ -322,9 +322,16 @@ export default function AccountsDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      // Force immediate cache invalidation and refetch
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.removeQueries({ queryKey: ['/api/bank-transactions'] });
+      
+      // Refetch immediately with fresh data
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.refetchQueries({ queryKey: ['/api/bank-transactions'] });
+      
       toast({
         title: "Success",
         description: "Deposit completed successfully",
@@ -368,9 +375,16 @@ export default function AccountsDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      // Force immediate cache invalidation and refetch
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.removeQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.removeQueries({ queryKey: ['/api/bank-transactions'] });
+      
+      // Refetch immediately with fresh data
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      queryClient.refetchQueries({ queryKey: ['/api/bank-transactions'] });
+      
       toast({
         title: "Success",
         description: "Withdrawal completed successfully",
