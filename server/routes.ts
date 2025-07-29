@@ -7687,6 +7687,20 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  app.delete('/api/manufacturing/raw-materials/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteRawMaterial(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Raw material not found' });
+      }
+      res.json({ message: 'Raw material deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting raw material:', error);
+      res.status(500).json({ message: 'Failed to delete raw material' });
+    }
+  });
+
   // Manufacturing Recipes Routes
   app.get('/api/manufacturing/recipes', isAuthenticated, async (req, res) => {
     try {
