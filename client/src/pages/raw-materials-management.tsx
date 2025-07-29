@@ -117,6 +117,8 @@ export default function RawMaterialsManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/raw-materials'] });
       setSelectedMaterial(null);
+      setIsAddMaterialOpen(false);
+      materialForm.reset();
       toast({
         title: "Success",
         description: "Raw material updated successfully"
@@ -263,13 +265,19 @@ export default function RawMaterialsManagement() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Raw Material</DialogTitle>
+                    <DialogTitle>{selectedMaterial ? 'Edit Raw Material' : 'Add New Raw Material'}</DialogTitle>
                     <DialogDescription>
-                      Create a new raw material for your inventory
+                      {selectedMaterial ? 'Update the raw material information' : 'Create a new raw material for your inventory'}
                     </DialogDescription>
                   </DialogHeader>
                   <Form {...materialForm}>
-                    <form onSubmit={materialForm.handleSubmit((data) => createMaterialMutation.mutate(data))} className="space-y-4">
+                    <form onSubmit={materialForm.handleSubmit((data) => {
+                      if (selectedMaterial) {
+                        updateMaterialMutation.mutate({ id: selectedMaterial.id, ...data });
+                      } else {
+                        createMaterialMutation.mutate(data);
+                      }
+                    })} className="space-y-4">
                       <FormField
                         control={materialForm.control}
                         name="name"
@@ -366,15 +374,92 @@ export default function RawMaterialsManagement() {
                         )}
                       />
                       <div className="flex justify-end space-x-2">
-                        <Button type="button" variant="outline" onClick={() => setIsAddMaterialOpen(false)}>
+                        <Button type="button" variant="outline" onClick={() => {
+                          setIsAddMaterialOpen(false);
+                          setSelectedMaterial(null);
+                          materialForm.reset({
+                            name: "",
+                            description: "",
+                            unit: "",
+                            unit_cost: 0,
+                            current_stock: 0,
+                            min_stock_level: 0,
+                            storage_location: ""
+                          });
+                        }}>
                           Cancel
                         </Button>
-                        <Button type="submit" disabled={createMaterialMutation.isPending}>
-                          {createMaterialMutation.isPending ? "Creating..." : "Create Material"}
+                        <Button type="submit" disabled={createMaterialMutation.isPending || updateMaterialMutation.isPending}>
+                          {selectedMaterial 
+                            ? (updateMaterialMutation.isPending ? "Updating..." : "Update Material")
+                            : (createMaterialMutation.isPending ? "Creating..." : "Create Material")
+                          }
                         </Button>
                       </div>
                     </form>
                   </Form>
+                </DialogContent>
+              </Dialog>
+
+              {/* View Material Dialog */}
+              <Dialog open={!!selectedMaterial && !isAddMaterialOpen} onOpenChange={() => setSelectedMaterial(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Raw Material Details</DialogTitle>
+                    <DialogDescription>
+                      View complete information for {selectedMaterial?.name}
+                    </DialogDescription>
+                  </DialogHeader>
+                  {selectedMaterial && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Material Name</label>
+                          <p className="font-semibold">{selectedMaterial.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Unit</label>
+                          <p className="font-semibold">{selectedMaterial.unit}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Description</label>
+                        <p className="font-semibold">{selectedMaterial.description || "No description"}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Current Stock</label>
+                          <p className="font-semibold">{selectedMaterial.current_stock} {selectedMaterial.unit}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Unit Cost</label>
+                          <p className="font-semibold">₹{selectedMaterial.unit_cost}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Min Stock Level</label>
+                          <p className="font-semibold">{selectedMaterial.min_stock_level} {selectedMaterial.unit}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Storage Location</label>
+                          <p className="font-semibold">{selectedMaterial.storage_location || "Not specified"}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2 pt-4">
+                        <Button variant="outline" onClick={() => setSelectedMaterial(null)}>
+                          Close
+                        </Button>
+                        <Button onClick={() => {
+                          materialForm.reset(selectedMaterial);
+                          setIsAddMaterialOpen(true);
+                        }}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit Material
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </DialogContent>
               </Dialog>
             </div>
@@ -436,11 +521,23 @@ export default function RawMaterialsManagement() {
                           </div>
                         </div>
                         <div className="flex justify-end space-x-2 pt-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedMaterial(material)}
+                          >
                             <Eye className="h-3 w-3 mr-1" />
                             View
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              materialForm.reset(material);
+                              setSelectedMaterial(material);
+                              setIsAddMaterialOpen(true);
+                            }}
+                          >
                             <Edit2 className="h-3 w-3 mr-1" />
                             Edit
                           </Button>
