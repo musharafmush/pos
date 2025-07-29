@@ -5117,8 +5117,8 @@ export const storage = {
       const insertMaterial = sqlite.prepare(`
         INSERT INTO raw_materials (
           name, description, unit, current_stock, 
-          unit_cost, min_stock_level, storage_location
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          unit_cost, min_stock_level
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `);
 
       const result = insertMaterial.run(
@@ -5127,8 +5127,7 @@ export const storage = {
         data.unit,
         data.current_stock || 0,
         data.unit_cost || 0,
-        data.min_stock_level || 0,
-        data.storage_location || null
+        data.min_stock_level || 0
       );
 
       const getMaterial = sqlite.prepare('SELECT * FROM raw_materials WHERE id = ?');

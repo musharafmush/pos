@@ -24,8 +24,7 @@ const rawMaterialSchema = z.object({
   unit: z.string().min(1, "Unit is required"),
   unit_cost: z.number().min(0, "Unit cost must be positive"),
   current_stock: z.number().min(0, "Current stock must be positive"),
-  min_stock_level: z.number().min(0, "Minimum stock level must be positive"),
-  storage_location: z.string().optional()
+  min_stock_level: z.number().min(0, "Minimum stock level must be positive")
 });
 
 // Schema for manufacturing order form
@@ -76,8 +75,7 @@ export default function RawMaterialsManagement() {
       unit: "",
       unit_cost: 0,
       current_stock: 0,
-      min_stock_level: 0,
-      storage_location: ""
+      min_stock_level: 0
     }
   });
 
@@ -379,19 +377,7 @@ export default function RawMaterialsManagement() {
                           )}
                         />
                       </div>
-                      <FormField
-                        control={materialForm.control}
-                        name="storage_location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Storage Location</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Warehouse location" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+
                       <div className="flex justify-end space-x-2">
                         <Button type="button" variant="outline" onClick={() => {
                           setIsAddMaterialOpen(false);
@@ -402,8 +388,7 @@ export default function RawMaterialsManagement() {
                             unit: "",
                             unit_cost: 0,
                             current_stock: 0,
-                            min_stock_level: 0,
-                            storage_location: ""
+                            min_stock_level: 0
                           });
                         }}>
                           Cancel
