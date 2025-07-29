@@ -11,8 +11,9 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Plus, Building2, CreditCard, ArrowUpDown, Eye, Edit, Trash2, Download, Filter, Search, TrendingUp, TrendingDown, Wallet, RefreshCw, Clock, Zap, ArrowUpCircle, ArrowDownCircle, ShoppingCart, Smartphone, Receipt } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/currency";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import type { 
   BankAccount, 
@@ -33,6 +34,7 @@ export default function AccountsDashboard() {
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isPosIntegrationOpen, setIsPosIntegrationOpen] = useState(false);
   const [viewingAccount, setViewingAccount] = useState<any>(null);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [deletingAccount, setDeletingAccount] = useState<any>(null);
@@ -101,12 +103,89 @@ export default function AccountsDashboard() {
     refetchOnWindowFocus: true
   });
 
+  // Fetch POS sales data with payment methods for bank integration
+  const { data: posData = [] } = useQuery<any[]>({
+    queryKey: ['/api/sales'],
+    staleTime: 30000, // 30 seconds stale time for sales data
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnWindowFocus: true,
+    select: (data) => {
+      // Filter and transform sales data for bank integration
+      return data?.map(sale => ({
+        id: sale.id,
+        orderNumber: sale.orderNumber || sale.order_number,
+        customerName: sale.customer?.name || 'Walk-in Customer',
+        totalAmount: parseFloat(sale.totalAmount || sale.total_amount || '0'),
+        paymentMethod: sale.paymentMethod || sale.payment_method || 'cash',
+        saleDate: sale.createdAt || sale.created_at,
+        items: sale.items || []
+      })) || [];
+    }
+  });
+
   // Update last refresh time when data changes
   useEffect(() => {
     if ((accounts as any[])?.length > 0 || (summary && Object.keys(summary).length > 0) || (transactions as any[])?.length > 0) {
       setLastUpdate(new Date());
     }
   }, [accounts, summary, transactions]);
+
+  // Auto-create bank transactions for POS sales mutation
+  const createPosTransactionMutation = useMutation({
+    mutationFn: async ({ sale, accountId }: { sale: any, accountId: number }) => {
+      // Determine transaction mode based on payment method
+      const transactionModeMap: { [key: string]: string } = {
+        'upi': 'upi',
+        'card': 'card',
+        'bank_transfer': 'bank_transfer',
+        'cheque': 'cheque',
+        'cash': 'cash',
+        'other': 'other'
+      };
+
+      const transactionMode = transactionModeMap[sale.paymentMethod.toLowerCase()] || 'other';
+      
+      const response = await fetch('/api/bank-transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          accountId,
+          transactionId: `POS${sale.orderNumber}`,
+          transactionType: 'credit',
+          transactionMode: transactionMode,
+          amount: sale.totalAmount,
+          balanceAfter: 0, // Backend will calculate
+          description: `POS Sale - ${sale.orderNumber} (${sale.customerName})`,
+          referenceNumber: sale.orderNumber,
+          category: 'sales_revenue',
+          transactionDate: new Date().toISOString().split('T')[0]
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create POS transaction');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts/summary'] });
+      toast({
+        title: "POS Transaction Created",
+        description: "Sales transaction has been added to bank account",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Create bank account mutation
   const createAccountMutation = useMutation({
@@ -850,6 +929,7 @@ export default function AccountsDashboard() {
       <Tabs defaultValue="accounts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="accounts">Bank Accounts</TabsTrigger>
+          <TabsTrigger value="pos-integration">POS Integration</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="settlements">Settlements</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -993,6 +1073,206 @@ export default function AccountsDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="pos-integration" className="space-y-4">
+          <div className="grid gap-6">
+            {/* POS Sales Summary */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5 text-green-600" />
+                      POS Enhanced Sales Data
+                    </CardTitle>
+                    <CardDescription>
+                      Recent sales from POS Enhanced with payment method breakdown
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    {posData.length} Sales
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Payment Method Breakdown */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Payment Method Breakdown
+                    </h4>
+                    <div className="space-y-3">
+                      {[
+                        { method: 'UPI Payment', key: 'upi', icon: Smartphone, color: 'text-blue-600' },
+                        { method: 'Card Payment', key: 'card', icon: CreditCard, color: 'text-purple-600' },
+                        { method: 'Cash Payment', key: 'cash', icon: Wallet, color: 'text-green-600' },
+                        { method: 'Bank Transfer', key: 'bank_transfer', icon: Building2, color: 'text-indigo-600' }
+                      ].map(({ method, key, icon: Icon, color }) => {
+                        const methodSales = posData.filter(sale => 
+                          sale.paymentMethod?.toLowerCase().includes(key) ||
+                          sale.paymentMethod?.toLowerCase() === key
+                        );
+                        const total = methodSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                        
+                        return (
+                          <div key={method} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Icon className={`h-5 w-5 ${color}`} />
+                              <div>
+                                <span className="font-medium">{method}</span>
+                                <p className="text-sm text-gray-600">{methodSales.length} transactions</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold">₹{total.toFixed(2)}</div>
+                              <div className="text-sm text-gray-600">
+                                {methodSales.length > 0 ? `Avg: ₹${(total/methodSales.length).toFixed(2)}` : '—'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Recent Sales List */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Receipt className="h-4 w-4" />
+                      Recent Sales ({posData.length})
+                    </h4>
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {posData.slice(0, 10).map(sale => (
+                        <div key={sale.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{sale.orderNumber}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {sale.paymentMethod || 'Cash'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600">{sale.customerName}</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(sale.saleDate).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold">₹{sale.totalAmount.toFixed(2)}</div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="mt-1 text-xs"
+                              onClick={() => {
+                                // Auto-link to first available account for demo
+                                if (accounts.length > 0) {
+                                  createPosTransactionMutation.mutate({
+                                    sale,
+                                    accountId: accounts[0].id
+                                  });
+                                }
+                              }}
+                              disabled={createPosTransactionMutation.isPending}
+                            >
+                              Link to Bank
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Auto-Link Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-600" />
+                  Auto-Link Configuration
+                </CardTitle>
+                <CardDescription>
+                  Automatically create bank transactions for POS sales based on payment method
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Payment Method Mapping</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                        <span>UPI Payments →</span>
+                        <span className="font-medium">Business Current Account</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-purple-50 rounded">
+                        <span>Card Payments →</span>
+                        <span className="font-medium">Business Current Account</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-green-50 rounded">
+                        <span>Cash Payments →</span>
+                        <span className="font-medium">Business Current Account</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-indigo-50 rounded">
+                        <span>Bank Transfers →</span>
+                        <span className="font-medium">Business Savings Account</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Quick Actions</h4>
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full justify-start"
+                        variant="outline"
+                        onClick={() => {
+                          // Link all UPI sales to current account
+                          const upiSales = posData.filter(sale => 
+                            sale.paymentMethod?.toLowerCase() === 'upi'
+                          );
+                          if (accounts.length > 0 && upiSales.length > 0) {
+                            upiSales.forEach(sale => {
+                              createPosTransactionMutation.mutate({
+                                sale,
+                                accountId: accounts[0].id
+                              });
+                            });
+                          }
+                        }}
+                        disabled={createPosTransactionMutation.isPending}
+                      >
+                        <Smartphone className="h-4 w-4 mr-2" />
+                        Link All UPI Sales
+                      </Button>
+                      <Button
+                        className="w-full justify-start"
+                        variant="outline"
+                        onClick={() => {
+                          // Link all card sales
+                          const cardSales = posData.filter(sale => 
+                            sale.paymentMethod?.toLowerCase() === 'card'
+                          );
+                          if (accounts.length > 0 && cardSales.length > 0) {
+                            cardSales.forEach(sale => {
+                              createPosTransactionMutation.mutate({
+                                sale,
+                                accountId: accounts[0].id
+                              });
+                            });
+                          }
+                        }}
+                        disabled={createPosTransactionMutation.isPending}
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Link All Card Sales
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-4">
