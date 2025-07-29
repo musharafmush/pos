@@ -145,29 +145,20 @@ export default function AccountsDashboard() {
 
       const transactionMode = transactionModeMap[sale.paymentMethod.toLowerCase()] || 'other';
       
-      const response = await fetch('/api/bank-transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          accountId,
-          transactionId: `POS${sale.orderNumber}`,
-          transactionType: 'credit',
-          transactionMode: transactionMode,
-          amount: sale.totalAmount,
-          balanceAfter: 0, // Backend will calculate
-          description: `POS Sale - ${sale.orderNumber} (${sale.customerName})`,
-          referenceNumber: sale.orderNumber,
-          category: 'sales_revenue',
-          transactionDate: new Date().toISOString().split('T')[0]
-        })
+      const response = await apiRequest('POST', '/api/bank-transactions', {
+        accountId,
+        transactionId: `POS${sale.orderNumber}`,
+        transactionType: 'credit',
+        transactionMode: transactionMode,
+        amount: sale.totalAmount,
+        balanceAfter: 0, // Backend will calculate
+        description: `POS Sale - ${sale.orderNumber} (${sale.customerName})`,
+        referenceNumber: sale.orderNumber,
+        category: 'sales_revenue',
+        transactionDate: new Date().toISOString().split('T')[0]
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create POS transaction');
-      }
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bank-accounts'] });
