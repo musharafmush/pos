@@ -57,12 +57,13 @@ export default function AccountsDashboard() {
     transactionType: "credit",
     transactionMode: "cash",
     amount: 0,
+    balanceAfter: 0,
     description: "",
     transactionDate: new Date().toISOString().split('T')[0]
   });
 
   // Fetch bank accounts with real-time updates
-  const { data: accounts = [], isLoading: accountsLoading, isFetching: accountsFetching } = useQuery({
+  const { data: accounts = [], isLoading: accountsLoading, isFetching: accountsFetching } = useQuery<BankAccount[]>({
     queryKey: ['/api/bank-accounts'],
     staleTime: 5000, // 5 seconds for real-time feel
     refetchInterval: 15000, // Auto-refresh every 15 seconds
@@ -71,7 +72,11 @@ export default function AccountsDashboard() {
   });
 
   // Fetch bank account summary with real-time updates
-  const { data: summary, isFetching: summaryFetching } = useQuery({
+  const { data: summary = { totalAccounts: 0, activeAccounts: 0, totalBalance: 0 }, isFetching: summaryFetching } = useQuery<{
+    totalAccounts: number;
+    activeAccounts: number;
+    totalBalance: number;
+  }>({
     queryKey: ['/api/bank-accounts/summary'],
     staleTime: 3000, // 3 seconds for fastest updates
     refetchInterval: 10000, // Auto-refresh every 10 seconds
@@ -80,7 +85,7 @@ export default function AccountsDashboard() {
   });
 
   // Fetch bank transactions with real-time updates
-  const { data: transactions = [], isLoading: transactionsLoading, isFetching: transactionsFetching } = useQuery({
+  const { data: transactions = [], isLoading: transactionsLoading, isFetching: transactionsFetching } = useQuery<BankTransaction[]>({
     queryKey: ['/api/bank-transactions'],
     staleTime: 5000, // 5 seconds for real-time feel
     refetchInterval: 12000, // Auto-refresh every 12 seconds
@@ -410,6 +415,7 @@ export default function AccountsDashboard() {
         transactionType: "credit",
         transactionMode: "cash",
         amount: 0,
+        balanceAfter: 0,
         description: "",
         transactionDate: new Date().toISOString().split('T')[0]
       });
@@ -725,7 +731,7 @@ export default function AccountsDashboard() {
                   <input
                     type="checkbox"
                     id="isDefault"
-                    checked={newAccount.isDefault}
+                    checked={newAccount.isDefault || false}
                     onChange={(e) => setNewAccount(prev => ({ ...prev, isDefault: e.target.checked }))}
                     className="rounded border-gray-300"
                   />
