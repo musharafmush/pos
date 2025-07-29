@@ -97,15 +97,28 @@ export default function RawMaterialsManagement() {
   // Mutations for raw materials
   const createMaterialMutation = useMutation({
     mutationFn: async (data: RawMaterialFormData) => {
-      return apiRequest('POST', '/api/manufacturing/raw-materials', data);
+      console.log('Creating material with data:', data);
+      const response = await apiRequest('POST', '/api/manufacturing/raw-materials', data);
+      console.log('Create response:', response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Create material success:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/manufacturing/raw-materials'] });
       setIsAddMaterialOpen(false);
+      setSelectedMaterial(null);
       materialForm.reset();
       toast({
         title: "Success",
         description: "Raw material created successfully"
+      });
+    },
+    onError: (error) => {
+      console.error('Create material error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create raw material. Please try again.",
+        variant: "destructive"
       });
     }
   });
@@ -272,9 +285,15 @@ export default function RawMaterialsManagement() {
                   </DialogHeader>
                   <Form {...materialForm}>
                     <form onSubmit={materialForm.handleSubmit((data) => {
+                      console.log('Form submitted with data:', data);
+                      console.log('Selected material:', selectedMaterial);
+                      console.log('Form errors:', materialForm.formState.errors);
+                      
                       if (selectedMaterial) {
+                        console.log('Updating material...');
                         updateMaterialMutation.mutate({ id: selectedMaterial.id, ...data });
                       } else {
+                        console.log('Creating new material...');
                         createMaterialMutation.mutate(data);
                       }
                     })} className="space-y-4">
