@@ -300,6 +300,11 @@ export default function AccountsDashboard() {
   // Deposit money mutation
   const depositMutation = useMutation({
     mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
+      // Get current account balance first
+      const account = accounts.find(acc => acc.id === accountId);
+      const currentBalance = account?.currentBalance || 0;
+      const newBalance = currentBalance + amount;
+      
       const response = await fetch('/api/bank-transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -310,7 +315,7 @@ export default function AccountsDashboard() {
           transactionType: 'credit',
           transactionMode: 'deposit',
           amount,
-          balanceAfter: 0, // Will be calculated by backend
+          balanceAfter: newBalance, // Calculate new balance
           description: description || 'Deposit',
           transactionDate: new Date().toISOString().split('T')[0]
         })
@@ -353,6 +358,17 @@ export default function AccountsDashboard() {
   // Withdraw money mutation
   const withdrawMutation = useMutation({
     mutationFn: async ({ accountId, amount, description }: { accountId: number, amount: number, description: string }) => {
+      // Get current account balance first
+      const account = accounts.find(acc => acc.id === accountId);
+      const currentBalance = account?.currentBalance || 0;
+      
+      // Check if sufficient balance
+      if (currentBalance < amount) {
+        throw new Error('Insufficient balance for withdrawal');
+      }
+      
+      const newBalance = currentBalance - amount;
+      
       const response = await fetch('/api/bank-transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -363,7 +379,7 @@ export default function AccountsDashboard() {
           transactionType: 'debit',
           transactionMode: 'withdrawal',
           amount,
-          balanceAfter: 0, // Will be calculated by backend
+          balanceAfter: newBalance, // Calculate new balance
           description: description || 'Withdrawal',
           transactionDate: new Date().toISOString().split('T')[0]
         })
@@ -1030,8 +1046,15 @@ export default function AccountsDashboard() {
                           {transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('en-IN') : 'Invalid Date'}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{transaction.accountName || 'Unknown Account'}</div>
-                          <div className="text-sm text-muted-foreground">{transaction.bankName || 'Unknown Bank'}</div>
+                          {(() => {
+                            const account = accounts.find(acc => acc.id === transaction.accountId);
+                            return (
+                              <>
+                                <div className="font-medium">{account?.accountName || 'Unknown Account'}</div>
+                                <div className="text-sm text-muted-foreground">{account?.bankName || 'Unknown Bank'}</div>
+                              </>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
