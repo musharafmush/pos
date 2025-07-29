@@ -2049,7 +2049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
 
-        // Format the results with sale items
+        // Format the results with sale items and split payment fields
         const formattedSales = sales.map(sale => ({
           id: sale.id,
           orderNumber: sale.order_number,
@@ -2061,6 +2061,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentMethod: sale.payment_method,
           status: sale.status,
           createdAt: sale.created_at,
+          // Split payment amounts for bank integration
+          cash_amount: sale.cash_amount || 0,
+          upi_amount: sale.upi_amount || 0,
+          card_amount: sale.card_amount || 0,
+          bank_transfer_amount: sale.bank_transfer_amount || 0,
+          cheque_amount: sale.cheque_amount || 0,
           customer: sale.customerName ? {
             id: sale.customer_id,
             name: sale.customerName,
@@ -2073,6 +2079,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           itemsSummary: sale.items_summary,
           items: saleItemsMap[sale.id] || []
         }));
+
+        // Debug the first sale to ensure split payment data is included
+        if (formattedSales.length > 0) {
+          console.log('🔎 First formatted sale with split payments:', JSON.stringify(formattedSales[0], null, 2));
+        }
 
         return res.json(formattedSales);
 
