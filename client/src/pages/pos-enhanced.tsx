@@ -2648,6 +2648,16 @@ export default function POSEnhanced() {
                     <Monitor className="h-3 w-3 mr-1" />
                     Fullscreen (F11)
                   </Button>
+
+                  <Button 
+                    variant="outline" 
+                    onClick={() => queryClient.invalidateQueries()}
+                    size="sm"
+                    className="hover:bg-gray-50 text-xs"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh Data
+                  </Button>
                 </div>
               </div>
               
@@ -2811,16 +2821,7 @@ export default function POSEnhanced() {
           </div>
           {/* Search Section */}
           <div className="bg-white border-b border-gray-200 px-4 py-1">
-            <div className="flex items-center justify-end mb-1">
-              <Button 
-                variant="outline" 
-                onClick={() => queryClient.invalidateQueries()}
-                className="hover:bg-gray-50"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-            </div>
+
 
             {/* Unified Search and Barcode Scanner */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-2 mb-1">
