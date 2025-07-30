@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -50,9 +49,7 @@ import {
   Settings,
   Printer,
   Star,
-  Gift,
-  Grid3X3,
-  BarChart3
+  Gift
 } from "lucide-react";
 
 interface Product {
@@ -93,7 +90,6 @@ interface CartItem extends Product {
 
 export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchTab, setSearchTab] = useState<'name' | 'barcode'>('name');
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -2589,7 +2585,7 @@ export default function POSEnhanced() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-1 flex-wrap">
+                <div className="flex items-center space-x-2 flex-wrap">
                   {!registerOpened ? (
                     <Button
                       onClick={() => setShowOpenRegister(true)}
@@ -2601,36 +2597,36 @@ export default function POSEnhanced() {
                       Open Register
                     </Button>
                   ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="hover:bg-green-50 border-green-200 text-green-700 text-xs"
-                        >
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          Cash Management
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => setShowCashRegister(true)}>
-                          <Banknote className="h-4 w-4 mr-2" />
-                          Manage Cash
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowWithdrawal(true)}>
-                          <TrendingDown className="h-4 w-4 mr-2" />
-                          Withdrawal
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setShowCloseRegister(true)} className="text-red-600">
-                          <Archive className="h-4 w-4 mr-2" />
-                          Close Register
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center space-x-2 flex-wrap">
+                      <Button
+                        onClick={() => setShowCashRegister(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-green-50 border-green-200 text-green-700 text-xs"
+                      >
+                        <Banknote className="h-3 w-3 mr-1" />
+                        Manage Cash
+                      </Button>
+                      <Button
+                        onClick={() => setShowWithdrawal(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-orange-50 border-orange-200 text-orange-700 text-xs"
+                      >
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                        Withdrawal
+                      </Button>
+                      <Button
+                        onClick={() => setShowCloseRegister(true)}
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-red-50 border-red-200 text-red-700 text-xs"
+                      >
+                        <Archive className="h-3 w-3 mr-1" />
+                        Close Register
+                      </Button>
+                    </div>
                   )}
-
-                  <div className="h-6 w-px bg-gray-300 mx-2" />
 
                   <Button
                     onClick={() => window.open('/printer-settings', '_blank')}
@@ -2640,7 +2636,7 @@ export default function POSEnhanced() {
                     title="Open printer settings"
                   >
                     <Printer className="h-3 w-3 mr-1" />
-                    Settings
+                    Printer Settings
                   </Button>
 
                   <Button
@@ -2650,7 +2646,7 @@ export default function POSEnhanced() {
                     className="hover:bg-blue-50 border-blue-200 text-xs"
                   >
                     <Monitor className="h-3 w-3 mr-1" />
-                    Fullscreen
+                    Fullscreen (F11)
                   </Button>
                 </div>
               </div>
@@ -2911,103 +2907,6 @@ export default function POSEnhanced() {
                 </div>
               </div>
             </div>
-
-            {/* Product Categories and Brands Grid */}
-            {!searchTerm && (
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex gap-6">
-                  {/* Categories Section */}
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center font-inter">
-                        <Grid3X3 className="h-5 w-5 mr-2 text-blue-600" />
-                        Category
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-4 gap-3">
-                      {products.slice(0, 16).map((product: Product, index) => (
-                        <div 
-                          key={product.id}
-                          className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group hover:border-blue-300"
-                          onClick={() => addToCart(product)}
-                        >
-                          <div className="text-center">
-                            <div className="text-2xl mb-2">
-                              {product.category?.name === 'Electronics' ? '💻' : 
-                               product.category?.name === 'Food' ? '🍎' : 
-                               product.name.toLowerCase().includes('phone') ? '📱' :
-                               product.name.toLowerCase().includes('rice') ? '🍚' :
-                               product.name.toLowerCase().includes('oil') ? '🫒' :
-                               product.name.toLowerCase().includes('flour') ? '🌾' :
-                               '📦'}
-                            </div>
-                            <h4 className="text-sm font-medium text-gray-900 mb-2 group-hover:text-blue-600 font-inter truncate">
-                              {product.name}
-                            </h4>
-                            <p className="text-xs text-gray-500 font-inter">
-                              {product.stockQuantity > 0 ? `${product.stockQuantity} Items in stock` : '0 Items in stock'}
-                            </p>
-                            <p className="text-xs font-medium text-blue-600 mt-1 font-inter">
-                              {formatCurrency(parseFloat(product.price))}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Brands Section */}
-                  <div className="w-80">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 flex items-center font-inter">
-                        <Star className="h-5 w-5 mr-2 text-blue-600" />
-                        Brands
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {products.slice(16, 24).map((product: Product, index) => (
-                        <div 
-                          key={product.id}
-                          className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group hover:border-blue-300"
-                          onClick={() => addToCart(product)}
-                        >
-                          <div className="text-center">
-                            <div className="text-xl mb-2">
-                              {product.name.toLowerCase().includes('sugar') ? '🍬' :
-                               product.name.toLowerCase().includes('salt') ? '🧂' :
-                               product.name.toLowerCase().includes('tea') ? '🍵' :
-                               product.name.toLowerCase().includes('coffee') ? '☕' :
-                               product.name.toLowerCase().includes('milk') ? '🥛' :
-                               product.name.toLowerCase().includes('bread') ? '🍞' :
-                               '⭐'}
-                            </div>
-                            <h4 className="text-sm font-medium text-gray-900 mb-2 group-hover:text-blue-600 font-inter truncate">
-                              {product.name}
-                            </h4>
-                            <p className="text-xs text-gray-500 font-inter">
-                              {product.stockQuantity > 0 ? `${product.stockQuantity} Items in stock` : '0 Items in stock'}
-                            </p>
-                            <p className="text-xs font-medium text-blue-600 mt-1 font-inter">
-                              {formatCurrency(parseFloat(product.price))}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4 text-center">
-                      <Button 
-                        variant="outline" 
-                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 font-inter"
-                      >
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Recent Transactions
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-160px)]' : 'min-h-[500px] max-h-[800px]'} gap-3 px-3 py-2`}>
@@ -3050,24 +2949,30 @@ export default function POSEnhanced() {
 
               <div className="min-h-96 max-h-[500px] bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                      <ShoppingCart className="h-10 w-10 text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Ready to Scan</h3>
-                    <p className="text-sm text-gray-500 mb-6">Scan an item or search to begin billing</p>
-                    <div className="grid grid-cols-1 gap-2 max-w-xs mx-auto">
-                      <div className="flex items-center bg-gradient-to-r from-blue-50 to-blue-100 p-2 rounded-lg border border-blue-200">
-                        <Search className="h-4 w-4 text-blue-600 mr-2" />
-                        <span className="text-xs font-medium text-blue-700">Search products</span>
+                  <div className="text-center py-12">
+                    <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is Empty</h3>
+                    <p className="text-gray-500 mb-4 text-base">Start by searching for products above</p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-w-3xl mx-auto text-xs text-gray-500">
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F1</kbd>
+                        <p className="mt-1 text-xs">Focus barcode scanner</p>
                       </div>
-                      <div className="flex items-center bg-gradient-to-r from-green-50 to-green-100 p-2 rounded-lg border border-green-200">
-                        <Scan className="h-4 w-4 text-green-600 mr-2" />
-                        <span className="text-xs font-medium text-green-700">Scan barcode</span>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">Enter</kbd>
+                        <p className="mt-1 text-xs">Add scanned item</p>
                       </div>
-                      <div className="flex items-center bg-gradient-to-r from-purple-50 to-purple-100 p-2 rounded-lg border border-purple-200">
-                        <Package className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-xs font-medium text-purple-700">Browse catalog</span>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F10</kbd>
+                        <p className="mt-1 text-xs">Quick checkout</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F11</kbd>
+                        <p className="mt-1 text-xs">Toggle fullscreen</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F12</kbd>
+                        <p className="mt-1 text-xs">Clear cart</p>
                       </div>
                     </div>
                   </div>
@@ -3180,44 +3085,35 @@ export default function POSEnhanced() {
                 )}
               </div>
 
-              {/* Bottom Action Bar - Grouped Actions */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                {/* Payment Actions Group */}
-                <div className="mb-4">
-                  <h4 className="text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide font-inter">Payment Actions</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={() => setupQuickPayment("cash")}
-                      disabled={cart.length === 0}
-                      title="Quick cash payment (Alt+C)"
-                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300 pos-button font-inter"
-                    >
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Cash
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setupQuickPayment("upi")}
-                      disabled={cart.length === 0}
-                      title="Quick UPI payment (Alt+U)"
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300 pos-button font-inter"
-                    >
-                      <Smartphone className="h-4 w-4 mr-2" />
-                      UPI
-                    </Button>
-                  </div>
-                </div>
+              {/* Bottom Action Bar */}
+              <div className="flex flex-col lg:flex-row items-center justify-between mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 gap-3">
 
-                {/* Cart Actions Group */}
-                <div className="mb-4">
-                  <h4 className="text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide font-inter">Cart Actions</h4>
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("cash")}
+                  disabled={cart.length === 0}
+                  title="Quick cash payment (Alt+C)"
+                  className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Cash (Alt+C)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setupQuickPayment("upi")}
+                  disabled={cart.length === 0}
+                  title="Quick UPI payment (Alt+U)"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                >
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  UPI (Alt+U)
+                </Button>
                 <Button 
                   variant="outline"
                   onClick={toggleDiscount}
                   title="Toggle 10% discount (Ctrl+D)"
-                  className={`pos-button font-inter hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                  className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
                 >
                   <Calculator className="h-4 w-4 mr-2" />
                   Discount (Ctrl+D)
@@ -3226,7 +3122,7 @@ export default function POSEnhanced() {
                   variant="outline"
                   onClick={() => setShowOceanDialog(true)}
                   title="Enter Ocean Freight & Shipping Costs"
-                  className={`pos-button font-inter hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                  className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
                 >
                   <Package className="h-4 w-4 mr-2" />
                   Enter Ocean
@@ -3236,7 +3132,7 @@ export default function POSEnhanced() {
                   onClick={holdCurrentSale}
                   disabled={cart.length === 0}
                   title="Hold current sale (Alt+H)"
-                  className="pos-button font-inter hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Hold (Alt+H)
@@ -3245,7 +3141,7 @@ export default function POSEnhanced() {
                   variant="outline"
                   onClick={() => setShowHoldSales(true)}
                   title="Recall held sales (Alt+R)"
-                  className="pos-button font-inter hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
+                  className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
                 >
                   <List className="h-4 w-4 mr-2" />
                   Recall (Alt+R)
@@ -3259,7 +3155,7 @@ export default function POSEnhanced() {
                   variant="outline" 
                   onClick={() => clearCart(false)} 
                   disabled={cart.length === 0}
-                  className="pos-button font-inter hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                  className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Clear Cart (F12)
@@ -3267,12 +3163,12 @@ export default function POSEnhanced() {
               </div>
 
                 <div className="flex items-center flex-wrap gap-2 text-sm">
-                  <Badge className="bg-green-100 text-green-800 border-green-200 font-inter">
+                  <Badge className="bg-green-100 text-green-800 border-green-200">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     System Online
                   </Badge>
-                  <span className="text-gray-600 hidden sm:inline font-inter">Terminal: POS-01</span>
-                  <span className="text-gray-600 font-mono font-inter">{currentTime}</span>
+                  <span className="text-gray-600 hidden sm:inline">Terminal: POS-01</span>
+                  <span className="text-gray-600 font-mono">{currentTime}</span>
                 </div>
               </div>
             </div>
@@ -3321,32 +3217,28 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-lg mb-4 shadow-md">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <Receipt className="h-5 w-5 mr-2" />
-                    <h2 className="text-lg font-bold font-inter">Bill Summary</h2>
-                  </div>
-                  <span className="text-sm text-blue-100 bg-blue-800 px-3 py-1 rounded-full font-inter">
-                    Bill #{billNumber}
-                  </span>
+              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-4 rounded-lg mb-4 shadow-md">
+                <div className="flex items-center mb-2">
+                  <Receipt className="h-5 w-5 mr-2" />
+                  <h2 className="text-lg font-bold">Bill Summary</h2>
                 </div>
-                <div className="text-blue-100 text-sm font-inter">{currentDate}</div>
+                <div className="text-purple-100 text-xs">Bill #{billNumber}</div>
+                <div className="text-purple-100 text-xs">{currentDate}</div>
               </div>
 
               {/* Bill Details */}
-              <Card className="mb-4 border border-gray-200 pos-card">
+              <Card className="mb-4 border border-gray-200">
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between text-base font-inter">
+                  <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Items:</span>
-                    <span className="font-semibold text-gray-900">{cart.length}</span>
+                    <span className="font-semibold">{cart.length}</span>
                   </div>
-                  <div className="flex justify-between text-base font-inter">
+                  <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Total Qty:</span>
-                    <span className="font-semibold text-gray-900">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                    <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <span className="text-blue-800 font-medium text-lg font-inter">Gross Amount:</span>
+                    <span className="text-blue-800 font-medium text-lg">Gross Amount:</span>
                     <span className="font-bold text-xl text-blue-900">{formatCurrency(subtotal)}</span>
                   </div>
 
@@ -3422,9 +3314,9 @@ export default function POSEnhanced() {
               {/* Total Cost Amount Display */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4 shadow-md">
                 <div className="text-center">
-                  <div className="text-sm font-medium opacity-90 mb-1 font-inter">Total Amount</div>
-                  <div className="text-3xl font-bold mb-1 font-poppins">{formatCurrency(total)}</div>
-                  <div className="text-sm opacity-90 mb-2 font-inter">
+                  <div className="text-xs font-medium opacity-90 mb-1">Total Amount</div>
+                  <div className="text-3xl font-bold mb-1">{formatCurrency(total)}</div>
+                  <div className="text-xs opacity-90 mb-2">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   
@@ -3465,7 +3357,7 @@ export default function POSEnhanced() {
               <div className="space-y-3">
                 {/* Ocean Freight Management Button */}
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base py-4 h-auto pos-button font-inter"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 h-auto"
                   onClick={() => {
                     // Auto-add test items if cart is empty
                     if (cart.length === 0) {
@@ -3506,7 +3398,7 @@ export default function POSEnhanced() {
                 </Button>
 
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-base py-4 h-auto pos-button font-inter"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                 >
@@ -3516,7 +3408,7 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50 pos-button font-inter"
+                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
                   onClick={clearCart}
                   disabled={cart.length === 0}
                 >
@@ -3526,7 +3418,7 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="w-full hover:bg-gray-50 pos-button font-inter"
+                  className="w-full hover:bg-gray-50"
                   onClick={() => handlePrintReceipt(null)}
                 >
                   <Receipt className="h-4 w-4 mr-2" />
@@ -5595,7 +5487,6 @@ export default function POSEnhanced() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
     </div>
   );
 }
