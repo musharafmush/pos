@@ -2966,6 +2966,7 @@ export default function POSEnhanced() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-blue-800 text-sm">Product Search & Barcode Scanner</h3>
+                    <p className="text-xs text-blue-600">Search products or scan barcodes for instant addition</p>
                   </div>
                 </div>
                 <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-0.5">
@@ -3012,6 +3013,7 @@ export default function POSEnhanced() {
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
 
