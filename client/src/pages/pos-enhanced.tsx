@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -90,6 +91,7 @@ interface CartItem extends Product {
 
 export default function POSEnhanced() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchTab, setSearchTab] = useState<'name' | 'barcode'>('name');
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -2585,7 +2587,7 @@ export default function POSEnhanced() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 flex-wrap">
+                <div className="flex items-center space-x-1 flex-wrap">
                   {!registerOpened ? (
                     <Button
                       onClick={() => setShowOpenRegister(true)}
@@ -2597,36 +2599,36 @@ export default function POSEnhanced() {
                       Open Register
                     </Button>
                   ) : (
-                    <div className="flex items-center space-x-2 flex-wrap">
-                      <Button
-                        onClick={() => setShowCashRegister(true)}
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-green-50 border-green-200 text-green-700 text-xs"
-                      >
-                        <Banknote className="h-3 w-3 mr-1" />
-                        Manage Cash
-                      </Button>
-                      <Button
-                        onClick={() => setShowWithdrawal(true)}
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-orange-50 border-orange-200 text-orange-700 text-xs"
-                      >
-                        <TrendingDown className="h-3 w-3 mr-1" />
-                        Withdrawal
-                      </Button>
-                      <Button
-                        onClick={() => setShowCloseRegister(true)}
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-red-50 border-red-200 text-red-700 text-xs"
-                      >
-                        <Archive className="h-3 w-3 mr-1" />
-                        Close Register
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="hover:bg-green-50 border-green-200 text-green-700 text-xs"
+                        >
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          Cash Management
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => setShowCashRegister(true)}>
+                          <Banknote className="h-4 w-4 mr-2" />
+                          Manage Cash
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowWithdrawal(true)}>
+                          <TrendingDown className="h-4 w-4 mr-2" />
+                          Withdrawal
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowCloseRegister(true)} className="text-red-600">
+                          <Archive className="h-4 w-4 mr-2" />
+                          Close Register
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
+
+                  <div className="h-6 w-px bg-gray-300 mx-2" />
 
                   <Button
                     onClick={() => window.open('/printer-settings', '_blank')}
@@ -2636,7 +2638,7 @@ export default function POSEnhanced() {
                     title="Open printer settings"
                   >
                     <Printer className="h-3 w-3 mr-1" />
-                    Printer Settings
+                    Settings
                   </Button>
 
                   <Button
@@ -2646,7 +2648,7 @@ export default function POSEnhanced() {
                     className="hover:bg-blue-50 border-blue-200 text-xs"
                   >
                     <Monitor className="h-3 w-3 mr-1" />
-                    Fullscreen (F11)
+                    Fullscreen
                   </Button>
                 </div>
               </div>
@@ -2949,30 +2951,24 @@ export default function POSEnhanced() {
 
               <div className="min-h-96 max-h-[500px] bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
-                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is Empty</h3>
-                    <p className="text-gray-500 mb-4 text-base">Start by searching for products above</p>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-w-3xl mx-auto text-xs text-gray-500">
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F1</kbd>
-                        <p className="mt-1 text-xs">Focus barcode scanner</p>
+                  <div className="text-center py-8">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                      <ShoppingCart className="h-10 w-10 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Ready to Scan</h3>
+                    <p className="text-sm text-gray-500 mb-6">Scan an item or search to begin billing</p>
+                    <div className="grid grid-cols-1 gap-2 max-w-xs mx-auto">
+                      <div className="flex items-center bg-gradient-to-r from-blue-50 to-blue-100 p-2 rounded-lg border border-blue-200">
+                        <Search className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="text-xs font-medium text-blue-700">Search products</span>
                       </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">Enter</kbd>
-                        <p className="mt-1 text-xs">Add scanned item</p>
+                      <div className="flex items-center bg-gradient-to-r from-green-50 to-green-100 p-2 rounded-lg border border-green-200">
+                        <Scan className="h-4 w-4 text-green-600 mr-2" />
+                        <span className="text-xs font-medium text-green-700">Scan barcode</span>
                       </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F10</kbd>
-                        <p className="mt-1 text-xs">Quick checkout</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F11</kbd>
-                        <p className="mt-1 text-xs">Toggle fullscreen</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F12</kbd>
-                        <p className="mt-1 text-xs">Clear cart</p>
+                      <div className="flex items-center bg-gradient-to-r from-purple-50 to-purple-100 p-2 rounded-lg border border-purple-200">
+                        <Package className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-xs font-medium text-purple-700">Browse catalog</span>
                       </div>
                     </div>
                   </div>
@@ -3085,30 +3081,39 @@ export default function POSEnhanced() {
                 )}
               </div>
 
-              {/* Bottom Action Bar */}
-              <div className="flex flex-col lg:flex-row items-center justify-between mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 gap-3">
+              {/* Bottom Action Bar - Grouped Actions */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                {/* Payment Actions Group */}
+                <div className="mb-3">
+                  <h4 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Payment Actions</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setupQuickPayment("cash")}
+                      disabled={cart.length === 0}
+                      title="Quick cash payment (Alt+C)"
+                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300"
+                    >
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Cash
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setupQuickPayment("upi")}
+                      disabled={cart.length === 0}
+                      title="Quick UPI payment (Alt+U)"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300"
+                    >
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      UPI
+                    </Button>
+                  </div>
+                </div>
 
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                <Button 
-                  variant="outline"
-                  onClick={() => setupQuickPayment("cash")}
-                  disabled={cart.length === 0}
-                  title="Quick cash payment (Alt+C)"
-                  className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Cash (Alt+C)
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setupQuickPayment("upi")}
-                  disabled={cart.length === 0}
-                  title="Quick UPI payment (Alt+U)"
-                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-                >
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  UPI (Alt+U)
-                </Button>
+                {/* Cart Actions Group */}
+                <div className="mb-3">
+                  <h4 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Cart Actions</h4>
+                  <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline"
                   onClick={toggleDiscount}
@@ -3217,13 +3222,13 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-4 rounded-lg mb-4 shadow-md">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-lg mb-4 shadow-md">
                 <div className="flex items-center mb-2">
                   <Receipt className="h-5 w-5 mr-2" />
                   <h2 className="text-lg font-bold">Bill Summary</h2>
                 </div>
-                <div className="text-purple-100 text-xs">Bill #{billNumber}</div>
-                <div className="text-purple-100 text-xs">{currentDate}</div>
+                <div className="text-blue-100 text-xs">Bill #{billNumber}</div>
+                <div className="text-blue-100 text-xs">{currentDate}</div>
               </div>
 
               {/* Bill Details */}
@@ -5487,6 +5492,7 @@ export default function POSEnhanced() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
     </div>
   );
 }
