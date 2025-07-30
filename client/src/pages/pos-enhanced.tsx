@@ -2562,80 +2562,80 @@ export default function POSEnhanced() {
         <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'min-h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
           {/* Modern Header */}
           <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-xl">
-            <div className={`${isFullscreen ? 'px-4 py-3' : 'px-8 py-6'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-6">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-2xl shadow-lg">
-                    <Monitor className="h-7 w-7" />
+            <div className={`${isFullscreen ? 'px-4 py-2' : 'px-6 py-4'}`}>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl shadow-lg">
+                    <Monitor className="h-6 w-6" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
-                    <p className="text-sm text-gray-600 font-medium">Professional Point of Sale System</p>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
+                    <p className="text-xs text-gray-600 font-medium">Professional Point of Sale System</p>
                   </div>
 
-                  <div className="flex items-center space-x-4 ml-12">
-                    <Badge className="bg-green-100/80 text-green-800 border-green-200 px-4 py-2 shadow-sm backdrop-blur">
-                      <CheckCircle className="w-4 h-4 mr-2" />
+                  <div className="hidden lg:flex items-center space-x-3 ml-8">
+                    <Badge className="bg-green-100/80 text-green-800 border-green-200 px-3 py-1 shadow-sm backdrop-blur text-xs">
+                      <CheckCircle className="w-3 h-3 mr-1" />
                       System Ready
                     </Badge>
-                    <Badge className="bg-blue-100/80 text-blue-800 border-blue-200 px-4 py-2 shadow-sm backdrop-blur">
-                      <Zap className="h-4 w-4 mr-2" />
+                    <Badge className="bg-blue-100/80 text-blue-800 border-blue-200 px-3 py-1 shadow-sm backdrop-blur text-xs">
+                      <Zap className="h-3 w-3 mr-1" />
                       Live Mode
                     </Badge>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2 flex-wrap">
                   {!registerOpened ? (
                     <Button
                       onClick={() => setShowOpenRegister(true)}
                       variant="outline"
                       size="sm"
-                      className="hover:bg-blue-50 border-blue-200 text-blue-700"
+                      className="hover:bg-blue-50 border-blue-200 text-blue-700 text-xs"
                     >
-                      <DollarSign className="h-4 w-4 mr-2" />
+                      <DollarSign className="h-3 w-3 mr-1" />
                       Open Register
                     </Button>
                   ) : (
-                    <>
+                    <div className="flex items-center space-x-2 flex-wrap">
                       <Button
                         onClick={() => setShowCashRegister(true)}
                         variant="outline"
                         size="sm"
-                        className="hover:bg-green-50 border-green-200 text-green-700"
+                        className="hover:bg-green-50 border-green-200 text-green-700 text-xs"
                       >
-                        <Banknote className="h-4 w-4 mr-2" />
+                        <Banknote className="h-3 w-3 mr-1" />
                         Manage Cash
                       </Button>
                       <Button
                         onClick={() => setShowWithdrawal(true)}
                         variant="outline"
                         size="sm"
-                        className="hover:bg-orange-50 border-orange-200 text-orange-700"
+                        className="hover:bg-orange-50 border-orange-200 text-orange-700 text-xs"
                       >
-                        <TrendingDown className="h-4 w-4 mr-2" />
+                        <TrendingDown className="h-3 w-3 mr-1" />
                         Withdrawal
                       </Button>
                       <Button
                         onClick={() => setShowCloseRegister(true)}
                         variant="outline"
                         size="sm"
-                        className="hover:bg-red-50 border-red-200 text-red-700"
+                        className="hover:bg-red-50 border-red-200 text-red-700 text-xs"
                       >
-                        <Archive className="h-4 w-4 mr-2" />
+                        <Archive className="h-3 w-3 mr-1" />
                         Close Register
                       </Button>
-                    </>
+                    </div>
                   )}
 
                   <Button
                     onClick={() => window.open('/printer-settings', '_blank')}
                     variant="outline"
                     size="sm"
-                    className="hover:bg-purple-50 border-purple-200 text-purple-700"
+                    className="hover:bg-purple-50 border-purple-200 text-purple-700 text-xs"
                     title="Open printer settings"
                   >
-                    <Printer className="h-4 w-4 mr-2" />
+                    <Printer className="h-3 w-3 mr-1" />
                     Printer Settings
                   </Button>
 
@@ -2643,31 +2643,39 @@ export default function POSEnhanced() {
                     onClick={toggleFullscreen}
                     variant="outline"
                     size="sm"
-                    className="hover:bg-blue-50 border-blue-200"
+                    className="hover:bg-blue-50 border-blue-200 text-xs"
                   >
-                    <Monitor className="h-4 w-4 mr-2" />
+                    <Monitor className="h-3 w-3 mr-1" />
                     Fullscreen (F11)
                   </Button>
-
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Bill Number</div>
-                    <div className="font-mono font-semibold text-gray-900">{billNumber}</div>
+                </div>
+              </div>
+              
+              {/* Secondary Header Row */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200/50">
+                <div className="flex items-center space-x-6">
+                  <div className="text-left">
+                    <div className="text-xs text-gray-500">Bill Number</div>
+                    <div className="font-mono font-semibold text-gray-900 text-sm">{billNumber}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Date & Time</div>
-                    <div className="font-mono text-sm text-gray-700">{currentDate} • {currentTime}</div>
+                  <div className="text-left">
+                    <div className="text-xs text-gray-500">Date & Time</div>
+                    <div className="font-mono text-xs text-gray-700">{currentDate} • {currentTime}</div>
                   </div>
-                  <div className={`text-right p-3 rounded-lg border ${registerOpened ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                    <div className={`text-sm font-medium ${registerOpened ? 'text-green-600' : 'text-gray-600'}`}>
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <div className={`text-center p-2 rounded-lg border ${registerOpened ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className={`text-xs font-medium ${registerOpened ? 'text-green-600' : 'text-gray-600'}`}>
                       {registerOpened ? 'Cash in Hand' : 'Register Closed'}
                     </div>
-                    <div className={`text-xl font-bold ${registerOpened ? 'text-green-700' : 'text-gray-700'}`}>
+                    <div className={`text-lg font-bold ${registerOpened ? 'text-green-700' : 'text-gray-700'}`}>
                       {registerOpened ? formatCurrency(cashInHand) : '---'}
                     </div>
                   </div>
-                  <div className="text-right bg-green-50 p-3 rounded-lg border border-green-200">
-                    <div className="text-sm text-green-600 font-medium">Total Amount</div>
-                    <div className="text-2xl font-bold text-green-700">{formatCurrency(total)}</div>
+                  <div className="text-center bg-green-50 p-2 rounded-lg border border-green-200">
+                    <div className="text-xs text-green-600 font-medium">Total Amount</div>
+                    <div className="text-xl font-bold text-green-700">{formatCurrency(total)}</div>
                   </div>
                 </div>
               </div>
@@ -2901,9 +2909,9 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-160px)]' : ''}`}>
+          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-200px)]' : ''} gap-4 px-4 py-4`}>
             {/* Main Cart Section */}
-            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-4 overflow-y-auto' : 'p-8'}`}>
+            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-3 overflow-y-auto' : 'p-4'} rounded-lg shadow-sm`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-6 rounded-2xl mb-8 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -3079,9 +3087,9 @@ export default function POSEnhanced() {
               </div>
 
               {/* Bottom Action Bar */}
-              <div className="flex items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
+              <div className="flex flex-col lg:flex-row items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200 gap-4">
 
-                <div className="flex space-x-3">
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                 <Button 
                   variant="outline"
                   onClick={() => setupQuickPayment("cash")}
@@ -3155,19 +3163,19 @@ export default function POSEnhanced() {
                 </Button>
               </div>
 
-                <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center flex-wrap gap-2 text-sm">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     System Online
                   </Badge>
-                  <span className="text-gray-600">Terminal: POS-01</span>
+                  <span className="text-gray-600 hidden sm:inline">Terminal: POS-01</span>
                   <span className="text-gray-600 font-mono">{currentTime}</span>
                 </div>
               </div>
             </div>
 
             {/* Bill Summary Sidebar */}
-            <div className={`${isFullscreen ? 'w-80 p-3' : 'w-96 p-6'} bg-white border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''}`}>
+            <div className={`${isFullscreen ? 'w-80 p-3' : 'w-full lg:w-96 p-4'} bg-white lg:border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''} rounded-lg shadow-sm`}>
               {/* Barcode Scanner Status */}
               <Card className="mb-4 border border-blue-200 bg-blue-50">
                 <CardContent className="p-4">
