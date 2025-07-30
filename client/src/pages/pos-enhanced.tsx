@@ -2811,19 +2811,7 @@ export default function POSEnhanced() {
           </div>
           {/* Search Section */}
           <div className="bg-white border-b border-gray-200 px-4 py-1">
-            <div className="flex items-center space-x-3 mb-1">
-              <Button 
-                onClick={() => searchInputRef.current?.focus()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Search Products (F1)
-              </Button>
-              <Button variant="outline" className="hover:bg-gray-50">
-                <Package className="h-4 w-4 mr-2" />
-                Browse Categories
-              </Button>
-              <div className="flex-1" />
+            <div className="flex items-center justify-end mb-1">
               <Button 
                 variant="outline" 
                 onClick={() => queryClient.invalidateQueries()}
