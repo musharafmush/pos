@@ -3194,7 +3194,7 @@ export default function POSEnhanced() {
               </div>
 
               {/* Status Bar */}
-              <div className="flex items-center justify-between mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
+              <div className="flex items-center justify-end mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
                 <div className="flex items-center flex-wrap gap-2 text-sm">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
                     <CheckCircle className="w-3 h-3 mr-1" />
@@ -3203,14 +3203,6 @@ export default function POSEnhanced() {
                   <span className="text-gray-600 hidden sm:inline">Terminal: POS-01</span>
                   <span className="text-gray-600 font-mono">{currentTime}</span>
                 </div>
-                <Button
-                  onClick={() => searchInputRef.current?.focus()}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-3 text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Item
-                </Button>
               </div>
             </div>
 
