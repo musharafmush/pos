@@ -3084,15 +3084,15 @@ export default function POSEnhanced() {
               {/* Bottom Action Bar - Grouped Actions */}
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 {/* Payment Actions Group */}
-                <div className="mb-3">
-                  <h4 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Payment Actions</h4>
+                <div className="mb-4">
+                  <h4 className="text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide font-inter">Payment Actions</h4>
                   <div className="flex flex-wrap gap-2">
                     <Button 
                       variant="outline"
                       onClick={() => setupQuickPayment("cash")}
                       disabled={cart.length === 0}
                       title="Quick cash payment (Alt+C)"
-                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300"
+                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300 pos-button font-inter"
                     >
                       <DollarSign className="h-4 w-4 mr-2" />
                       Cash
@@ -3102,7 +3102,7 @@ export default function POSEnhanced() {
                       onClick={() => setupQuickPayment("upi")}
                       disabled={cart.length === 0}
                       title="Quick UPI payment (Alt+U)"
-                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300 pos-button font-inter"
                     >
                       <Smartphone className="h-4 w-4 mr-2" />
                       UPI
@@ -3111,14 +3111,14 @@ export default function POSEnhanced() {
                 </div>
 
                 {/* Cart Actions Group */}
-                <div className="mb-3">
-                  <h4 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Cart Actions</h4>
+                <div className="mb-4">
+                  <h4 className="text-xs font-medium text-gray-600 mb-3 uppercase tracking-wide font-inter">Cart Actions</h4>
                   <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline"
                   onClick={toggleDiscount}
                   title="Toggle 10% discount (Ctrl+D)"
-                  className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                  className={`pos-button font-inter hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
                 >
                   <Calculator className="h-4 w-4 mr-2" />
                   Discount (Ctrl+D)
@@ -3127,7 +3127,7 @@ export default function POSEnhanced() {
                   variant="outline"
                   onClick={() => setShowOceanDialog(true)}
                   title="Enter Ocean Freight & Shipping Costs"
-                  className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                  className={`pos-button font-inter hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
                 >
                   <Package className="h-4 w-4 mr-2" />
                   Enter Ocean
@@ -3137,7 +3137,7 @@ export default function POSEnhanced() {
                   onClick={holdCurrentSale}
                   disabled={cart.length === 0}
                   title="Hold current sale (Alt+H)"
-                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
+                  className="pos-button font-inter hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Hold (Alt+H)
@@ -3146,7 +3146,7 @@ export default function POSEnhanced() {
                   variant="outline"
                   onClick={() => setShowHoldSales(true)}
                   title="Recall held sales (Alt+R)"
-                  className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
+                  className="pos-button font-inter hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
                 >
                   <List className="h-4 w-4 mr-2" />
                   Recall (Alt+R)
@@ -3160,7 +3160,7 @@ export default function POSEnhanced() {
                   variant="outline" 
                   onClick={() => clearCart(false)} 
                   disabled={cart.length === 0}
-                  className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                  className="pos-button font-inter hover:bg-red-50 hover:text-red-700 hover:border-red-200"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Clear Cart (F12)
@@ -3168,12 +3168,12 @@ export default function POSEnhanced() {
               </div>
 
                 <div className="flex items-center flex-wrap gap-2 text-sm">
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <Badge className="bg-green-100 text-green-800 border-green-200 font-inter">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     System Online
                   </Badge>
-                  <span className="text-gray-600 hidden sm:inline">Terminal: POS-01</span>
-                  <span className="text-gray-600 font-mono">{currentTime}</span>
+                  <span className="text-gray-600 hidden sm:inline font-inter">Terminal: POS-01</span>
+                  <span className="text-gray-600 font-mono font-inter">{currentTime}</span>
                 </div>
               </div>
             </div>
@@ -3223,27 +3223,31 @@ export default function POSEnhanced() {
               </Card>
 
               <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4 rounded-lg mb-4 shadow-md">
-                <div className="flex items-center mb-2">
-                  <Receipt className="h-5 w-5 mr-2" />
-                  <h2 className="text-lg font-bold">Bill Summary</h2>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <Receipt className="h-5 w-5 mr-2" />
+                    <h2 className="text-lg font-bold font-inter">Bill Summary</h2>
+                  </div>
+                  <span className="text-sm text-blue-100 bg-blue-800 px-3 py-1 rounded-full font-inter">
+                    Bill #{billNumber}
+                  </span>
                 </div>
-                <div className="text-blue-100 text-xs">Bill #{billNumber}</div>
-                <div className="text-blue-100 text-xs">{currentDate}</div>
+                <div className="text-blue-100 text-sm font-inter">{currentDate}</div>
               </div>
 
               {/* Bill Details */}
-              <Card className="mb-4 border border-gray-200">
+              <Card className="mb-4 border border-gray-200 pos-card">
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between text-lg">
+                  <div className="flex justify-between text-base font-inter">
                     <span className="text-gray-600">Items:</span>
-                    <span className="font-semibold">{cart.length}</span>
+                    <span className="font-semibold text-gray-900">{cart.length}</span>
                   </div>
-                  <div className="flex justify-between text-lg">
+                  <div className="flex justify-between text-base font-inter">
                     <span className="text-gray-600">Total Qty:</span>
-                    <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                    <span className="font-semibold text-gray-900">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <span className="text-blue-800 font-medium text-lg">Gross Amount:</span>
+                    <span className="text-blue-800 font-medium text-lg font-inter">Gross Amount:</span>
                     <span className="font-bold text-xl text-blue-900">{formatCurrency(subtotal)}</span>
                   </div>
 
@@ -3319,9 +3323,9 @@ export default function POSEnhanced() {
               {/* Total Cost Amount Display */}
               <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4 shadow-md">
                 <div className="text-center">
-                  <div className="text-xs font-medium opacity-90 mb-1">Total Amount</div>
-                  <div className="text-3xl font-bold mb-1">{formatCurrency(total)}</div>
-                  <div className="text-xs opacity-90 mb-2">
+                  <div className="text-sm font-medium opacity-90 mb-1 font-inter">Total Amount</div>
+                  <div className="text-3xl font-bold mb-1 font-poppins">{formatCurrency(total)}</div>
+                  <div className="text-sm opacity-90 mb-2 font-inter">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   
@@ -3362,7 +3366,7 @@ export default function POSEnhanced() {
               <div className="space-y-3">
                 {/* Ocean Freight Management Button */}
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 h-auto"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base py-4 h-auto pos-button font-inter"
                   onClick={() => {
                     // Auto-add test items if cart is empty
                     if (cart.length === 0) {
@@ -3403,7 +3407,7 @@ export default function POSEnhanced() {
                 </Button>
 
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-base py-4 h-auto pos-button font-inter"
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                 >
@@ -3413,7 +3417,7 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full text-red-600 border-red-200 hover:bg-red-50 pos-button font-inter"
                   onClick={clearCart}
                   disabled={cart.length === 0}
                 >
@@ -3423,7 +3427,7 @@ export default function POSEnhanced() {
 
                 <Button
                   variant="outline"
-                  className="w-full hover:bg-gray-50"
+                  className="w-full hover:bg-gray-50 pos-button font-inter"
                   onClick={() => handlePrintReceipt(null)}
                 >
                   <Receipt className="h-4 w-4 mr-2" />
