@@ -3194,8 +3194,8 @@ export default function POSEnhanced() {
               </div>
 
               {/* Status Bar */}
-              <div className="flex items-center justify-end mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
-                <div className="flex items-center flex-wrap gap-2 text-sm">
+              <div className="flex items-center justify-end mt-1 p-1.5 bg-gray-50 rounded-lg border border-gray-200 gap-1.5 flex-shrink-0">
+                <div className="flex items-center flex-wrap gap-1.5 text-sm">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     System Online
