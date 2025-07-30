@@ -2561,15 +2561,15 @@ export default function POSEnhanced() {
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden' : ''}`}>
         <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'min-h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
           {/* Modern Header */}
-          <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-xl">
-            <div className={`${isFullscreen ? 'px-4 py-2' : 'px-6 py-4'}`}>
+          <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
+            <div className={`${isFullscreen ? 'px-3 py-2' : 'px-4 py-3'}`}>
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl shadow-lg">
-                    <Monitor className="h-6 w-6" />
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-lg shadow-md">
+                    <Monitor className="h-5 w-5" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
                     <p className="text-xs text-gray-600 font-medium">Professional Point of Sale System</p>
                   </div>
 
@@ -2652,7 +2652,7 @@ export default function POSEnhanced() {
               </div>
               
               {/* Secondary Header Row */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200/50">
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200/50">
                 <div className="flex items-center space-x-6">
                   <div className="text-left">
                     <div className="text-xs text-gray-500">Bill Number</div>
@@ -2912,19 +2912,19 @@ export default function POSEnhanced() {
           <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-200px)]' : ''} gap-4 px-4 py-4`}>
             {/* Main Cart Section */}
             <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-3 overflow-y-auto' : 'p-4'} rounded-lg shadow-sm`}>
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-6 rounded-2xl mb-8 shadow-2xl">
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-4 rounded-xl mb-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mr-4">
-                      <ShoppingCart className="h-7 w-7" />
+                    <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg mr-3">
+                      <ShoppingCart className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">Shopping Cart</h2>
-                      <p className="text-blue-100 text-sm">Professional Point of Sale</p>
+                      <h2 className="text-lg font-bold">Shopping Cart</h2>
+                      <p className="text-blue-100 text-xs">Professional Point of Sale</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xl font-bold">
+                    <div className="text-base font-bold">
                       {cart.length} items • {(() => {
                         const regularItems = cart.filter(item => !item.isWeightBased);
                         const weightItems = cart.filter(item => item.isWeightBased);
@@ -2940,40 +2940,39 @@ export default function POSEnhanced() {
                         }
                       })()}
                     </div>
-                    <div className="text-blue-100 text-lg font-medium">
+                    <div className="text-blue-100 text-sm font-medium">
                       Subtotal: {formatCurrency(subtotal)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="min-h-96 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-200/50 shadow-xl">
+              <div className="min-h-80 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 shadow-lg">
                 {cart.length === 0 ? (
-                  <div className="text-center py-20">
-                    <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-2xl font-semibold text-gray-600 mb-3">Cart is Empty</h3>
-                    <p className="text-gray-500 mb-6 text-lg">Start by searching for products above</p>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 max-w-4xl mx-auto text-sm text-gray-500">
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F1</kbd>
-                        <p className="mt-2">Focus barcode scanner</p>
+                  <div className="text-center py-12">
+                    <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is Empty</h3>
+                    <p className="text-gray-500 mb-4 text-base">Start by searching for products above</p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-w-3xl mx-auto text-xs text-gray-500">
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F1</kbd>
+                        <p className="mt-1 text-xs">Focus barcode scanner</p>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">Enter</kbd>
-                        <p className="mt-2">Add scanned item</p>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">Enter</kbd>
+                        <p className="mt-1 text-xs">Add scanned item</p>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F10</kbd>
-                        <p className="mt-2">Quick checkout</p>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F10</kbd>
+                        <p className="mt-1 text-xs">Quick checkout</p>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F11</kbd>
-                        <p className="mt-2">Toggle fullscreen</p>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F11</kbd>
+                        <p className="mt-1 text-xs">Toggle fullscreen</p>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border">
-                        <kbd className="bg-gray-200 px-2 py-1 rounded text-xs">F12</kbd>
-                        <p className="mt-2">Clear cart</p>
-                        <p className="text-xs text-gray-500">Shift+F12: Clear all</p>
+                      <div className="bg-white p-2 rounded border">
+                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F12</kbd>
+                        <p className="mt-1 text-xs">Clear cart</p>
                       </div>
                     </div>
                   </div>
@@ -3087,7 +3086,7 @@ export default function POSEnhanced() {
               </div>
 
               {/* Bottom Action Bar */}
-              <div className="flex flex-col lg:flex-row items-center justify-between mt-6 p-4 bg-gray-100 rounded-xl border border-gray-200 gap-4">
+              <div className="flex flex-col lg:flex-row items-center justify-between mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 gap-3">
 
                 <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                 <Button 
