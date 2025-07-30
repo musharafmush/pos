@@ -2955,7 +2955,67 @@ export default function POSEnhanced() {
               </div>
             </div>
           </div>
+          {/* Search Section */}
+          <div className="bg-white border-b border-gray-200 px-3 py-1">
+            {/* Unified Search and Barcode Scanner */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Search className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-800 text-sm">Product Search & Barcode Scanner</h3>
+                    <p className="text-xs text-blue-600">Search products or scan barcodes for instant addition</p>
+                  </div>
+                </div>
+                <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-0.5">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Ready
+                </Badge>
+              </div>
 
+              <div className="flex items-center space-x-3">
+                <div className="relative flex-1">
+                  <div className="flex items-center gap-2 absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Search className="h-4 w-4 text-blue-600" />
+                    <Scan className="h-3 w-3 text-blue-600" />
+                  </div>
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search products by name, SKU or scan barcode..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setBarcodeInput(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (searchTerm.trim()) {
+                          handleBarcodeSubmit();
+                        }
+                      }
+                    }}
+                    className="text-base py-2 pl-16 pr-20 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                    <Button
+                      onClick={handleBarcodeSubmit}
+                      disabled={!searchTerm.trim()}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-7 px-3 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
 
           <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} gap-2 px-2 py-1`}>
             {/* Main Cart Section */}
