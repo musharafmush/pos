@@ -50,7 +50,9 @@ import {
   Settings,
   Printer,
   Star,
-  Gift
+  Gift,
+  Grid3X3,
+  BarChart3
 } from "lucide-react";
 
 interface Product {
@@ -2909,6 +2911,103 @@ export default function POSEnhanced() {
                 </div>
               </div>
             </div>
+
+            {/* Product Categories and Brands Grid */}
+            {!searchTerm && (
+              <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex gap-6">
+                  {/* Categories Section */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center font-inter">
+                        <Grid3X3 className="h-5 w-5 mr-2 text-blue-600" />
+                        Category
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {products.slice(0, 16).map((product: Product, index) => (
+                        <div 
+                          key={product.id}
+                          className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group hover:border-blue-300"
+                          onClick={() => addToCart(product)}
+                        >
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">
+                              {product.category?.name === 'Electronics' ? '💻' : 
+                               product.category?.name === 'Food' ? '🍎' : 
+                               product.name.toLowerCase().includes('phone') ? '📱' :
+                               product.name.toLowerCase().includes('rice') ? '🍚' :
+                               product.name.toLowerCase().includes('oil') ? '🫒' :
+                               product.name.toLowerCase().includes('flour') ? '🌾' :
+                               '📦'}
+                            </div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2 group-hover:text-blue-600 font-inter truncate">
+                              {product.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 font-inter">
+                              {product.stockQuantity > 0 ? `${product.stockQuantity} Items in stock` : '0 Items in stock'}
+                            </p>
+                            <p className="text-xs font-medium text-blue-600 mt-1 font-inter">
+                              {formatCurrency(parseFloat(product.price))}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Brands Section */}
+                  <div className="w-80">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center font-inter">
+                        <Star className="h-5 w-5 mr-2 text-blue-600" />
+                        Brands
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {products.slice(16, 24).map((product: Product, index) => (
+                        <div 
+                          key={product.id}
+                          className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group hover:border-blue-300"
+                          onClick={() => addToCart(product)}
+                        >
+                          <div className="text-center">
+                            <div className="text-xl mb-2">
+                              {product.name.toLowerCase().includes('sugar') ? '🍬' :
+                               product.name.toLowerCase().includes('salt') ? '🧂' :
+                               product.name.toLowerCase().includes('tea') ? '🍵' :
+                               product.name.toLowerCase().includes('coffee') ? '☕' :
+                               product.name.toLowerCase().includes('milk') ? '🥛' :
+                               product.name.toLowerCase().includes('bread') ? '🍞' :
+                               '⭐'}
+                            </div>
+                            <h4 className="text-sm font-medium text-gray-900 mb-2 group-hover:text-blue-600 font-inter truncate">
+                              {product.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 font-inter">
+                              {product.stockQuantity > 0 ? `${product.stockQuantity} Items in stock` : '0 Items in stock'}
+                            </p>
+                            <p className="text-xs font-medium text-blue-600 mt-1 font-inter">
+                              {formatCurrency(parseFloat(product.price))}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-4 text-center">
+                      <Button 
+                        variant="outline" 
+                        className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 font-inter"
+                      >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Recent Transactions
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-160px)]' : 'min-h-[500px] max-h-[800px]'} gap-3 px-3 py-2`}>
