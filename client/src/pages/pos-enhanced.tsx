@@ -2909,10 +2909,10 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-160px)]' : 'min-h-[500px] max-h-[800px]'} gap-3 px-3 py-2`}>
+          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} gap-2 px-2 py-1`}>
             {/* Main Cart Section */}
-            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-2 overflow-y-auto' : 'p-3'} rounded-lg shadow-sm`}>
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-3 rounded-lg mb-3 shadow-md">
+            <div className={`flex-1 bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-sm flex flex-col h-full`}>
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-2 rounded-lg mb-2 shadow-md flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg mr-3">
@@ -2947,7 +2947,7 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
-              <div className="min-h-96 max-h-[500px] bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg overflow-hidden">
+              <div className="flex-1 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-2 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
                   <div className="text-center py-12">
                     <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
@@ -2977,7 +2977,7 @@ export default function POSEnhanced() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2">
+                  <div className="space-y-2 h-full overflow-y-auto pr-1">
                     {cart.map((item) => (
                       <Card key={item.id} className="p-3 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
@@ -3086,7 +3086,7 @@ export default function POSEnhanced() {
               </div>
 
               {/* Bottom Action Bar */}
-              <div className="flex flex-col lg:flex-row items-center justify-between mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200 gap-3">
+              <div className="flex flex-col lg:flex-row items-center justify-between mt-2 p-2 bg-gray-100 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
 
                 <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                 <Button 
@@ -3174,10 +3174,10 @@ export default function POSEnhanced() {
             </div>
 
             {/* Bill Summary Sidebar */}
-            <div className={`${isFullscreen ? 'w-72 p-2' : 'w-full lg:w-80 p-3'} bg-white lg:border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''} rounded-lg shadow-sm`}>
+            <div className={`w-full lg:w-80 p-2 bg-white lg:border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
               {/* Barcode Scanner Status */}
-              <Card className="mb-3 border border-blue-200 bg-blue-50">
-                <CardContent className="p-3">
+              <Card className="mb-2 border border-blue-200 bg-blue-50 flex-shrink-0">
+                <CardContent className="p-2">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
                       <Scan className="h-5 w-5 text-blue-600 mr-2" />
@@ -3217,7 +3217,7 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-4 rounded-lg mb-4 shadow-md">
+              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-3 rounded-lg mb-2 shadow-md flex-shrink-0">
                 <div className="flex items-center mb-2">
                   <Receipt className="h-5 w-5 mr-2" />
                   <h2 className="text-lg font-bold">Bill Summary</h2>
@@ -3227,8 +3227,8 @@ export default function POSEnhanced() {
               </div>
 
               {/* Bill Details */}
-              <Card className="mb-4 border border-gray-200">
-                <CardContent className="p-4 space-y-3">
+              <Card className="mb-2 border border-gray-200 flex-1 overflow-y-auto">
+                <CardContent className="p-2 space-y-2">
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Items:</span>
                     <span className="font-semibold">{cart.length}</span>
@@ -3312,7 +3312,7 @@ export default function POSEnhanced() {
               </Card>
 
               {/* Total Cost Amount Display */}
-              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4 shadow-md">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-lg mb-2 shadow-md flex-shrink-0">
                 <div className="text-center">
                   <div className="text-xs font-medium opacity-90 mb-1">Total Amount</div>
                   <div className="text-3xl font-bold mb-1">{formatCurrency(total)}</div>
@@ -3354,10 +3354,10 @@ export default function POSEnhanced() {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3">
+              <div className="space-y-2 flex-shrink-0">
                 {/* Ocean Freight Management Button */}
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 h-auto"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base py-2 h-auto"
                   onClick={() => {
                     // Auto-add test items if cart is empty
                     if (cart.length === 0) {
@@ -3398,7 +3398,7 @@ export default function POSEnhanced() {
                 </Button>
 
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 h-auto"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-base py-2 h-auto"
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                 >
