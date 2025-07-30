@@ -2683,8 +2683,8 @@ export default function POSEnhanced() {
           </div>
 
           {/* Customer Selection Bar */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="grid grid-cols-12 gap-4 items-center">
+          <div className="bg-white border-b border-gray-200 px-4 py-2">
+            <div className="grid grid-cols-12 gap-3 items-center">
               <div className="col-span-2">
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Cashier</label>
                 <div className="flex items-center text-gray-900 font-medium">
@@ -2810,10 +2810,9 @@ export default function POSEnhanced() {
               </div>
             </div>
           </div>
-
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center space-x-4 mb-4">
+          <div className="bg-white border-b border-gray-200 px-4 py-1">
+            <div className="flex items-center space-x-3 mb-1">
               <Button 
                 onClick={() => searchInputRef.current?.focus()}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -2837,8 +2836,8 @@ export default function POSEnhanced() {
             </div>
 
             {/* Unified Search and Barcode Scanner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-2 mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
                     <Search className="h-5 w-5 text-white" />
