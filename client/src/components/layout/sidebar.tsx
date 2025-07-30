@@ -105,18 +105,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         { href: "/add-item-dashboard", icon: <BarChart4Icon className="h-5 w-5" />, label: "Add Item Dashboard" },
         { href: "/add-item-professional", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>, label: "Add Item Professional" },
         { href: "/update-price-professional", icon: <Calculator className="h-5 w-5" />, label: "Update Price" },
-        { href: "/print-labels", icon: <ClipboardCheckIcon className="h-5 w-5" />, label: "Print Labels" },
         { href: "/print-labels-enhanced", icon: <Printer className="h-5 w-5" />, label: "Print Labels Enhanced" },
         { href: "/product-history", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>, label: "Product History" },
-        { href: "/products/variations", icon: <GalleryHorizontalIcon className="h-5 w-5" />, label: "Variations" },
-        { href: "/products/import", icon: <ArrowDownIcon className="h-5 w-5" />, label: "Import Products" },
-        { href: "/products/opening-stock", icon: <PackageIcon className="h-5 w-5" />, label: "Import Opening Stock" },
-        { href: "/products/selling-price-group", icon: <BarChart4Icon className="h-5 w-5" />, label: "Selling Price Group" },
         { href: "/units", icon: <Calculator className="h-5 w-5" />, label: "Units" },
         { href: "/categories", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, label: "Categories" },
-        { href: "/brands", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>, label: "Brands" },
-        { href: "/products/warranties", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label: "Warranties" },
-
+        { href: "/brands", icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>, label: "Brands" }
       ]
     },
     {
