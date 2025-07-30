@@ -2966,19 +2966,12 @@ export default function POSEnhanced() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-blue-800 text-sm">Product Search & Barcode Scanner</h3>
-                    <p className="text-xs text-blue-600">Search products or scan barcodes for instant addition</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-0.5">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Ready
-                  </Badge>
-                  <div className="text-xs text-blue-600">
-                    <div>Scannable Products: <span className="font-semibold">71</span></div>
-                    <div>Total Products: <span className="font-semibold">{products.length}</span></div>
-                  </div>
-                </div>
+                <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-0.5">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Ready
+                </Badge>
               </div>
 
               <div className="flex items-center space-x-3">
@@ -3017,13 +3010,6 @@ export default function POSEnhanced() {
                       Add
                     </Button>
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center text-xs text-blue-600 mt-1">
-                <div className="flex items-center gap-1">
-                  <Info className="h-3 w-3" />
-                  <span>Scanner works with products that have valid barcodes (8+ chars), stock, and pricing</span>
                 </div>
               </div>
             </div>
