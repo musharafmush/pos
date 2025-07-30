@@ -2909,17 +2909,17 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-200px)]' : ''} gap-4 px-4 py-4`}>
+          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-180px)]' : 'min-h-[600px]'} gap-3 px-3 py-3`}>
             {/* Main Cart Section */}
-            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-3 overflow-y-auto' : 'p-4'} rounded-lg shadow-sm`}>
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-4 rounded-xl mb-4 shadow-lg">
+            <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-2 overflow-y-auto' : 'p-3'} rounded-lg shadow-sm`}>
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-3 rounded-lg mb-3 shadow-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg mr-3">
                       <ShoppingCart className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Shopping Cart</h2>
+                      <h2 className="text-base font-bold">Shopping Cart</h2>
                       <p className="text-blue-100 text-xs">Professional Point of Sale</p>
                     </div>
                   </div>
@@ -3174,10 +3174,10 @@ export default function POSEnhanced() {
             </div>
 
             {/* Bill Summary Sidebar */}
-            <div className={`${isFullscreen ? 'w-80 p-3' : 'w-full lg:w-96 p-4'} bg-white lg:border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''} rounded-lg shadow-sm`}>
+            <div className={`${isFullscreen ? 'w-72 p-2' : 'w-full lg:w-80 p-3'} bg-white lg:border-l border-gray-200 ${isFullscreen ? 'overflow-y-auto' : ''} rounded-lg shadow-sm`}>
               {/* Barcode Scanner Status */}
-              <Card className="mb-4 border border-blue-200 bg-blue-50">
-                <CardContent className="p-4">
+              <Card className="mb-3 border border-blue-200 bg-blue-50">
+                <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
                       <Scan className="h-5 w-5 text-blue-600 mr-2" />
@@ -3217,18 +3217,18 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-6 rounded-xl mb-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <Receipt className="h-6 w-6 mr-3" />
-                  <h2 className="text-xl font-bold">Bill Summary</h2>
+              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-4 rounded-lg mb-4 shadow-md">
+                <div className="flex items-center mb-2">
+                  <Receipt className="h-5 w-5 mr-2" />
+                  <h2 className="text-lg font-bold">Bill Summary</h2>
                 </div>
-                <div className="text-purple-100 text-sm">Bill #{billNumber}</div>
-                <div className="text-purple-100 text-sm">{currentDate}</div>
+                <div className="text-purple-100 text-xs">Bill #{billNumber}</div>
+                <div className="text-purple-100 text-xs">{currentDate}</div>
               </div>
 
               {/* Bill Details */}
-              <Card className="mb-6 border border-gray-200">
-                <CardContent className="p-6 space-y-4">
+              <Card className="mb-4 border border-gray-200">
+                <CardContent className="p-4 space-y-3">
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Items:</span>
                     <span className="font-semibold">{cart.length}</span>
@@ -3312,11 +3312,11 @@ export default function POSEnhanced() {
               </Card>
 
               {/* Total Cost Amount Display */}
-              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl mb-6 shadow-lg">
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg mb-4 shadow-md">
                 <div className="text-center">
-                  <div className="text-sm font-medium opacity-90 mb-2">Total Amount</div>
-                  <div className="text-5xl font-bold mb-2">{formatCurrency(total)}</div>
-                  <div className="text-sm opacity-90 mb-3">
+                  <div className="text-xs font-medium opacity-90 mb-1">Total Amount</div>
+                  <div className="text-3xl font-bold mb-1">{formatCurrency(total)}</div>
+                  <div className="text-xs opacity-90 mb-2">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'} • Qty: {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
                   
