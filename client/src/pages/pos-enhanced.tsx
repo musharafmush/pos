@@ -2696,9 +2696,20 @@ export default function POSEnhanced() {
             <div className="grid grid-cols-12 gap-2 items-center">
               <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-700 mb-0.5 block">Cashier</label>
-                <div className="flex items-center text-gray-900 font-medium text-sm">
-                  <User className="h-3 w-3 mr-1 text-gray-500" />
-                  Admin User
+                <div className="space-y-0.5">
+                  <div className="flex items-center text-gray-900 font-medium text-sm">
+                    <User className="h-3 w-3 mr-1 text-gray-500" />
+                    Admin User
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center text-blue-600 text-xs">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      Live Mode
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ID: {user?.id || 'N/A'}
+                    </div>
+                  </div>
                 </div>
               </div>
 
