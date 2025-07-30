@@ -2909,7 +2909,7 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-180px)]' : 'min-h-[600px]'} gap-3 px-3 py-3`}>
+          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-160px)]' : 'min-h-[500px] max-h-[800px]'} gap-3 px-3 py-2`}>
             {/* Main Cart Section */}
             <div className={`flex-1 bg-white/90 backdrop-blur-sm ${isFullscreen ? 'p-2 overflow-y-auto' : 'p-3'} rounded-lg shadow-sm`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-3 rounded-lg mb-3 shadow-md">
@@ -2947,7 +2947,7 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
-              <div className="min-h-80 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 shadow-lg">
+              <div className="min-h-96 max-h-[500px] bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-3 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
                   <div className="text-center py-12">
                     <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
@@ -2977,20 +2977,20 @@ export default function POSEnhanced() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2">
                     {cart.map((item) => (
-                      <Card key={item.id} className="p-4 hover:shadow-md transition-shadow border border-gray-200">
+                      <Card key={item.id} className="p-3 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h4 className="font-semibold text-lg text-gray-900">{item.name}</h4>
-                            <p className="text-sm text-gray-500 font-mono">{item.sku || 'No SKU'}</p>
-                            <div className="flex items-center space-x-4 mt-2">
+                            <h4 className="font-semibold text-base text-gray-900">{item.name}</h4>
+                            <p className="text-xs text-gray-500 font-mono">{item.sku || 'No SKU'}</p>
+                            <div className="flex items-center space-x-3 mt-1">
                               <div className="flex flex-col">
-                                <p className="text-lg font-bold text-green-600">
+                                <p className="text-base font-bold text-green-600">
                                   Sell: {formatCurrency(parseFloat(item.price))}
                                 </p>
                                 {item.cost && (
-                                  <p className="text-sm text-blue-600">
+                                  <p className="text-xs text-blue-600">
                                     Cost: {formatCurrency(parseFloat(item.cost))}
                                   </p>
                                 )}
@@ -3060,11 +3060,11 @@ export default function POSEnhanced() {
                               </div>
                             )}
 
-                            <div className="text-right min-w-24">
-                              <div className="font-bold text-xl text-green-600">
+                            <div className="text-right min-w-20">
+                              <div className="font-bold text-lg text-green-600">
                                 {formatCurrency(item.total)}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-xs text-gray-500">
                                 Total
                               </div>
                             </div>
