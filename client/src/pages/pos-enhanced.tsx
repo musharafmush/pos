@@ -258,6 +258,24 @@ export default function POSEnhanced() {
     },
   });
 
+  // Fetch user authentication data
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: 'include'
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.user;
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        return null;
+      }
+    },
+  });
+
   // Fetch printer settings dynamically for bill printing
   const { data: dynamicPrinterSettings, isLoading: printerSettingsLoading } = useQuery({
     queryKey: ["/api/settings/receipt"],
