@@ -2580,38 +2580,37 @@ export default function POSEnhanced() {
         <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'min-h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
           {/* Modern Header */}
           <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
-            <div className={`${isFullscreen ? 'px-3 py-1' : 'px-4 py-2'}`}>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-lg shadow-md">
-                    <Monitor className="h-5 w-5" />
+            <div className={`${isFullscreen ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-1.5 rounded-lg shadow-md">
+                    <Monitor className="h-4 w-4" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
+                    <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Enhanced POS</h1>
                     <p className="text-xs text-gray-600 font-medium">Professional Point of Sale System</p>
                   </div>
 
-                  <div className="hidden lg:flex items-center space-x-3 ml-8">
-                    <Badge className="bg-green-100/80 text-green-800 border-green-200 px-3 py-1 shadow-sm backdrop-blur text-xs">
+                  <div className="hidden xl:flex items-center space-x-2 ml-4">
+                    <Badge className="bg-green-100/80 text-green-800 border-green-200 px-2 py-0.5 shadow-sm backdrop-blur text-xs">
                       <CheckCircle className="w-3 h-3 mr-1" />
                       System Ready
                     </Badge>
-                    <Badge className="bg-blue-100/80 text-blue-800 border-blue-200 px-3 py-1 shadow-sm backdrop-blur text-xs">
+                    <Badge className="bg-blue-100/80 text-blue-800 border-blue-200 px-2 py-0.5 shadow-sm backdrop-blur text-xs">
                       <Zap className="h-3 w-3 mr-1" />
                       Live Mode
                     </Badge>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 flex-wrap">
+                <div className="flex items-center gap-1">
                   {/* Action Buttons moved from bottom */}
                   <Button 
                     variant="outline"
                     onClick={() => setupQuickPayment("cash")}
                     disabled={cart.length === 0}
                     title="Quick cash payment (Alt+C)"
-                    size="sm"
-                    className="hover:bg-green-50 hover:text-green-700 hover:border-green-200 text-xs"
+                    className="hover:bg-green-50 hover:text-green-700 hover:border-green-200 text-xs h-7 px-2"
                   >
                     <DollarSign className="h-3 w-3 mr-1" />
                     Cash
@@ -2621,8 +2620,7 @@ export default function POSEnhanced() {
                     onClick={() => setupQuickPayment("upi")}
                     disabled={cart.length === 0}
                     title="Quick UPI payment (Alt+U)"
-                    size="sm"
-                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs"
+                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs h-7 px-2"
                   >
                     <Smartphone className="h-3 w-3 mr-1" />
                     UPI
@@ -2631,8 +2629,7 @@ export default function POSEnhanced() {
                     variant="outline"
                     onClick={toggleDiscount}
                     title="Toggle 10% discount (Ctrl+D)"
-                    size="sm"
-                    className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 text-xs ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                    className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 text-xs h-7 px-2 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
                   >
                     <Calculator className="h-3 w-3 mr-1" />
                     Discount
@@ -2641,8 +2638,7 @@ export default function POSEnhanced() {
                     variant="outline"
                     onClick={() => setShowOceanDialog(true)}
                     title="Enter Ocean Freight & Shipping Costs"
-                    size="sm"
-                    className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                    className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs h-7 px-2 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
                   >
                     <Package className="h-3 w-3 mr-1" />
                     Ocean
@@ -2652,8 +2648,7 @@ export default function POSEnhanced() {
                     onClick={holdCurrentSale}
                     disabled={cart.length === 0}
                     title="Hold current sale (Alt+H)"
-                    size="sm"
-                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs"
+                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs h-7 px-2"
                   >
                     <Save className="h-3 w-3 mr-1" />
                     Hold
@@ -2662,8 +2657,7 @@ export default function POSEnhanced() {
                     variant="outline"
                     onClick={() => setShowHoldSales(true)}
                     title="Recall held sales (Alt+R)"
-                    size="sm"
-                    className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200 text-xs"
+                    className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200 text-xs h-7 px-2"
                   >
                     <List className="h-3 w-3 mr-1" />
                     Recall
