@@ -2604,6 +2604,76 @@ export default function POSEnhanced() {
                 </div>
 
                 <div className="flex items-center space-x-2 flex-wrap">
+                  {/* Action Buttons moved from bottom */}
+                  <Button 
+                    variant="outline"
+                    onClick={() => setupQuickPayment("cash")}
+                    disabled={cart.length === 0}
+                    title="Quick cash payment (Alt+C)"
+                    size="sm"
+                    className="hover:bg-green-50 hover:text-green-700 hover:border-green-200 text-xs"
+                  >
+                    <DollarSign className="h-3 w-3 mr-1" />
+                    Cash
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setupQuickPayment("upi")}
+                    disabled={cart.length === 0}
+                    title="Quick UPI payment (Alt+U)"
+                    size="sm"
+                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs"
+                  >
+                    <Smartphone className="h-3 w-3 mr-1" />
+                    UPI
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={toggleDiscount}
+                    title="Toggle 10% discount (Ctrl+D)"
+                    size="sm"
+                    className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 text-xs ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
+                  >
+                    <Calculator className="h-3 w-3 mr-1" />
+                    Discount
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowOceanDialog(true)}
+                    title="Enter Ocean Freight & Shipping Costs"
+                    size="sm"
+                    className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                  >
+                    <Package className="h-3 w-3 mr-1" />
+                    Ocean
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={holdCurrentSale}
+                    disabled={cart.length === 0}
+                    title="Hold current sale (Alt+H)"
+                    size="sm"
+                    className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs"
+                  >
+                    <Save className="h-3 w-3 mr-1" />
+                    Hold
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowHoldSales(true)}
+                    title="Recall held sales (Alt+R)"
+                    size="sm"
+                    className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200 text-xs"
+                  >
+                    <List className="h-3 w-3 mr-1" />
+                    Recall
+                    {holdSales.length > 0 && (
+                      <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-1 py-0.5 rounded-full">
+                        {holdSales.length}
+                      </span>
+                    )}
+                  </Button>
+
                   {!registerOpened ? (
                     <Button
                       onClick={() => setShowOpenRegister(true)}
@@ -3144,83 +3214,8 @@ export default function POSEnhanced() {
                 )}
               </div>
 
-              {/* Bottom Action Bar */}
-              <div className="flex flex-col lg:flex-row items-center justify-between mt-2 p-2 bg-gray-100 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
-
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                <Button 
-                  variant="outline"
-                  onClick={() => setupQuickPayment("cash")}
-                  disabled={cart.length === 0}
-                  title="Quick cash payment (Alt+C)"
-                  className="hover:bg-green-50 hover:text-green-700 hover:border-green-200"
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Cash (Alt+C)
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setupQuickPayment("upi")}
-                  disabled={cart.length === 0}
-                  title="Quick UPI payment (Alt+U)"
-                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-                >
-                  <Smartphone className="h-4 w-4 mr-2" />
-                  UPI (Alt+U)
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={toggleDiscount}
-                  title="Toggle 10% discount (Ctrl+D)"
-                  className={`hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 ${discount > 0 ? 'bg-purple-50 border-purple-200 text-purple-700' : ''}`}
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Discount (Ctrl+D)
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowOceanDialog(true)}
-                  title="Enter Ocean Freight & Shipping Costs"
-                  className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Enter Ocean
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={holdCurrentSale}
-                  disabled={cart.length === 0}
-                  title="Hold current sale (Alt+H)"
-                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Hold (Alt+H)
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowHoldSales(true)}
-                  title="Recall held sales (Alt+R)"
-                  className="hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-200"
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  Recall (Alt+R)
-                  {holdSales.length > 0 && (
-                    <span className="ml-1 bg-yellow-100 text-yellow-800 text-xs px-1.5 py-0.5 rounded-full">
-                      {holdSales.length}
-                    </span>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => clearCart(false)} 
-                  disabled={cart.length === 0}
-                  className="hover:bg-red-50 hover:text-red-700 hover:border-red-200"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear Cart (F12)
-                </Button>
-              </div>
-
+              {/* Status Bar */}
+              <div className="flex items-center justify-end mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200 gap-2 flex-shrink-0">
                 <div className="flex items-center flex-wrap gap-2 text-sm">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
                     <CheckCircle className="w-3 h-3 mr-1" />
