@@ -2733,68 +2733,111 @@ export default function POSEnhanced() {
 
               <div className="col-span-4">
                 <label className="text-xs font-medium text-gray-700 mb-0.5 block">Customer</label>
-                <Select 
-                  value={selectedCustomer?.id?.toString() || ""} 
-                  onValueChange={(value) => {
-                    if (value === "walk-in") {
-                      setSelectedCustomer(null);
-                    } else {
-                      const customer = customers.find(c => c.id.toString() === value);
-                      setSelectedCustomer(customer || null);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Customer">
-                      {selectedCustomer?.name || "Walk-in Customer"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="walk-in">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2" />
-                        Walk-in Customer
+                {selectedCustomer ? (
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium text-sm text-gray-900">{selectedCustomer.name}</div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCustomer(null)}
+                        className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        Change
+                      </Button>
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs">
+                      <div className="flex items-center text-blue-600">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                        Active Customer
                       </div>
-                    </SelectItem>
-                    {customers?.map((customer: Customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        <div>
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500">
-                            {customer.phone && (
-                              <span>{customer.phone}</span>
-                            )}
-                            {customer.taxId && (
-                              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono text-xs">
-                                GST: {customer.taxId}
-                              </span>
-                            )}
-                          </div>
+                      <div className="text-gray-500">
+                        ID: {selectedCustomer.id}
+                      </div>
+                      {selectedCustomer.phone && (
+                        <div className="text-gray-500">
+                          Tel: {selectedCustomer.phone.slice(-4)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <Select 
+                    value="" 
+                    onValueChange={(value) => {
+                      if (value === "walk-in") {
+                        setSelectedCustomer(null);
+                      } else {
+                        const customer = customers.find(c => c.id.toString() === value);
+                        setSelectedCustomer(customer || null);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="walk-in">
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 mr-2" />
+                          Walk-in Customer
                         </div>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {customers?.map((customer: Customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          <div>
+                            <div className="font-medium">{customer.name}</div>
+                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                              {customer.phone && (
+                                <span>{customer.phone}</span>
+                              )}
+                              {customer.taxId && (
+                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono text-xs">
+                                  GST: {customer.taxId}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-700 mb-0.5 block">Contact & GST</label>
                 <div className="space-y-0.5">
-                  <div className="flex items-center text-gray-600 text-xs">
-                    {selectedCustomer?.phone ? (
-                      <>
+                  {selectedCustomer ? (
+                    <div className="space-y-0.5">
+                      <div className="flex items-center text-gray-900 text-sm font-medium">
+                        <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                        {selectedCustomer.phone || 'No phone'}
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs">
+                        {selectedCustomer.taxId ? (
+                          <div className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono">
+                            GST: {selectedCustomer.taxId}
+                          </div>
+                        ) : (
+                          <div className="text-gray-500">No GST</div>
+                        )}
+                        {selectedCustomer.email && (
+                          <div className="text-gray-500 truncate" title={selectedCustomer.email}>
+                            {selectedCustomer.email.split('@')[0]}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      <div className="flex items-center text-gray-500 text-sm">
                         <Phone className="h-3 w-3 mr-1" />
-                        {selectedCustomer.phone}
-                      </>
-                    ) : (
-                      <span className="text-gray-400">No contact</span>
-                    )}
-                  </div>
-                  {selectedCustomer?.taxId && (
-                    <div className="flex items-center text-blue-700 text-xs">
-                      <span className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs">
-                        GST: {selectedCustomer.taxId}
-                      </span>
+                        No contact
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        No GST registered
+                      </div>
                     </div>
                   )}
                 </div>
