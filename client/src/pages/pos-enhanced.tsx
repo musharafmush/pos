@@ -2774,8 +2774,8 @@ export default function POSEnhanced() {
             </div>
           </div>
           {/* Customer Selection Bar */}
-          <div className="bg-white border-b border-gray-200 px-4 py-1">
-            <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="bg-white border-b border-gray-200 px-3 py-0.5">
+            <div className="grid grid-cols-12 gap-1 items-center">
               <div className="col-span-2">
                 <label className="text-xs font-medium text-gray-700 mb-0.5 block">Cashier</label>
                 <div className="space-y-0.5">
@@ -2909,11 +2909,11 @@ export default function POSEnhanced() {
 
               <div className="col-span-1">
                 <label className="text-xs font-medium text-gray-700 mb-0.5 block">Loyalty Points</label>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-0.5">
                   {selectedCustomer && customerLoyalty ? (
                     <>
                       <div className="flex items-center text-green-600 font-medium text-xs">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="h-3 w-3 mr-0.5" />
                         {Math.round((parseFloat(customerLoyalty.availablePoints) || 0) * 100) / 100}
                       </div>
                       {(parseFloat(customerLoyalty.availablePoints) || 0) > 0 && (
@@ -2921,20 +2921,20 @@ export default function POSEnhanced() {
                           size="sm"
                           variant="outline"
                           onClick={() => setShowLoyaltyDialog(true)}
-                          className="text-xs px-2 py-1 h-7 hover:bg-green-50 border-green-200 text-green-700"
+                          className="text-xs px-1.5 py-0.5 h-6 hover:bg-green-50 border-green-200 text-green-700"
                         >
-                          <Gift className="h-3 w-3 mr-1" />
+                          <Gift className="h-3 w-3 mr-0.5" />
                           Redeem
                         </Button>
                       )}
                     </>
                   ) : (
-                    <span className="text-gray-400 text-sm">No points</span>
+                    <span className="text-gray-400 text-xs">No points</span>
                   )}
                 </div>
               </div>
 
-              <div className="col-span-3 flex justify-end space-x-1">
+              <div className="col-span-3 flex justify-end space-x-0.5">
                 <Button 
                   size="sm" 
                   variant="outline"
