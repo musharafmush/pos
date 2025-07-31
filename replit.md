@@ -137,6 +137,22 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Purchase Entry Professional Tax Calculation Method Fix (July 31, 2025)
+- Fixed critical tax calculation method functionality in purchase-entry-professional system
+- Resolved issue where Tax Calculation Method dropdown was not properly triggering recalculations
+- Enhanced tax calculation logic for all three methods:
+  • Tax Exclusive: Tax added on top of base amount (most common)
+  • Tax Inclusive: Tax included in base amount (extracts base from total)
+  • Compound Tax: Tax calculated on tax (compound interest approach)
+- Added real-time recalculation when tax method changes with immediate visual feedback
+- Implemented comprehensive watching system for taxCalculationMethod form field changes
+- Added helper function recalculateItemNetAmount() for accurate per-item tax calculations
+- Enhanced dropdown with clearer descriptions and toast notifications for user feedback
+- Fixed calculation accuracy with proper mathematical rounding (Math.round * 100 / 100)
+- Added visual indicator showing current tax method selection with descriptive text
+- Improved user experience with immediate calculation updates when switching between methods
+- All tax calculations now work properly across different scenarios and product configurations
+
 ### POS Enhanced Two-Column Layout Optimization (July 31, 2025)
 - Implemented major two-column layout restructuring (70% left: Product Search & Cart, 30% right: Scanner Info, Bill Summary, Payment)
 - Eliminated vertical scrolling by optimizing layout distribution and reducing white space throughout interface
