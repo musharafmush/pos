@@ -92,6 +92,7 @@ type Product = {
   price: number;
   cost: number;
   mrp: number;
+  wholesalePrice?: number;
   stockQuantity: number;
   alertThreshold?: number;
   weight?: number;
@@ -1393,6 +1394,12 @@ export default function RepackingDashboardProfessional() {
                   <div className="font-medium">MRP:</div>
                   <div className="col-span-2">₹{Number(selectedProduct.mrp).toFixed(2)}</div>
                 </div>
+                {selectedProduct.wholesalePrice && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="font-medium">Wholesale Price:</div>
+                    <div className="col-span-2">₹{Number(selectedProduct.wholesalePrice).toFixed(2)}</div>
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="font-medium">Stock:</div>
                   <div className="col-span-2 flex items-center gap-2">
