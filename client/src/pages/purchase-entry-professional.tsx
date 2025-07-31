@@ -1016,14 +1016,43 @@ export default function PurchaseEntryProfessional() {
     const discount = Number(item.discountAmount) || 0;
     const taxPercentage = Number(item.taxPercentage) || 0;
     
+    // Get additional charges for proportional distribution using form getValues
+    const formValues = form.getValues();
+    const surchargeAmount = Number(formValues.surcharge) || 0;
+    const freightAmount = Number(formValues.freight) || 0;
+    const packingCharges = Number(formValues.packing) || 0;
+    const otherCharges = Number(formValues.otherCharges) || 0;
+    const additionalDiscount = Number(formValues.additionalDiscount) || 0;
+    
+    const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
+    
+    // Calculate total order value for proportional distribution
+    const allItems = form.getValues("items") || [];
+    const totalOrderValue = allItems.reduce((sum, item) => {
+      if (item.productId && item.productId > 0) {
+        return sum + ((item.receivedQty || 0) * (item.unitCost || 0));
+      }
+      return sum;
+    }, 0);
+    
+    // Calculate proportional additional charges for this item
+    let itemAdditionalCharges = 0;
+    let itemAdditionalDiscount = 0;
+    
     const subtotal = qty * unitCost;
+    if (totalOrderValue > 0) {
+      const itemProportion = subtotal / totalOrderValue;
+      itemAdditionalCharges = totalAdditionalCharges * itemProportion;
+      itemAdditionalDiscount = additionalDiscount * itemProportion;
+    }
+    
     let netAmount = 0;
     
     switch (taxCalculationMethod) {
       case "inclusive":
-        // Tax included in cost price
+        // Tax included in cost price - net amount is same as taxable amount
         const taxableAmountIncl = subtotal - discount;
-        netAmount = taxableAmountIncl;
+        netAmount = taxableAmountIncl + itemAdditionalCharges - itemAdditionalDiscount;
         break;
       case "compound":
         // Compound tax calculation
@@ -1031,20 +1060,21 @@ export default function PurchaseEntryProfessional() {
         if (taxPercentage > 0) {
           const primaryTax = (taxableAmountComp * taxPercentage) / 100;
           const compoundTax = (primaryTax * taxPercentage) / 100;
-          netAmount = taxableAmountComp + primaryTax + compoundTax;
+          netAmount = taxableAmountComp + primaryTax + compoundTax + itemAdditionalCharges - itemAdditionalDiscount;
         } else {
-          netAmount = taxableAmountComp;
+          netAmount = taxableAmountComp + itemAdditionalCharges - itemAdditionalDiscount;
         }
         break;
       case "exclusive":
       default:
-        // Standard exclusive tax calculation
+        // Standard exclusive tax calculation - tax added on top
         const taxableAmountExcl = subtotal - discount;
         const tax = (taxableAmountExcl * taxPercentage) / 100;
-        netAmount = taxableAmountExcl + tax;
+        netAmount = taxableAmountExcl + tax + itemAdditionalCharges - itemAdditionalDiscount;
         break;
     }
     
+    // Update netAmount field
     form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
   };
 
@@ -1061,9 +1091,19 @@ export default function PurchaseEntryProfessional() {
       setTimeout(() => {
         const currentItems = form.getValues("items");
         form.setValue("items", [...currentItems]);
-      }, 50);
+      }, 100);
     }
   }, [watchedTaxCalculationMethod, form]);
+
+  // Effect to recalculate when item fields change
+  useEffect(() => {
+    const items = form.getValues("items") || [];
+    items.forEach((item, index) => {
+      if (item.productId && item.productId > 0) {
+        recalculateItemNetAmount(index);
+      }
+    });
+  }, [watchedItems]);
 
   // Enhanced tax field syncing utility with detailed breakdown
   const syncTaxFieldsFromProduct = (product: Product, index: number) => {
@@ -2945,17 +2985,10 @@ export default function PurchaseEntryProfessional() {
                                           const value = parseFloat(e.target.value) || 0;
                                           form.setValue(`items.${index}.unitCost`, value);
 
-                                          // Auto-calculate net amount using receivedQty
-                                          const receivedQty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                          const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                          const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
-
-                                          const subtotal = value * receivedQty;
-                                          const taxableAmount = subtotal - discount;
-                                          const tax = (taxableAmount * taxPercentage) / 100;
-                                          const netAmount = taxableAmount + tax;
-
-                                          form.setValue(`items.${index}.netAmount`, netAmount);
+                                          // Auto-calculate net amount using proper tax method
+                                          setTimeout(() => {
+                                            recalculateItemNetAmount(index);
+                                          }, 50);
 
                                           // Update product cost price in real-time if changed significantly
                                           const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
@@ -3076,17 +3109,10 @@ export default function PurchaseEntryProfessional() {
                                           if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
                                             form.setValue(`items.${index}.taxPercentage`, suggestedGst);
                                             
-                                            // Recalculate net amount with new tax rate
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * suggestedGst) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
+                                            // Recalculate net amount with new tax rate using proper tax method
+                                            setTimeout(() => {
+                                              recalculateItemNetAmount(index);
+                                            }, 50);
 
                                             toast({
                                               title: "Tax Rate Updated! 📊",
@@ -3136,17 +3162,10 @@ export default function PurchaseEntryProfessional() {
                                         const taxRate = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.taxPercentage`, taxRate);
                                         
-                                        // Recalculate net amount when tax changes
-                                        const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                        const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const subtotal = qty * cost;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxRate) / 100;
-                                        const netAmount = taxableAmount + tax;
-                                        
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-                                        form.trigger(`items.${index}`);
+                                        // Recalculate net amount when tax changes using proper tax method
+                                        setTimeout(() => {
+                                          recalculateItemNetAmount(index);
+                                        }, 50);
                                       }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
