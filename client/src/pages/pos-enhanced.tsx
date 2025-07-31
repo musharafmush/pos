@@ -3017,10 +3017,10 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex flex-col lg:flex-row ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} gap-2 px-2 py-1`}>
-            {/* Main Cart Section */}
-            <div className={`flex-1 bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-sm flex flex-col h-full`}>
-              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-2 rounded-lg mb-2 shadow-md flex-shrink-0">
+          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} gap-1 px-1 py-0.5`}>
+            {/* LEFT COLUMN (70%) - Product Search & Cart */}
+            <div className={`w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col h-full`}>
+              <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg mr-3">
@@ -3055,39 +3055,31 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
-              <div className="flex-1 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-2 border border-gray-200/50 shadow-lg overflow-hidden">
+              <div className="flex-1 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingCart className="h-16 w-16 mx-auto mb-3 text-gray-300" />
-                    <h3 className="text-xl font-semibold text-gray-600 mb-2">Cart is Empty</h3>
-                    <p className="text-gray-500 mb-4 text-base">Start by searching for products above</p>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-w-3xl mx-auto text-xs text-gray-500">
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F1</kbd>
-                        <p className="mt-1 text-xs">Focus barcode scanner</p>
+                  <div className="text-center py-4">
+                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <h3 className="text-sm font-semibold text-gray-600 mb-1">Cart is Empty</h3>
+                    <p className="text-gray-500 mb-2 text-xs">Start by searching for products above</p>
+                    <div className="grid grid-cols-3 gap-1 max-w-md mx-auto text-xs text-gray-500">
+                      <div className="bg-white p-1 rounded border">
+                        <kbd className="bg-gray-200 px-1 py-0.5 rounded text-xs">F1</kbd>
+                        <p className="mt-0.5 text-xs">Scanner</p>
                       </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">Enter</kbd>
-                        <p className="mt-1 text-xs">Add scanned item</p>
+                      <div className="bg-white p-1 rounded border">
+                        <kbd className="bg-gray-200 px-1 py-0.5 rounded text-xs">F10</kbd>
+                        <p className="mt-0.5 text-xs">Checkout</p>
                       </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F10</kbd>
-                        <p className="mt-1 text-xs">Quick checkout</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F11</kbd>
-                        <p className="mt-1 text-xs">Toggle fullscreen</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border">
-                        <kbd className="bg-gray-200 px-1.5 py-0.5 rounded text-xs">F12</kbd>
-                        <p className="mt-1 text-xs">Clear cart</p>
+                      <div className="bg-white p-1 rounded border">
+                        <kbd className="bg-gray-200 px-1 py-0.5 rounded text-xs">F12</kbd>
+                        <p className="mt-0.5 text-xs">Clear</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 h-full overflow-y-auto pr-1">
+                  <div className="space-y-1 h-full overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <Card key={item.id} className="p-3 hover:shadow-md transition-shadow border border-gray-200">
+                      <Card key={item.id} className="p-2 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <h4 className="font-semibold text-base text-gray-900">{item.name}</h4>
@@ -3206,12 +3198,12 @@ export default function POSEnhanced() {
               </div>
             </div>
 
-            {/* Bill Summary Sidebar */}
-            <div className={`w-full lg:w-80 p-2 bg-white lg:border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
+            {/* RIGHT COLUMN (30%) - Scanner Info, Bill Summary, Payment */}
+            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
               {/* Barcode Scanner Status */}
-              <Card className="mb-2 border border-blue-200 bg-blue-50 flex-shrink-0">
-                <CardContent className="p-2">
-                  <div className="flex items-center justify-between mb-3">
+              <Card className="mb-1 border border-blue-200 bg-blue-50 flex-shrink-0">
+                <CardContent className="p-1">
+                  <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center">
                       <Scan className="h-5 w-5 text-blue-600 mr-2" />
                       <h3 className="font-semibold text-blue-900">Barcode Scanner</h3>
@@ -3250,18 +3242,18 @@ export default function POSEnhanced() {
                 </CardContent>
               </Card>
 
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-3 rounded-lg mb-2 shadow-md flex-shrink-0">
-                <div className="flex items-center mb-2">
-                  <Receipt className="h-5 w-5 mr-2" />
-                  <h2 className="text-lg font-bold">Bill Summary</h2>
+              <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
+                <div className="flex items-center mb-1">
+                  <Receipt className="h-4 w-4 mr-1" />
+                  <h2 className="text-sm font-bold">Bill Summary</h2>
                 </div>
                 <div className="text-purple-100 text-xs">Bill #{billNumber}</div>
                 <div className="text-purple-100 text-xs">{currentDate}</div>
               </div>
 
               {/* Bill Details */}
-              <Card className="mb-2 border border-gray-200 flex-1 overflow-y-auto">
-                <CardContent className="p-2 space-y-2">
+              <Card className="mb-1 border border-gray-200 flex-1 overflow-y-auto">
+                <CardContent className="p-1 space-y-1">
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Items:</span>
                     <span className="font-semibold">{cart.length}</span>
@@ -3387,10 +3379,10 @@ export default function POSEnhanced() {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 flex-shrink-0">
+              <div className="space-y-1 flex-shrink-0">
                 {/* Ocean Freight Management Button */}
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base py-2 h-auto"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 h-7"
                   onClick={() => {
                     // Auto-add test items if cart is empty
                     if (cart.length === 0) {
@@ -3426,35 +3418,35 @@ export default function POSEnhanced() {
                     setShowOceanDialog(true);
                   }}
                 >
-                  <Package className="h-5 w-5 mr-3" />
-                  Enter Ocean Freight Management
+                  <Package className="h-3 w-3 mr-1" />
+                  Ocean Freight
                 </Button>
 
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-base py-2 h-auto"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-1 h-8"
                   onClick={() => setShowPaymentDialog(true)}
                   disabled={cart.length === 0}
                 >
-                  <CreditCard className="h-5 w-5 mr-3" />
+                  <CreditCard className="h-4 w-4 mr-1" />
                   Proceed to Payment (F10)
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full text-red-600 border-red-200 hover:bg-red-50 text-xs py-1 h-7"
                   onClick={clearCart}
                   disabled={cart.length === 0}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Items
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Clear All
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="w-full hover:bg-gray-50"
+                  className="w-full hover:bg-gray-50 text-xs py-1 h-7"
                   onClick={() => handlePrintReceipt(null)}
                 >
-                  <Receipt className="h-4 w-4 mr-2" />
+                  <Receipt className="h-3 w-3 mr-1" />
                   Print Receipt
                 </Button>
               </div>
