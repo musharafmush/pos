@@ -141,11 +141,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - Successfully resolved critical wholesale price system issue preventing retrieval of stored values
 - Fixed missing `wholesalePrice` field in ORM schema (shared/sqlite-schema.ts) that was preventing API access to database values
 - Added `wholesalePrice: real('wholesale_price')` field to products table schema for proper ORM mapping
-- Verified wholesale price data is correctly stored in database (product ID 49: ₹79.99) and now properly retrieved by API
+- Verified wholesale price data is correctly stored in database (product ID 49: ₹80.00) and now properly retrieved by API
 - Removed redundant manual field mapping in storage.ts since ORM now handles field conversion automatically
+- Fixed repacking API endpoint to include wholesalePrice in request body parsing and product creation
+- Enhanced repacking-professional Live Price Configuration to display wholesale price in 4-column grid
+- Added wholesale price to proportional pricing calculation for automatic weight-based pricing
+- Updated Product type definitions across all repacking pages to include wholesalePrice field
+- Fixed both create and edit workflows in repacking system to properly save wholesale price to database
 - Wholesale price system now fully functional: data saves to database and API returns correct values
-- API response now includes `"wholesalePrice":"79.99"` for products with wholesale pricing data
-- Complete end-to-end wholesale price workflow working: frontend → API → database → retrieval
+- API response now includes `"wholesalePrice":"80"` for products with wholesale pricing data
+- Complete end-to-end wholesale price workflow working: frontend → API → database → retrieval → display
 
 ### Wholesale Price Frontend Integration Complete (July 31, 2025)
 - Added wholesale price field to Complete Product Details dialog in add-item-dashboard with 5-column grid layout

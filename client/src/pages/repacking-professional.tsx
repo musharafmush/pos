@@ -1128,6 +1128,10 @@ export default function RepackingProfessional() {
                     <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("wholesalePrice") || "0").toFixed(2)}</div>
                   </div>
                   <div className="text-center">
+                    <div className="text-purple-600 font-medium">Wholesale Price</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("wholesalePrice") || "0").toFixed(2)}</div>
+                  </div>
+                  <div className="text-center">
                     <div className="text-purple-600 font-medium">MRP</div>
                     <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("mrp") || "0").toFixed(2)}</div>
                   </div>
