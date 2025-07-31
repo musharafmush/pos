@@ -225,8 +225,9 @@ export default function RepackingProfessional() {
       // Force form re-render and ensure values are persisted
       form.trigger(['costPrice', 'sellingPrice', 'wholesalePrice', 'mrp']);
       
-      // Trigger form re-render
+      // Force component re-render after setting values
       setTimeout(() => {
+        form.trigger(); // Trigger all fields
         console.log('🔄 Final form values after integration:', {
           costPrice: form.getValues('costPrice'),
           sellingPrice: form.getValues('sellingPrice'),
@@ -1125,11 +1126,8 @@ export default function RepackingProfessional() {
                   </div>
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">Wholesale Price</div>
-                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("wholesalePrice") || "0").toFixed(2)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-purple-600 font-medium">Wholesale Price</div>
-                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("wholesalePrice") || "0").toFixed(2)}</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.getValues("wholesalePrice") || form.watch("wholesalePrice") || "0").toFixed(2)}</div>
+                    <div className="text-xs text-purple-500">W:{form.watch("wholesalePrice")} G:{form.getValues("wholesalePrice")}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">MRP</div>
