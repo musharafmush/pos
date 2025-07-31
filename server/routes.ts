@@ -2345,6 +2345,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wholesale Sales API
+  app.get('/api/wholesale-sales', isAuthenticated, async (req, res) => {
+    try {
+      console.log('📊 Wholesale sales endpoint accessed');
+      
+      // For now, return empty array - this would be populated with actual wholesale sales
+      // when the wholesale sales table and functionality is implemented
+      const wholesaleSales = [];
+      
+      res.json(wholesaleSales);
+    } catch (error) {
+      console.error('Error fetching wholesale sales:', error);
+      res.status(500).json({ error: 'Failed to fetch wholesale sales' });
+    }
+  });
+
+  app.post('/api/wholesale-sales', isAuthenticated, async (req, res) => {
+    try {
+      const wholesaleSaleData = req.body;
+      console.log('📊 Creating wholesale sale:', wholesaleSaleData);
+      
+      // Placeholder for wholesale sale creation logic
+      // This would create a wholesale sale record in the database
+      const newWholesaleSale = {
+        id: Date.now(),
+        orderNumber: `WS-${Date.now()}`,
+        ...wholesaleSaleData,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      
+      res.json(newWholesaleSale);
+    } catch (error) {
+      console.error('Error creating wholesale sale:', error);
+      res.status(500).json({ error: 'Failed to create wholesale sale' });
+    }
+  });
+
+  // Sales Overview API for Sales Menu
+  app.get('/api/sales/overview', async (req, res) => {
+    try {
+      console.log('📊 Sales overview endpoint accessed');
+      
+      const { sqlite } = await import('../db/index.js');
+      
+      // Get today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Get this month's date
+      const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const thisMonthStr = thisMonth.toISOString().split('T')[0];
+      
+      // Get retail sales (regular sales)
+      const retailTodayQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count, COALESCE(SUM(CAST(total as REAL)), 0) as revenue
+        FROM sales 
+        WHERE DATE(created_at) = ?
+      `);
+      const retailToday = retailTodayQuery.get(todayStr) || { count: 0, revenue: 0 };
+      
+      const retailMonthQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count, COALESCE(SUM(CAST(total as REAL)), 0) as revenue
+        FROM sales 
+        WHERE DATE(created_at) >= ?
+      `);
+      const retailMonth = retailMonthQuery.get(thisMonthStr) || { count: 0, revenue: 0 };
+      
+      // Calculate total revenue and average order value
+      const totalRevenueQuery = sqlite.prepare(`
+        SELECT COALESCE(SUM(CAST(total as REAL)), 0) as total
+        FROM sales
+      `);
+      const totalRevenueResult = totalRevenueQuery.get() || { total: 0 };
+      
+      const totalSalesQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count
+        FROM sales
+      `);
+      const totalSalesResult = totalSalesQuery.get() || { count: 0 };
+      
+      const avgOrderValue = totalSalesResult.count > 0 ? 
+        totalRevenueResult.total / totalSalesResult.count : 0;
+      
+      const overview = {
+        retailSales: {
+          today: retailToday.count,
+          todayRevenue: retailToday.revenue,
+          thisMonth: retailMonth.count,
+          thisMonthRevenue: retailMonth.revenue
+        },
+        wholesaleSales: {
+          today: 0, // Placeholder - would come from wholesale sales table
+          todayRevenue: 0,
+          thisMonth: 0,
+          thisMonthRevenue: 0
+        },
+        totalRevenue: totalRevenueResult.total,
+        avgOrderValue: avgOrderValue
+      };
+      
+      console.log('📊 Sales overview calculated:', overview);
+      res.json(overview);
+    } catch (error) {
+      console.error('Error fetching sales overview:', error);
+      res.status(500).json({ error: 'Failed to fetch sales overview' });
+    }
+  });
+
+  // Sales Statistics API for Retail Sales
+  app.get('/api/sales/stats', async (req, res) => {
+    try {
+      console.log('📊 Sales stats endpoint accessed');
+      
+      const { sqlite } = await import('../db/index.js');
+      
+      // Get today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Get this month's date
+      const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const thisMonthStr = thisMonth.toISOString().split('T')[0];
+      
+      // Today's sales
+      const todayQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count, COALESCE(SUM(CAST(total as REAL)), 0) as revenue
+        FROM sales 
+        WHERE DATE(created_at) = ?
+      `);
+      const todayStats = todayQuery.get(todayStr) || { count: 0, revenue: 0 };
+      
+      // This month's sales
+      const monthQuery = sqlite.prepare(`
+        SELECT COUNT(*) as count, COALESCE(SUM(CAST(total as REAL)), 0) as revenue
+        FROM sales 
+        WHERE DATE(created_at) >= ?
+      `);
+      const monthStats = monthQuery.get(thisMonthStr) || { count: 0, revenue: 0 };
+      
+      // Average order value
+      const avgQuery = sqlite.prepare(`
+        SELECT COALESCE(AVG(CAST(total as REAL)), 0) as avg
+        FROM sales
+      `);
+      const avgResult = avgQuery.get() || { avg: 0 };
+      
+      // Top payment method
+      const paymentQuery = sqlite.prepare(`
+        SELECT payment_method, COUNT(*) as count
+        FROM sales
+        GROUP BY payment_method
+        ORDER BY count DESC
+        LIMIT 1
+      `);
+      const topPayment = paymentQuery.get() || { payment_method: 'cash', count: 0 };
+      
+      const stats = {
+        todaysSales: todayStats.count,
+        todaysRevenue: todayStats.revenue,
+        thisMonthSales: monthStats.count,
+        thisMonthRevenue: monthStats.revenue,
+        avgOrderValue: avgResult.avg,
+        topPaymentMethod: topPayment.payment_method
+      };
+      
+      console.log('📊 Sales stats calculated:', stats);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching sales stats:', error);
+      res.status(500).json({ error: 'Failed to fetch sales stats' });
+    }
+  });
+
   // Purchases API
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {
