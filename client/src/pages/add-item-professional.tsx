@@ -140,6 +140,7 @@ const productFormSchema = z.object({
   price: z.string().min(1, "Price is required"),
   mrp: z.string().min(1, "MRP is required"),
   cost: z.string().optional(),
+  wholesalePrice: z.string().optional(),
   weight: z.string().optional(),
   weightUnit: z.string().default("kg"),
   categoryId: z.number(),
@@ -309,6 +310,7 @@ export default function AddItemProfessional() {
       price: "",
       mrp: "",
       cost: "",
+      wholesalePrice: "",
       weight: "",
       weightUnit: "kg",
       categoryId: categories[0]?.id || 1,
@@ -585,6 +587,7 @@ export default function AddItemProfessional() {
         price: editingProduct.price?.toString() || "",
         mrp: editingProduct.mrp?.toString() || "",
         cost: editingProduct.cost?.toString() || "",
+        wholesalePrice: editingProduct.wholesalePrice?.toString() || "",
 
         // Reorder Configurations
         skuType: editingProduct.skuType || "Put Away",
@@ -681,6 +684,7 @@ export default function AddItemProfessional() {
       const price = parseFloat(data.price);
       const mrp = data.mrp ? parseFloat(data.mrp) : price;
       const cost = data.cost ? parseFloat(data.cost) : 0;
+      const wholesalePrice = data.wholesalePrice ? parseFloat(data.wholesalePrice) : null;
       const stockQuantity = data.stockQuantity ? parseInt(data.stockQuantity) : 0;
 
       // Dynamic validation checks
@@ -689,6 +693,8 @@ export default function AddItemProfessional() {
       if (isNaN(stockQuantity) || stockQuantity < 0) validationErrors.push("Stock quantity must be a valid positive number");
       if (mrp > 0 && mrp < price) validationErrors.push("MRP cannot be less than selling price");
       if (cost > 0 && price < cost) validationErrors.push("Selling price should typically be higher than cost price");
+      if (wholesalePrice && cost > 0 && wholesalePrice < cost) validationErrors.push("Wholesale price should typically be higher than cost price");
+      if (wholesalePrice && wholesalePrice > price) validationErrors.push("Wholesale price should typically be lower than retail price");
 
       if (validationErrors.length > 0) {
         throw new Error(validationErrors.join("; "));
@@ -704,6 +710,7 @@ export default function AddItemProfessional() {
         price: price,
         mrp: mrp,
         cost: cost,
+        wholesalePrice: data.wholesalePrice ? parseFloat(data.wholesalePrice) : null,
         weight: data.weight ? parseFloat(data.weight) : null,
         weightUnit: data.weightUnit || "kg",
         stockQuantity: stockQuantity,
@@ -2890,7 +2897,13 @@ export default function AddItemProfessional() {
                             />
 
                             <div className="bg-blue-50 p-4 rounded-lg">
-                              <h3 className="font-medium mb-3">Pricing Information</h3>
+                              <h3 className="font-medium mb-3 flex items-center gap-2">
+                                <DollarSignIcon className="w-4 h-4 text-blue-600" />
+                                Pricing Information
+                                <Badge variant="secondary" className="text-xs">
+                                  With Wholesale Support
+                                </Badge>
+                              </h3>
                               <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                   control={form.control}
@@ -2918,6 +2931,80 @@ export default function AddItemProfessional() {
                                     </FormItem>
                                   )}
                                 />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="wholesalePrice"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="flex items-center gap-2">
+                                        <span>Wholesale Price</span>
+                                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                          Bulk Pricing
+                                        </Badge>
+                                      </FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          {...field} 
+                                          placeholder="0.00" 
+                                          type="number" 
+                                          step="0.01"
+                                          className="border-green-200 focus:border-green-400"
+                                          onChange={(e) => {
+                                            const value = e.target.value;
+                                            field.onChange(value);
+                                            // Auto-calculate suggested retail price if not set
+                                            if (!isEditMode && value) {
+                                              const currentRetailPrice = form.getValues("price");
+                                              if (!currentRetailPrice || currentRetailPrice === "0" || currentRetailPrice === "") {
+                                                const wholesaleValue = parseFloat(value) || 0;
+                                                const suggestedRetailPrice = wholesaleValue * 1.25; // 25% markup from wholesale
+                                                form.setValue("price", suggestedRetailPrice.toFixed(2));
+                                              }
+                                            }
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <p className="text-xs text-green-600 mt-1">
+                                        For bulk orders & B2B customers
+                                      </p>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                  <h4 className="text-sm font-medium text-green-800 mb-2">Pricing Guide</h4>
+                                  <div className="space-y-1 text-xs text-green-700">
+                                    <div className="flex justify-between">
+                                      <span>Cost Price:</span>
+                                      <span>₹{form.watch("cost") || "0"}</span>
+                                    </div>
+                                    <div className="flex justify-between font-medium">
+                                      <span>Wholesale Price:</span>
+                                      <span>₹{form.watch("wholesalePrice") || "0"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Retail Price:</span>
+                                      <span>₹{form.watch("price") || "0"}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>MRP:</span>
+                                      <span>₹{form.watch("mrp") || "0"}</span>
+                                    </div>
+                                    {form.watch("wholesalePrice") && form.watch("cost") && (
+                                      <div className="border-t border-green-300 pt-1 mt-2">
+                                        <div className="flex justify-between text-xs">
+                                          <span>Wholesale Margin:</span>
+                                          <span>
+                                            {(((parseFloat(form.watch("wholesalePrice")) - parseFloat(form.watch("cost"))) / parseFloat(form.watch("cost"))) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
 
                               <div className="grid grid-cols-2 gap-4 mt-4">
