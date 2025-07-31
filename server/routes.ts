@@ -3084,30 +3084,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Build dynamic update query
+      // Build dynamic update query - always update these core payment fields
       const updateFields = [];
       const updateValues = [];
 
-      if (columnNames.includes('payment_status')) {
+      // Always update payment status if provided
+      if (calculatedPaymentStatus) {
         updateFields.push('payment_status = ?');
         updateValues.push(calculatedPaymentStatus);
       }
 
-      if (columnNames.includes('paid_amount')) {
-        updateFields.push('paid_amount = ?');
-        updateValues.push(finalPaidAmount.toString());
-      }
+      // Always update paid amount 
+      updateFields.push('paid_amount = ?');
+      updateValues.push(finalPaidAmount.toString());
 
-      if (columnNames.includes('payment_method') && paymentMethod) {
+      // Update payment method if provided
+      if (paymentMethod) {
         updateFields.push('payment_method = ?');
         updateValues.push(paymentMethod);
       }
 
-      if (columnNames.includes('payment_date') && paymentDate) {
+      // Update payment date if provided
+      if (paymentDate) {
         updateFields.push('payment_date = ?');
         updateValues.push(paymentDate);
       }
 
+      // Always update timestamp if column exists
       if (columnNames.includes('updated_at')) {
         updateFields.push('updated_at = CURRENT_TIMESTAMP');
       }
