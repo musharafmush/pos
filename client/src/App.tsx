@@ -73,9 +73,6 @@ import ManufacturingDashboard from "@/pages/manufacturing-dashboard";
 import CreateProductFormula from "@/pages/create-product-formula";
 import RawMaterialsManagement from "@/pages/raw-materials-management";
 import PayrollDashboard from "@/pages/payroll-dashboard";
-import SalesMenu from "@/pages/sales-menu";
-import WholesaleSales from "@/pages/wholesale-sales";
-import RetailSales from "@/pages/retail-sales";
 
 function Router() {
   return (
@@ -126,9 +123,6 @@ function Router() {
       <ProtectedRoute path="/sale-return" component={SaleReturn} />
       <ProtectedRoute path="/sale-returns-dashboard" component={SaleReturnsDashboard} />
       <ProtectedRoute path="/sales-dashboard" component={SalesDashboard} />
-      <ProtectedRoute path="/sales-menu" component={SalesMenu} />
-      <ProtectedRoute path="/wholesale-sales" component={WholesaleSales} />
-      <ProtectedRoute path="/retail-sales" component={RetailSales} />
       <ProtectedRoute path="/profit-management" component={ProfitManagement} />
       <ProtectedRoute path="/users" component={Users} adminOnly />
       <ProtectedRoute path="/roles" component={Roles} adminOnly />

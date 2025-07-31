@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,8 +49,7 @@ import {
   Settings,
   Printer,
   Star,
-  Gift,
-  BarChart3
+  Gift
 } from "lucide-react";
 
 interface Product {
@@ -2669,17 +2667,6 @@ export default function POSEnhanced() {
                       </span>
                     )}
                   </Button>
-                  
-                  <Link href="/sales-menu">
-                    <Button 
-                      variant="outline"
-                      title="Open Sales Management Hub"
-                      className="hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 text-xs h-7 px-2"
-                    >
-                      <BarChart3 className="h-3 w-3 mr-1" />
-                      Sales
-                    </Button>
-                  </Link>
 
                   {!registerOpened ? (
                     <Button
