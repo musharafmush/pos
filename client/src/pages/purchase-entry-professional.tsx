@@ -730,8 +730,9 @@ export default function PurchaseEntryProfessional() {
             // Find the product details to get name and sku
             const product = products.find(p => p.id === (item.productId || item.product_id));
 
-            // Calculate selling price and MRP if not available from database
+            // Calculate selling price, wholesale price and MRP if not available from database
             let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
+            let wholesalePrice = Number(item.wholesalePrice || item.wholesale_price) || 0;
             let mrp = Number(item.mrp) || 0;
             
             // If selling price is not set, try to get from product or calculate from cost
@@ -744,6 +745,13 @@ export default function PurchaseEntryProfessional() {
                   // Apply standard retail markup (30-50% depending on category)
                   sellingPrice = Math.round(unitCost * 1.4 * 100) / 100;
                 }
+              }
+            }
+            
+            // If wholesale price is not set, try to get from product
+            if (wholesalePrice === 0) {
+              if (product?.wholesalePrice && parseFloat(product.wholesalePrice) > 0) {
+                wholesalePrice = parseFloat(product.wholesalePrice);
               }
             }
             
@@ -766,6 +774,7 @@ export default function PurchaseEntryProfessional() {
               freeQty: Number(item.freeQty || item.free_qty) || 0,
               unitCost: Number(item.unitCost || item.unit_cost || item.cost) || 0,
               sellingPrice: sellingPrice,
+              wholesalePrice: wholesalePrice,
               mrp: mrp,
               hsnCode: item.hsnCode || item.hsn_code || product?.hsnCode || "",
               taxPercentage: Number(item.taxPercentage || item.tax_percentage || item.taxPercent || item.tax_percent) || 18,
@@ -1333,6 +1342,7 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`${itemPath}.expiryDate`, modalData.expiryDate);
       form.setValue(`${itemPath}.batchNumber`, modalData.batchNumber);
       form.setValue(`${itemPath}.sellingPrice`, modalData.sellingPrice);
+      form.setValue(`${itemPath}.wholesalePrice`, modalData.wholesalePrice);
       form.setValue(`${itemPath}.mrp`, modalData.mrp);
       form.setValue(`${itemPath}.netAmount`, modalData.netAmount);
       form.setValue(`${itemPath}.location`, modalData.location);
