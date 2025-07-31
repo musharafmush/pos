@@ -488,6 +488,7 @@ export default function RepackingProfessional() {
             sku: data.newProductSku,
             cost: data.costPrice,
             price: data.sellingPrice,
+            wholesalePrice: data.wholesalePrice,
             mrp: data.mrp,
             weight: data.unitWeight,
             weightUnit: data.weightUnit,
