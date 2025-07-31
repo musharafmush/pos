@@ -2003,6 +2003,7 @@ export default function PurchaseEntryProfessional() {
             expiryDate: item.expiryDate || "",
             batchNumber: item.batchNumber || "",
             sellingPrice: Number(item.sellingPrice) || 0,
+            wholesalePrice: Number(item.wholesalePrice) || 0,
             mrp: Number(item.mrp) || 0,
             netAmount: Number(item.netAmount) || 0,
             location: item.location || "",

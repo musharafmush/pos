@@ -2574,7 +2574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const optionalItemFields = [
               'quantity', 'received_qty', 'free_qty', 'unit_cost', 'cost',
-              'selling_price', 'mrp', 'hsn_code', 'tax_percentage', 
+              'selling_price', 'wholesale_price', 'mrp', 'hsn_code', 'tax_percentage', 
               'discount_amount', 'discount_percent', 'expiry_date', 
               'batch_number', 'net_cost', 'roi_percent', 'gross_profit_percent',
               'net_amount', 'cash_percent', 'cash_amount', 'location', 'unit',
@@ -2638,6 +2638,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       break;
                     case 'selling_price':
                       itemValues.push(parseFloat(item.sellingPrice || 0));
+                      break;
+                    case 'wholesale_price':
+                      itemValues.push(parseFloat(item.wholesalePrice || 0));
                       break;
                     case 'mrp':
                       itemValues.push(parseFloat(item.mrp || 0));
