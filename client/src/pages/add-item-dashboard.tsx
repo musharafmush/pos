@@ -2611,7 +2611,7 @@ export default function AddItemDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-5 gap-4">
                       <div className="bg-green-50 p-3 rounded">
                         <label className="text-sm font-medium text-green-700">Selling Price</label>
                         <p className="text-xl font-bold text-green-800">
@@ -2628,6 +2628,15 @@ export default function AddItemDashboard() {
                         <label className="text-sm font-medium text-orange-700">Cost Price</label>
                         <p className="text-xl font-bold text-orange-800">
                           {formatCurrency(parseFloat(selectedProduct.cost?.toString() || "0"))}
+                        </p>
+                      </div>
+                      <div className="bg-indigo-50 p-3 rounded">
+                        <label className="text-sm font-medium text-indigo-700">Wholesale Price</label>
+                        <p className="text-xl font-bold text-indigo-800">
+                          {selectedProduct.wholesalePrice ? 
+                            formatCurrency(parseFloat(selectedProduct.wholesalePrice.toString())) :
+                            "Not Set"
+                          }
                         </p>
                       </div>
                       <div className="bg-purple-50 p-3 rounded">
