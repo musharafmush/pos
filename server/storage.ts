@@ -248,6 +248,7 @@ export const storage = {
     price: number;
     mrp: number;
     cost: number;
+    wholesalePrice?: number;
     weight?: number;
     weightUnit?: string;
     categoryId: number;
@@ -273,12 +274,12 @@ export const storage = {
 
       const insertProduct = sqlite.prepare(`
         INSERT INTO products (
-          name, description, sku, price, mrp, cost, weight, weight_unit, category_id, 
+          name, description, sku, price, mrp, cost, wholesale_price, weight, weight_unit, category_id, 
           stock_quantity, alert_threshold, barcode, image, active, hsn_code,
           cgst_rate, sgst_rate, igst_rate, cess_rate, tax_calculation_method,
           manufacturer_name, supplier_name, manufacturer_id, supplier_id,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `);
 
       const result = insertProduct.run(
@@ -288,6 +289,7 @@ export const storage = {
         product.price.toString(),
         product.mrp?.toString() || product.price.toString(),
         product.cost?.toString() || '0',
+        product.wholesalePrice?.toString() || null,
         product.weight?.toString() || null,
         product.weightUnit || 'kg',
         product.categoryId,
@@ -346,6 +348,7 @@ export const storage = {
         price: productData.price ? parseFloat(productData.price.toString()) : parseFloat(existingProduct.price || 0),
         cost: productData.cost ? parseFloat(productData.cost.toString()) : parseFloat(existingProduct.cost || 0),
         mrp: productData.mrp ? parseFloat(productData.mrp.toString()) : parseFloat(existingProduct.mrp || 0),
+        wholesalePrice: productData.wholesalePrice ? parseFloat(productData.wholesalePrice.toString()) : existingProduct.wholesale_price,
         weight: productData.weight ? parseFloat(productData.weight.toString()) : existingProduct.weight,
         weightUnit: productData.weightUnit?.toString() || existingProduct.weight_unit || 'kg',
         categoryId: productData.categoryId ? parseInt(productData.categoryId.toString()) : existingProduct.category_id,
@@ -445,6 +448,7 @@ export const storage = {
           price = ?,
           cost = ?,
           mrp = ?,
+          wholesale_price = ?,
           weight = ?,
           weight_unit = ?,
           category_id = ?,
@@ -515,6 +519,7 @@ export const storage = {
         updateData.price.toString(),
         updateData.cost.toString(),
         updateData.mrp.toString(),
+        updateData.wholesalePrice ? updateData.wholesalePrice.toString() : null,
         updateData.weight,
         updateData.weightUnit,
         updateData.categoryId,
