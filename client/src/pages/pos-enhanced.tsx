@@ -2956,17 +2956,17 @@ export default function POSEnhanced() {
             </div>
           </div>
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-2 py-0.5">
+          <div className="bg-white border-b border-gray-200 px-1 py-0.5">
             {/* Unified Search and Barcode Scanner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1.5">
-              <div className="flex items-center justify-between mb-0.5">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1">
+              <div className="flex items-center justify-between mb-0">
                 <div className="flex items-center gap-1.5">
                   <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
                     <Search className="h-3 w-3 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-blue-800 text-xs">Product Search & Barcode Scanner</h3>
-                    <p className="text-xs text-blue-600">Search products or scan barcodes for instant addition</p>
+                    <h3 className="font-semibold text-blue-800 text-xs leading-tight">Product Search & Barcode Scanner</h3>
+                    <p className="text-xs text-blue-600 leading-tight">Search products or scan barcodes for instant addition</p>
                   </div>
                 </div>
                 <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-1.5 py-0.5">
@@ -2975,7 +2975,7 @@ export default function POSEnhanced() {
                 </Badge>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mt-1">
                 <div className="relative flex-1">
                   <div className="flex items-center gap-1.5 absolute left-2 top-1/2 transform -translate-y-1/2">
                     <Search className="h-3 w-3 text-blue-600" />
@@ -2997,7 +2997,7 @@ export default function POSEnhanced() {
                         }
                       }
                     }}
-                    className="text-sm py-1.5 pl-12 pr-16 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="text-sm py-1 pl-12 pr-16 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                     autoFocus
                   />
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
@@ -3017,7 +3017,7 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-180px)]'} gap-1 px-1 py-0.5`}>
+          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-160px)]'} gap-1 px-1 py-0.5`}>
             {/* LEFT COLUMN (70%) - Product Search & Cart */}
             <div className={`w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col h-full`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
