@@ -756,7 +756,9 @@ export const storage = {
         queryOptions.offset = offset;
       }
       
-      return await db.query.products.findMany(queryOptions);
+      const result = await db.query.products.findMany(queryOptions);
+      
+      return result;
     } catch (error) {
       console.error('Error listing products:', error);
       throw error;

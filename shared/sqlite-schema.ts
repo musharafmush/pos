@@ -68,6 +68,7 @@ export const products = sqliteTable('products', {
   price: real('price').notNull(),
   mrp: real('mrp').notNull(),
   cost: real('cost').notNull(),
+  wholesalePrice: real('wholesale_price'),
   weight: real('weight'),
   weightUnit: text('weight_unit').default('kg'),
   categoryId: integer('category_id').references(() => categories.id).notNull(),

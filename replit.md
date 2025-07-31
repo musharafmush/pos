@@ -137,6 +137,16 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 
 ## Recent Changes
 
+### Wholesale Price System Complete Fix (July 31, 2025)
+- Successfully resolved critical wholesale price system issue preventing retrieval of stored values
+- Fixed missing `wholesalePrice` field in ORM schema (shared/sqlite-schema.ts) that was preventing API access to database values
+- Added `wholesalePrice: real('wholesale_price')` field to products table schema for proper ORM mapping
+- Verified wholesale price data is correctly stored in database (product ID 49: ₹79.99) and now properly retrieved by API
+- Removed redundant manual field mapping in storage.ts since ORM now handles field conversion automatically
+- Wholesale price system now fully functional: data saves to database and API returns correct values
+- API response now includes `"wholesalePrice":"79.99"` for products with wholesale pricing data
+- Complete end-to-end wholesale price workflow working: frontend → API → database → retrieval
+
 ### Replit Agent to Replit Migration Complete (July 31, 2025)
 - Successfully migrated comprehensive POS system from Replit Agent to standard Replit environment
 - Fixed critical wholesale price update functionality in backend storage system
