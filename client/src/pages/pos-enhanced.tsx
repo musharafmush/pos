@@ -57,6 +57,7 @@ interface Product {
   name: string;
   sku: string;
   price: string;
+  wholesalePrice?: number;
   mrp: number;
   cost?: string;
   stockQuantity: number;
@@ -93,6 +94,7 @@ export default function POSEnhanced() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [pricingMode, setPricingMode] = useState<'retail' | 'wholesale'>('retail');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountPaid, setAmountPaid] = useState("");
@@ -743,6 +745,14 @@ export default function POSEnhanced() {
       return;
     }
 
+    // Determine price based on pricing mode
+    let effectivePrice: number;
+    if (pricingMode === 'wholesale' && product.wholesalePrice && product.wholesalePrice > 0) {
+      effectivePrice = product.wholesalePrice;
+    } else {
+      effectivePrice = parseFloat(product.price);
+    }
+
     const existingItem = cart.find(item => item.id === product.id && !item.isWeightBased);
 
     if (existingItem) {
@@ -757,23 +767,25 @@ export default function POSEnhanced() {
 
       setCart(cart.map(item =>
         item.id === product.id
-          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * parseFloat(item.price) }
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * effectivePrice, price: effectivePrice.toString() }
           : item
       ));
     } else {
       const cartItem = { 
         ...product, 
         quantity: 1, 
-        total: parseFloat(product.price),
+        price: effectivePrice.toString(),
+        total: effectivePrice,
         mrp: parseFloat(product.mrp) || 0
       };
-      console.log('📦 Adding product to cart:', product.name, 'MRP:', product.mrp, '→', cartItem.mrp);
+      console.log('📦 Adding product to cart:', product.name, 'Mode:', pricingMode, 'Price:', effectivePrice, 'MRP:', product.mrp, '→', cartItem.mrp);
       setCart([...cart, cartItem]);
     }
 
+    const priceMode = pricingMode === 'wholesale' ? '(Wholesale)' : '(Retail)';
     toast({
       title: "Item Added",
-      description: `${product.name} added to cart successfully`,
+      description: `${product.name} added to cart ${priceMode} at ${formatCurrency(effectivePrice)}`,
       variant: "default",
     });
 
@@ -3519,14 +3531,41 @@ export default function POSEnhanced() {
                     </div>
                     <div className="text-right ml-4">
                       <div className="flex flex-col items-end">
+                        {/* Show current pricing mode price prominently */}
                         <div className="font-bold text-lg text-green-600">
-                          Sell: {formatCurrency(parseFloat(product.price))}
+                          {pricingMode === 'wholesale' && product.wholesalePrice && product.wholesalePrice > 0 ? (
+                            <>Wholesale: {formatCurrency(product.wholesalePrice)}</>
+                          ) : (
+                            <>Retail: {formatCurrency(parseFloat(product.price))}</>
+                          )}
                         </div>
+                        
+                        {/* Show alternative pricing if available */}
+                        {pricingMode === 'retail' && product.wholesalePrice && product.wholesalePrice > 0 && (
+                          <div className="text-sm text-purple-600">
+                            Wholesale: {formatCurrency(product.wholesalePrice)}
+                          </div>
+                        )}
+                        {pricingMode === 'wholesale' && (
+                          <div className="text-sm text-green-600">
+                            Retail: {formatCurrency(parseFloat(product.price))}
+                          </div>
+                        )}
+                        
                         {product.cost && (
                           <div className="text-sm text-blue-600">
                             Cost: {formatCurrency(parseFloat(product.cost))}
                           </div>
                         )}
+                        
+                        {/* Wholesale pricing indicator */}
+                        {product.wholesalePrice && product.wholesalePrice > 0 && (
+                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs mt-1">
+                            <Package className="w-3 h-3 mr-1" />
+                            Wholesale Available
+                          </Badge>
+                        )}
+                        
                         {product.mrp && parseFloat(product.mrp) > parseFloat(product.price) && (
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500 line-through">
@@ -4494,6 +4533,51 @@ export default function POSEnhanced() {
                         </div>
                       </div>
                     )}
+
+                    {/* Pricing Mode Selector */}
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Pricing Mode</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-white rounded-lg p-1">
+                          <Button
+                            size="sm"
+                            variant={pricingMode === 'retail' ? 'default' : 'ghost'}
+                            onClick={() => setPricingMode('retail')}
+                            className={`h-7 px-3 text-xs ${
+                              pricingMode === 'retail' 
+                                ? 'bg-green-600 text-white hover:bg-green-700' 
+                                : 'text-green-600 hover:bg-green-100'
+                            }`}
+                          >
+                            <User className="h-3 w-3 mr-1" />
+                            Retail
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={pricingMode === 'wholesale' ? 'default' : 'ghost'}
+                            onClick={() => setPricingMode('wholesale')}
+                            className={`h-7 px-3 text-xs ${
+                              pricingMode === 'wholesale' 
+                                ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                                : 'text-purple-600 hover:bg-purple-100'
+                            }`}
+                          >
+                            <Package className="h-3 w-3 mr-1" />
+                            Wholesale
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-blue-600">
+                        {pricingMode === 'retail' ? (
+                          <span>💰 Standard retail pricing for individual customers</span>
+                        ) : (
+                          <span>📦 Bulk wholesale pricing for business customers</span>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Customer Search Results */}
                     {customerSearchTerm && (
