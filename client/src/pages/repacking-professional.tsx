@@ -64,6 +64,7 @@ const repackingFormSchema = z.object({
   weightUnit: z.enum(["g", "kg"]),
   costPrice: z.number().min(0, "Cost price must be non-negative"),
   sellingPrice: z.number().min(0, "Selling price must be non-negative"),
+  wholesalePrice: z.number().min(0, "Wholesale price must be non-negative").optional(),
   mrp: z.number().min(0, "MRP must be non-negative"),
   newProductName: z.string().min(1, "Product name is required"),
   newProductSku: z.string().min(1, "SKU is required"),
@@ -166,6 +167,7 @@ export default function RepackingProfessional() {
       weightUnit: "g",
       costPrice: 0,
       sellingPrice: 0,
+      wholesalePrice: 0,
       mrp: 0,
       newProductName: "",
       newProductSku: "",
@@ -192,11 +194,13 @@ export default function RepackingProfessional() {
       // Convert to numbers and update form values with integration data
       const costPriceNum = Number(bulkProduct.costPrice) || 0;
       const sellingPriceNum = Number(bulkProduct.sellingPrice) || 0;
+      const wholesalePriceNum = Number(bulkProduct.wholesalePrice) || 0;
       const mrpNum = Number(bulkProduct.mrp) || 0;
       
       console.log('🔢 Converted numbers:', {
         costPriceNum,
         sellingPriceNum,
+        wholesalePriceNum,
         mrpNum
       });
       
@@ -209,6 +213,7 @@ export default function RepackingProfessional() {
       // Set pricing values as numbers (form expects numeric values)
       form.setValue('costPrice', costPriceNum);
       form.setValue('sellingPrice', sellingPriceNum);
+      form.setValue('wholesalePrice', wholesalePriceNum);
       form.setValue('mrp', mrpNum);
       
       // Set product details
@@ -216,13 +221,14 @@ export default function RepackingProfessional() {
       form.setValue('newProductSku', integrationData.newProduct?.itemCode || '');
       
       // Force form re-render and ensure values are persisted
-      form.trigger(['costPrice', 'sellingPrice', 'mrp']);
+      form.trigger(['costPrice', 'sellingPrice', 'wholesalePrice', 'mrp']);
       
       // Trigger form re-render
       setTimeout(() => {
         console.log('🔄 Final form values after integration:', {
           costPrice: form.getValues('costPrice'),
           sellingPrice: form.getValues('sellingPrice'),
+          wholesalePrice: form.getValues('wholesalePrice'),
           mrp: form.getValues('mrp'),
           bulkProductId: form.getValues('bulkProductId')
         });
@@ -335,6 +341,7 @@ export default function RepackingProfessional() {
         form.setValue("newProductSku", bulkProduct.sku);
         form.setValue("costPrice", parseFloat(bulkProduct.cost || bulkProduct.price || "0"));
         form.setValue("sellingPrice", parseFloat(bulkProduct.price || "0"));
+        form.setValue("wholesalePrice", parseFloat(bulkProduct.wholesalePrice || "0"));
         form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
         
         if (bulkProduct.weight && bulkProduct.weightUnit) {
@@ -356,11 +363,13 @@ export default function RepackingProfessional() {
           form.setValue("bulkProductId", foundProduct.id);
           form.setValue("costPrice", parseFloat(bulkProduct.cost || bulkProduct.price || "0"));
           form.setValue("sellingPrice", parseFloat(bulkProduct.price || "0"));
+          form.setValue("wholesalePrice", parseFloat(bulkProduct.wholesalePrice || "0"));
           form.setValue("mrp", parseFloat(bulkProduct.mrp || "0"));
           
           console.log('💰 Form values set to:', {
             costPrice: parseFloat(bulkProduct.cost || bulkProduct.price || "0"),
             sellingPrice: parseFloat(bulkProduct.price || "0"),
+            wholesalePrice: parseFloat(bulkProduct.wholesalePrice || "0"),
             mrp: parseFloat(bulkProduct.mrp || "0")
           });
           
@@ -1006,7 +1015,7 @@ export default function RepackingProfessional() {
               </h4>
               
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <FormField
                     control={form.control}
                     name="costPrice"
@@ -1050,6 +1059,28 @@ export default function RepackingProfessional() {
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="wholesalePrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-purple-700">Wholesale Price (₹)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            className="h-9 bg-white border-purple-300 font-semibold"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
                 
                 <FormField
@@ -1078,7 +1109,7 @@ export default function RepackingProfessional() {
               {/* Live Price Display */}
               <div className="mt-4 p-3 bg-purple-100 border border-purple-300 rounded">
                 <h5 className="text-sm font-semibold text-purple-800 mb-2">Live Price Configuration</h5>
-                <div className="grid grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-4 gap-3 text-xs">
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">Cost Price</div>
                     <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("costPrice") || "0").toFixed(2)}</div>
@@ -1086,6 +1117,10 @@ export default function RepackingProfessional() {
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">Selling Price</div>
                     <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("sellingPrice") || "0").toFixed(2)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-purple-600 font-medium">Wholesale Price</div>
+                    <div className="text-lg font-bold text-purple-900">₹{parseFloat(form.watch("wholesalePrice") || "0").toFixed(2)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-purple-600 font-medium">MRP</div>

@@ -147,6 +147,18 @@ This is a comprehensive Point of Sale (POS) system designed for Indian retail bu
 - API response now includes `"wholesalePrice":"79.99"` for products with wholesale pricing data
 - Complete end-to-end wholesale price workflow working: frontend → API → database → retrieval
 
+### Wholesale Price Frontend Integration Complete (July 31, 2025)
+- Added wholesale price field to Complete Product Details dialog in add-item-dashboard with 5-column grid layout
+- Updated pricing grid from 4 to 5 columns to accommodate wholesale price display with indigo styling
+- Added wholesale price field to repacking-professional page Pricing Configuration section
+- Updated repackingFormSchema to include wholesalePrice field with proper validation
+- Enhanced pricing grid from 2 to 3 columns (Cost Price, Selling Price, Wholesale Price)
+- Updated Live Price Configuration display from 3 to 4 columns to include wholesale price
+- Added wholesale price to all integration data loading and form population logic
+- Enhanced localStorage integration to include wholesale price in repacking workflow
+- Wholesale price now consistently appears across all relevant frontend pages
+- Complete pricing consistency maintained throughout POS system interface
+
 ### Replit Agent to Replit Migration Complete (July 31, 2025)
 - Successfully migrated comprehensive POS system from Replit Agent to standard Replit environment
 - Fixed critical wholesale price update functionality in backend storage system
