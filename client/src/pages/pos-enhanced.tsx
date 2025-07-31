@@ -57,7 +57,7 @@ interface Product {
   name: string;
   sku: string;
   price: string;
-  wholesalePrice?: number;
+  wholesalePrice?: number | string | null;
   mrp: number;
   cost?: string;
   stockQuantity: number;
@@ -747,8 +747,9 @@ export default function POSEnhanced() {
 
     // Determine price based on pricing mode
     let effectivePrice: number;
-    if (pricingMode === 'wholesale' && product.wholesalePrice && product.wholesalePrice > 0) {
-      effectivePrice = product.wholesalePrice;
+    const wholesalePrice = parseFloat(String(product.wholesalePrice || 0));
+    if (pricingMode === 'wholesale' && wholesalePrice > 0) {
+      effectivePrice = wholesalePrice;
     } else {
       effectivePrice = parseFloat(product.price);
     }
@@ -3533,24 +3534,34 @@ export default function POSEnhanced() {
                       <div className="flex flex-col items-end">
                         {/* Show current pricing mode price prominently */}
                         <div className="font-bold text-lg text-green-600">
-                          {pricingMode === 'wholesale' && product.wholesalePrice && product.wholesalePrice > 0 ? (
-                            <>Wholesale: {formatCurrency(product.wholesalePrice)}</>
-                          ) : (
-                            <>Retail: {formatCurrency(parseFloat(product.price))}</>
-                          )}
+                          {(() => {
+                            const wholesalePrice = parseFloat(String(product.wholesalePrice || 0));
+                            if (pricingMode === 'wholesale' && wholesalePrice > 0) {
+                              return <>Wholesale: {formatCurrency(wholesalePrice)}</>;
+                            } else {
+                              return <>Retail: {formatCurrency(parseFloat(product.price))}</>;
+                            }
+                          })()}
                         </div>
                         
                         {/* Show alternative pricing if available */}
-                        {pricingMode === 'retail' && product.wholesalePrice && product.wholesalePrice > 0 && (
-                          <div className="text-sm text-purple-600">
-                            Wholesale: {formatCurrency(product.wholesalePrice)}
-                          </div>
-                        )}
-                        {pricingMode === 'wholesale' && (
-                          <div className="text-sm text-green-600">
-                            Retail: {formatCurrency(parseFloat(product.price))}
-                          </div>
-                        )}
+                        {(() => {
+                          const wholesalePrice = parseFloat(String(product.wholesalePrice || 0));
+                          if (pricingMode === 'retail' && wholesalePrice > 0) {
+                            return (
+                              <div className="text-sm text-purple-600">
+                                Wholesale: {formatCurrency(wholesalePrice)}
+                              </div>
+                            );
+                          } else if (pricingMode === 'wholesale') {
+                            return (
+                              <div className="text-sm text-green-600">
+                                Retail: {formatCurrency(parseFloat(product.price))}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                         
                         {product.cost && (
                           <div className="text-sm text-blue-600">
@@ -3559,12 +3570,18 @@ export default function POSEnhanced() {
                         )}
                         
                         {/* Wholesale pricing indicator */}
-                        {product.wholesalePrice && product.wholesalePrice > 0 && (
-                          <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs mt-1">
-                            <Package className="w-3 h-3 mr-1" />
-                            Wholesale Available
-                          </Badge>
-                        )}
+                        {(() => {
+                          const wholesalePrice = parseFloat(String(product.wholesalePrice || 0));
+                          if (wholesalePrice > 0) {
+                            return (
+                              <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs mt-1">
+                                <Package className="w-3 h-3 mr-1" />
+                                Wholesale Available
+                              </Badge>
+                            );
+                          }
+                          return null;
+                        })()}
                         
                         {product.mrp && parseFloat(product.mrp) > parseFloat(product.price) && (
                           <div className="flex items-center gap-2 mt-1">
