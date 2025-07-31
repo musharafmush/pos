@@ -1057,6 +1057,11 @@ export default function PurchaseEntryProfessional() {
       });
       // Trigger form validation to update totals
       form.trigger("items");
+      // Force a re-render to update the display
+      setTimeout(() => {
+        const currentItems = form.getValues("items");
+        form.setValue("items", [...currentItems]);
+      }, 50);
     }
   }, [watchedTaxCalculationMethod, form]);
 
@@ -2527,14 +2532,20 @@ export default function PurchaseEntryProfessional() {
                         className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </div>
-                    <Button
-                      onClick={handleBarcodeSubmit}
-                      disabled={!barcodeInput.trim()}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add to Purchase
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        Tax Method: {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
+                                   form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
+                      </Badge>
+                      <Button
+                        onClick={handleBarcodeSubmit}
+                        disabled={!barcodeInput.trim()}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to Purchase
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-blue-600 mt-2">
                     💡 Tip: Use a barcode scanner or manually enter product barcodes for instant item addition
@@ -2640,11 +2651,45 @@ export default function PurchaseEntryProfessional() {
                               itemAdditionalDiscount = additionalDiscount * itemProportion;
                             }
                             
-                            // Enhanced Net Cost calculation including additional charges
-                            const baseCostWithTax = cost + (cost * taxPercent / 100);
-                            const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
+                            // Enhanced Net Cost and Net Amount calculation using proper tax method
+                            const taxCalculationMethod = form.watch("taxCalculationMethod") || "exclusive";
+                            let baseCostWithTax = cost;
+                            let netAmount = 0;
+                            let taxableAmount = amount - discountAmount;
                             
-                            const netAmount = amount - discountAmount + (amount * taxPercent / 100) + itemAdditionalCharges - itemAdditionalDiscount;
+                            // Calculate based on tax method
+                            switch (taxCalculationMethod) {
+                              case "inclusive":
+                                // Tax is included in cost - extract base amount
+                                if (taxPercent > 0) {
+                                  baseCostWithTax = cost / (1 + (taxPercent / 100));
+                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                                } else {
+                                  baseCostWithTax = cost;
+                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                                }
+                                break;
+                              case "compound":
+                                // Compound tax calculation
+                                baseCostWithTax = cost;
+                                if (taxPercent > 0) {
+                                  const primaryTax = (taxableAmount * taxPercent) / 100;
+                                  const compoundTax = (primaryTax * taxPercent) / 100;
+                                  netAmount = taxableAmount + primaryTax + compoundTax + itemAdditionalCharges - itemAdditionalDiscount;
+                                } else {
+                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                                }
+                                break;
+                              case "exclusive":
+                              default:
+                                // Tax exclusive - tax added on top
+                                baseCostWithTax = cost;
+                                const tax = (taxableAmount * taxPercent) / 100;
+                                netAmount = taxableAmount + tax + itemAdditionalCharges - itemAdditionalDiscount;
+                                break;
+                            }
+                            
+                            const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
                             const cashAmount = amount * cashPercent / 100;
                             const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
                             const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
