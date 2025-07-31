@@ -703,6 +703,11 @@ export default function PurchaseEntryProfessional() {
     name: "additionalDiscount"
   });
 
+  const watchedTaxCalculationMethod = useWatch({
+    control: form.control,
+    name: "taxCalculationMethod"
+  });
+
   // Effect to populate form when editing existing purchase
   useEffect(() => {
     if (existingPurchase && isEditMode) {
@@ -848,7 +853,7 @@ export default function PurchaseEntryProfessional() {
   // Calculate totals when items or additional charges change
   useEffect(() => {
     const items = form.getValues("items") || [];
-    const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
+    const taxCalculationMethod = watchedTaxCalculationMethod || form.getValues("taxCalculationMethod") || "exclusive";
 
     let totalItems = 0;
     let totalQuantity = 0;
@@ -874,25 +879,34 @@ export default function PurchaseEntryProfessional() {
         // Calculate tax based on selected method
         switch (taxCalculationMethod) {
           case "inclusive":
-            // Tax is included in the unit cost
+            // Tax is included in the unit cost - need to extract the base amount
             taxableAmount = itemCost - discount;
-            const baseAmount = taxableAmount / (1 + (taxPercentage / 100));
-            tax = taxableAmount - baseAmount;
-            subtotal += baseAmount;
+            if (taxPercentage > 0) {
+              const baseAmountIncl = taxableAmount / (1 + (taxPercentage / 100));
+              tax = taxableAmount - baseAmountIncl;
+              subtotal += baseAmountIncl;
+            } else {
+              tax = 0;
+              subtotal += taxableAmount;
+            }
             break;
 
           case "compound":
-            // Tax on tax calculation
+            // Tax on tax calculation - compound interest approach
             taxableAmount = itemCost - discount;
-            const primaryTax = (taxableAmount * (taxPercentage / 100));
-            const compoundTax = (primaryTax * (taxPercentage / 100));
-            tax = primaryTax + compoundTax;
+            if (taxPercentage > 0) {
+              const primaryTax = (taxableAmount * taxPercentage) / 100;
+              const compoundTax = (primaryTax * taxPercentage) / 100;
+              tax = primaryTax + compoundTax;
+            } else {
+              tax = 0;
+            }
             subtotal += itemCost;
             break;
 
           case "exclusive":
           default:
-            // Standard tax exclusive calculation
+            // Standard tax exclusive calculation - tax added on top
             taxableAmount = itemCost - discount;
             tax = (taxableAmount * taxPercentage) / 100;
             subtotal += itemCost;
@@ -928,21 +942,35 @@ export default function PurchaseEntryProfessional() {
         // Calculate tax and amounts based on selected method
         switch (taxCalculationMethod) {
           case "inclusive":
+            // Tax is included in the unit cost - extract base amount
             taxableAmount = itemCost - discount;
-            baseAmount = taxableAmount / (1 + (taxPercentage / 100));
-            tax = taxableAmount - baseAmount;
+            if (taxPercentage > 0) {
+              baseAmount = taxableAmount / (1 + (taxPercentage / 100));
+              tax = taxableAmount - baseAmount;
+            } else {
+              baseAmount = taxableAmount;
+              tax = 0;
+            }
             break;
 
           case "compound":
+            // Tax on tax calculation - compound interest approach
             taxableAmount = itemCost - discount;
-            const primaryTax = (taxableAmount * (taxPercentage / 100));
-            const compoundTax = (primaryTax * (taxPercentage / 100));
-            tax = primaryTax + compoundTax;
+            baseAmount = itemCost;
+            if (taxPercentage > 0) {
+              const primaryTax = (taxableAmount * taxPercentage) / 100;
+              const compoundTax = (primaryTax * taxPercentage) / 100;
+              tax = primaryTax + compoundTax;
+            } else {
+              tax = 0;
+            }
             break;
 
           case "exclusive":
           default:
+            // Standard tax exclusive calculation - tax added on top
             taxableAmount = itemCost - discount;
+            baseAmount = itemCost;
             tax = (taxableAmount * taxPercentage) / 100;
             break;
         }
@@ -974,7 +1002,63 @@ export default function PurchaseEntryProfessional() {
       freightCharges,
       grandTotal
     });
-  }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
+  }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, watchedTaxCalculationMethod, form]);
+
+  // Helper function to recalculate net amount for an item based on tax method
+  const recalculateItemNetAmount = (index: number) => {
+    const item = form.getValues(`items.${index}`);
+    const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
+    
+    if (!item || item.productId === 0) return;
+
+    const qty = Number(item.receivedQty) || 0;
+    const unitCost = Number(item.unitCost) || 0;
+    const discount = Number(item.discountAmount) || 0;
+    const taxPercentage = Number(item.taxPercentage) || 0;
+    
+    const subtotal = qty * unitCost;
+    let netAmount = 0;
+    
+    switch (taxCalculationMethod) {
+      case "inclusive":
+        // Tax included in cost price
+        const taxableAmountIncl = subtotal - discount;
+        netAmount = taxableAmountIncl;
+        break;
+      case "compound":
+        // Compound tax calculation
+        const taxableAmountComp = subtotal - discount;
+        if (taxPercentage > 0) {
+          const primaryTax = (taxableAmountComp * taxPercentage) / 100;
+          const compoundTax = (primaryTax * taxPercentage) / 100;
+          netAmount = taxableAmountComp + primaryTax + compoundTax;
+        } else {
+          netAmount = taxableAmountComp;
+        }
+        break;
+      case "exclusive":
+      default:
+        // Standard exclusive tax calculation
+        const taxableAmountExcl = subtotal - discount;
+        const tax = (taxableAmountExcl * taxPercentage) / 100;
+        netAmount = taxableAmountExcl + tax;
+        break;
+    }
+    
+    form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
+  };
+
+  // Effect to recalculate all items when tax calculation method changes
+  useEffect(() => {
+    if (watchedTaxCalculationMethod) {
+      const items = form.getValues("items") || [];
+      items.forEach((_, index) => {
+        recalculateItemNetAmount(index);
+      });
+      // Trigger form validation to update totals
+      form.trigger("items");
+    }
+  }, [watchedTaxCalculationMethod, form]);
 
   // Enhanced tax field syncing utility with detailed breakdown
   const syncTaxFieldsFromProduct = (product: Product, index: number) => {
@@ -1132,24 +1216,33 @@ export default function PurchaseEntryProfessional() {
       
       switch (taxCalculationMethod) {
         case "inclusive":
-          // Tax included in cost price
-          const baseAmount = subtotal / (1 + (totalGstRate / 100));
-          const taxAmount = subtotal - baseAmount;
-          netAmount = subtotal - discountAmount;
+          // Tax included in cost price - extract base amount first
+          const taxableAmountIncl = subtotal - discountAmount;
+          if (totalGstRate > 0) {
+            const baseAmountIncl = taxableAmountIncl / (1 + (totalGstRate / 100));
+            const taxAmountIncl = taxableAmountIncl - baseAmountIncl;
+            netAmount = taxableAmountIncl; // Net amount is the same as cost when tax is inclusive
+          } else {
+            netAmount = taxableAmountIncl;
+          }
           break;
         case "compound":
-          // Compound tax calculation
-          const taxableAmount = subtotal - discountAmount;
-          const primaryTax = (taxableAmount * totalGstRate) / 100;
-          const compoundTax = (primaryTax * totalGstRate) / 100;
-          netAmount = taxableAmount + primaryTax + compoundTax;
+          // Compound tax calculation - tax on tax
+          const taxableAmountComp = subtotal - discountAmount;
+          if (totalGstRate > 0) {
+            const primaryTax = (taxableAmountComp * totalGstRate) / 100;
+            const compoundTax = (primaryTax * totalGstRate) / 100;
+            netAmount = taxableAmountComp + primaryTax + compoundTax;
+          } else {
+            netAmount = taxableAmountComp;
+          }
           break;
         case "exclusive":
         default:
-          // Standard exclusive tax calculation
-          const taxableAmountExclusive = subtotal - discountAmount;
-          const tax = (taxableAmountExclusive * totalGstRate) / 100;
-          netAmount = taxableAmountExclusive + tax;
+          // Standard exclusive tax calculation - tax added on top
+          const taxableAmountExcl = subtotal - discountAmount;
+          const taxExcl = (taxableAmountExcl * totalGstRate) / 100;
+          netAmount = taxableAmountExcl + taxExcl;
           break;
       }
       
@@ -2076,18 +2169,38 @@ export default function PurchaseEntryProfessional() {
                     <div className="space-y-2">
                       <Label htmlFor="taxCalculationMethod">Tax Calculation Method</Label>
                       <Select 
-                        onValueChange={(value) => form.setValue("taxCalculationMethod", value)}
+                        onValueChange={(value) => {
+                          form.setValue("taxCalculationMethod", value);
+                          toast({
+                            title: "Tax Method Updated",
+                            description: `Switched to ${value === 'exclusive' ? 'Tax Exclusive - tax added on top' : value === 'inclusive' ? 'Tax Inclusive - tax included in price' : 'Compound Tax - tax on tax calculation'}. All items will be recalculated.`,
+                          });
+                          // Trigger recalculation immediately
+                          setTimeout(() => {
+                            const items = form.getValues("items") || [];
+                            items.forEach((_, index) => {
+                              recalculateItemNetAmount(index);
+                            });
+                            form.trigger("items");
+                          }, 100);
+                        }}
                         value={form.watch("taxCalculationMethod") || "exclusive"}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select tax calculation method" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="exclusive">Tax Exclusive (Add tax to base amount)</SelectItem>
-                          <SelectItem value="inclusive">Tax Inclusive (Tax included in base amount)</SelectItem>
-                          <SelectItem value="compound">Compound Tax (Tax on tax)</SelectItem>
+                          <SelectItem value="exclusive">Tax Exclusive - Tax added on top of base amount</SelectItem>
+                          <SelectItem value="inclusive">Tax Inclusive - Tax included in the base amount</SelectItem>
+                          <SelectItem value="compound">Compound Tax - Tax calculated on tax (compound)</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Current method: <span className="font-medium text-blue-600">
+                          {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
+                           form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
