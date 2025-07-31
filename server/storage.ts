@@ -196,13 +196,46 @@ export const storage = {
   // Product related operations
   async getProductById(id: number): Promise<Product | null> {
     try {
-      const product = await db.query.products.findFirst({
-        where: eq(products.id, id),
-        with: {
-          category: true
+      // Try ORM method first
+      try {
+        const product = await db.query.products.findFirst({
+          where: eq(products.id, id),
+          with: {
+            category: true
+          }
+        });
+        if (product) {
+          console.log('✅ Product found:', product.name);
+          return product;
         }
-      });
-      return product || null;
+      } catch (ormError) {
+        console.log('ORM method failed, trying direct SQLite query:', ormError.message);
+      }
+
+      // Fallback to direct SQLite query
+      const { sqlite } = await import('../db/index.js');
+      const product = sqlite.prepare('SELECT * FROM products WHERE id = ?').get(id);
+      if (product) {
+        console.log('✅ Product found via SQLite:', product.name);
+        return {
+          ...product,
+          active: Boolean(product.active),
+          createdAt: new Date(product.created_at),
+          updatedAt: new Date(product.updated_at),
+          categoryId: product.category_id,
+          stockQuantity: product.stock_quantity,
+          alertThreshold: product.alert_threshold,
+          weightUnit: product.weight_unit,
+          hsnCode: product.hsn_code,
+          cgstRate: product.cgst_rate,
+          sgstRate: product.sgst_rate,
+          igstRate: product.igst_rate,
+          cessRate: product.cess_rate,
+          taxCalculationMethod: product.tax_calculation_method,
+          wholesalePrice: product.wholesale_price,
+        };
+      }
+      return null;
     } catch (error) {
       console.error('Error fetching product by ID:', error);
       throw error;
@@ -609,6 +642,7 @@ export const storage = {
           price: updatedProduct.price,
           mrp: updatedProduct.mrp,
           cost: updatedProduct.cost,
+          wholesalePrice: updatedProduct.wholesale_price,
           weight: updatedProduct.weight,
           weightUnit: updatedProduct.weight_unit,
           categoryId: updatedProduct.category_id,
