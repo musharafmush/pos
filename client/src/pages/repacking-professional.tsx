@@ -47,7 +47,9 @@ type Product = {
   sku: string;
   barcode?: string;
   price: number;
+  cost?: number;
   mrp?: number;
+  wholesalePrice?: number;
   weight?: number;
   weightUnit?: string;
   stockQuantity: number;
@@ -438,10 +440,12 @@ export default function RepackingProfessional() {
           const weightRatio = childWeightInGrams / bulkWeightInGrams;
           const childCostPrice = parseFloat(selectedBulkProduct.cost || "0") * weightRatio; // Use cost field, not price
           const childSellingPrice = parseFloat(selectedBulkProduct.price || "0") * weightRatio; // Use price field for selling price
+          const childWholesalePrice = parseFloat(selectedBulkProduct.wholesalePrice || "0") * weightRatio; // Use wholesale price field
           const childMRP = parseFloat(selectedBulkProduct.mrp || "0") * weightRatio;
         
           form.setValue("costPrice", Math.round(childCostPrice * 100) / 100);
           form.setValue("sellingPrice", Math.round(childSellingPrice * 100) / 100);
+          form.setValue("wholesalePrice", Math.round(childWholesalePrice * 100) / 100);
           form.setValue("mrp", Math.round(childMRP * 100) / 100);
         }
       }
