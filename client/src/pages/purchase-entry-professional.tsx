@@ -222,6 +222,7 @@ const purchaseItemSchema = z.object({
   freeQty: z.number().min(0, "Free quantity cannot be negative").optional(),
   unitCost: z.number().min(0, "Unit cost must be at least 0"),
   sellingPrice: z.number().min(0, "Selling price must be at least 0").optional(),
+  wholesalePrice: z.number().min(0, "Wholesale price must be at least 0").optional(),
   mrp: z.number().min(0, "MRP must be at least 0").optional(),
   hsnCode: z.string().optional(),
   taxPercentage: z.number().min(0).max(100, "Tax percentage must be between 0 and 100").optional(),
@@ -285,6 +286,7 @@ interface Product {
   description: string;
   price: string;
   cost?: string;
+  wholesalePrice?: string;
   mrp?: string;
   hsnCode?: string;
   cgstRate?: string;
@@ -337,6 +339,7 @@ export default function PurchaseEntryProfessional() {
     expiryDate: "",
     batchNumber: "",
     sellingPrice: 0,
+    wholesalePrice: 0,
     mrp: 0,
     netAmount: 0,
     location: "",
@@ -1218,6 +1221,7 @@ export default function PurchaseEntryProfessional() {
       }
       
       const sellingPrice = parseFloat(product.price) || 0;
+      const wholesalePrice = parseFloat(product.wholesalePrice || "0") || 0;
       
       // Calculate MRP: use product MRP if available, otherwise calculate from selling price
       let mrpPrice = 0;
@@ -1233,6 +1237,7 @@ export default function PurchaseEntryProfessional() {
       
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
+      form.setValue(`items.${index}.wholesalePrice`, wholesalePrice);
       form.setValue(`items.${index}.mrp`, mrpPrice);
 
       // Set default received quantity if not set
@@ -2637,6 +2642,7 @@ export default function PurchaseEntryProfessional() {
                             <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">ROI %</TableHead>
                             <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Gross Profit %</TableHead>
                             <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Selling Price</TableHead>
+                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Wholesale Price</TableHead>
                             <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">MRP</TableHead>
                             <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Amount</TableHead>
                             <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Amount</TableHead>
@@ -3358,6 +3364,47 @@ export default function PurchaseEntryProfessional() {
                                           margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                                         }`}>
                                           {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+                                </TableCell>
+
+                                <TableCell className="border-r px-3 py-3">
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      {...form.register(`items.${index}.wholesalePrice`, { 
+                                        valueAsNumber: true,
+                                        setValueAs: (value) => value || 0
+                                      })}
+                                      onChange={(e) => {
+                                        const value = parseFloat(e.target.value) || 0;
+                                        form.setValue(`items.${index}.wholesalePrice`, value);
+                                        form.trigger(`items.${index}`);
+                                      }}
+                                      className="w-full text-right text-xs pl-6"
+                                      placeholder="0.00"
+                                      onFocus={(e) => e.target.select()}
+                                    />
+                                  </div>
+                                  {/* Wholesale Price Indicator */}
+                                  {(() => {
+                                    const wholesalePrice = form.watch(`items.${index}.wholesalePrice`) || 0;
+                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
+                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+                                    
+                                    if (wholesalePrice > 0 && unitCost > 0) {
+                                      const margin = ((wholesalePrice - unitCost) / unitCost) * 100;
+                                      return (
+                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                                          margin > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-red-50 text-red-700'
+                                        }`}>
+                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% bulk margin
                                         </div>
                                       );
                                     }
