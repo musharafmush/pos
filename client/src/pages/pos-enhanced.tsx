@@ -3025,6 +3025,43 @@ export default function POSEnhanced() {
                     </Button>
                   </div>
                 </div>
+                
+                {/* Barcode Scanner Info Box - Moved to gap space */}
+                <div className="flex-1">
+                  <Card className="border border-blue-200 bg-blue-50">
+                    <CardContent className="p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center">
+                          <Scan className="h-4 w-4 text-blue-600 mr-1" />
+                          <h3 className="font-semibold text-blue-900 text-sm">Barcode Scanner</h3>
+                        </div>
+                        <Badge 
+                          className={`${barcodeEnabledProducts.length > 0 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'} text-xs`}
+                        >
+                          {barcodeEnabledProducts.length > 0 ? 'Ready' : 'Limited'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Scannable Products:</span>
+                          <span className="font-medium text-blue-700">{barcodeEnabledProducts.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Products:</span>
+                          <span className="font-medium">{products.length}</span>
+                        </div>
+                        
+                        {barcodeEnabledProducts.length > 0 && barcodeEnabledProducts.length < products.length && (
+                          <div className="mt-1 p-1 bg-blue-100 rounded text-xs text-blue-800">
+                            <CheckCircle className="h-3 w-3 inline mr-1" />
+                            Scanner works with products that have valid barcodes (8+ chars), stock, and pricing.
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
             </div>
@@ -3211,49 +3248,8 @@ export default function POSEnhanced() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN (30%) - Scanner Info, Bill Summary, Payment */}
+            {/* RIGHT COLUMN (30%) - Bill Summary, Payment */}
             <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
-              {/* Barcode Scanner Status */}
-              <Card className="mb-1 border border-blue-200 bg-blue-50 flex-shrink-0">
-                <CardContent className="p-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center">
-                      <Scan className="h-5 w-5 text-blue-600 mr-2" />
-                      <h3 className="font-semibold text-blue-900">Barcode Scanner</h3>
-                    </div>
-                    <Badge 
-                      className={`${barcodeEnabledProducts.length > 0 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}
-                    >
-                      {barcodeEnabledProducts.length > 0 ? 'Ready' : 'Limited'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Scannable Products:</span>
-                      <span className="font-medium text-blue-700">{barcodeEnabledProducts.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Products:</span>
-                      <span className="font-medium">{products.length}</span>
-                    </div>
-                    
-                    {barcodeEnabledProducts.length === 0 && (
-                      <div className="mt-3 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
-                        <Info className="h-3 w-3 inline mr-1" />
-                        No products have valid barcodes for POS scanning. Add barcodes to products to enable scanner functionality.
-                      </div>
-                    )}
-                    
-                    {barcodeEnabledProducts.length > 0 && barcodeEnabledProducts.length < products.length && (
-                      <div className="mt-3 p-2 bg-blue-100 rounded text-xs text-blue-800">
-                        <CheckCircle className="h-3 w-3 inline mr-1" />
-                        Scanner works with products that have valid barcodes (8+ chars), stock, and pricing.
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
 
               <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center mb-1">
