@@ -2971,7 +2971,7 @@ export default function POSEnhanced() {
           {/* Search Section */}
           <div className="bg-white border-b border-gray-200 px-1 py-0.5">
             {/* Unified Search and Barcode Scanner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1 w-[70%]">
               <div className="flex items-center justify-between mb-0">
                 <div className="flex items-center gap-1.5">
                   <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
@@ -2989,7 +2989,7 @@ export default function POSEnhanced() {
               </div>
 
               <div className="flex items-center space-x-2 mt-1">
-                <div className="relative w-1/2">
+                <div className="relative w-[30%]">
                   <div className="flex items-center gap-1.5 absolute left-2 top-1/2 transform -translate-y-1/2">
                     <Search className="h-3 w-3 text-blue-600" />
                     <Scan className="h-3 w-3 text-blue-600" />
