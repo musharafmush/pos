@@ -321,7 +321,7 @@ export async function initializeDatabase() {
   }
 
   // Create default category if none exist
-  const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get();
+  const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get() as { count: number };
 
   if (categoryCount.count === 0) {
     console.log('🔄 Creating default categories...');
@@ -344,7 +344,7 @@ export async function initializeDatabase() {
   }
 
   // Create default supplier if none exist
-  const supplierCount = db.prepare('SELECT COUNT(*) as count FROM suppliers').get();
+  const supplierCount = db.prepare('SELECT COUNT(*) as count FROM suppliers').get() as { count: number };
 
   if (supplierCount.count === 0) {
     console.log('🔄 Creating default suppliers...');
@@ -423,7 +423,7 @@ export async function initializeDatabase() {
   `);
 
   // Create default expense categories
-  const existingExpenseCategories = db.prepare('SELECT COUNT(*) as count FROM expense_categories').get();
+  const existingExpenseCategories = db.prepare('SELECT COUNT(*) as count FROM expense_categories').get() as { count: number };
   if (existingExpenseCategories.count === 0) {
     const expenseCategories = [
       { name: 'Office Supplies', description: 'Stationery, equipment, and office materials' },
@@ -516,7 +516,7 @@ export async function initializeDatabase() {
   `);
 
   // Create default offers
-  const existingOffers = db.prepare('SELECT COUNT(*) as count FROM offers').get();
+  const existingOffers = db.prepare('SELECT COUNT(*) as count FROM offers').get() as { count: number };
   if (existingOffers.count === 0) {
     const defaultOffers = [
       {
