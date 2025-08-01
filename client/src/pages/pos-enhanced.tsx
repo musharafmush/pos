@@ -2989,7 +2989,7 @@ export default function POSEnhanced() {
               </div>
 
               <div className="flex items-center space-x-2 mt-1">
-                <div className="relative flex-1">
+                <div className="relative w-1/2">
                   <div className="flex items-center gap-1.5 absolute left-2 top-1/2 transform -translate-y-1/2">
                     <Search className="h-3 w-3 text-blue-600" />
                     <Scan className="h-3 w-3 text-blue-600" />
