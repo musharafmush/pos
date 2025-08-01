@@ -2989,7 +2989,7 @@ export default function POSEnhanced() {
               </div>
 
               <div className="flex items-center space-x-2 mt-1">
-                <div className="relative w-[30%]">
+                <div className="relative w-[60%]">
                   <div className="flex items-center gap-1.5 absolute left-2 top-1/2 transform -translate-y-1/2">
                     <Search className="h-3 w-3 text-blue-600" />
                     <Scan className="h-3 w-3 text-blue-600" />
@@ -3027,7 +3027,7 @@ export default function POSEnhanced() {
                 </div>
                 
                 {/* Barcode Scanner Info Box - Moved to gap space */}
-                <div className="flex-1">
+                <div className="w-[38%]">
                   <Card className="border border-blue-200 bg-blue-50">
                     <CardContent className="p-2">
                       <div className="flex items-center justify-between mb-1">
