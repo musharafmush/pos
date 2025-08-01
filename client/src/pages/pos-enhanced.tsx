@@ -3266,7 +3266,7 @@ export default function POSEnhanced() {
 
               {/* Bill Details */}
               <Card className="mb-1 border border-gray-200 flex-1 overflow-y-auto">
-                <CardContent className="p-1 space-y-1">
+                <CardContent className="p-2 space-y-2">
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600">Items:</span>
                     <span className="font-semibold">{cart.length}</span>
@@ -3275,12 +3275,10 @@ export default function POSEnhanced() {
                     <span className="text-gray-600">Total Qty:</span>
                     <span className="font-semibold">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <span className="text-blue-800 font-medium text-lg">Gross Amount:</span>
-                    <span className="font-bold text-xl text-blue-900">{formatCurrency(subtotal)}</span>
+                  <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <span className="text-blue-800 font-medium text-base">Gross Amount:</span>
+                    <span className="font-bold text-lg text-blue-900">{formatCurrency(subtotal)}</span>
                   </div>
-
-
 
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Discount:</span>
@@ -3343,8 +3341,6 @@ export default function POSEnhanced() {
                       )}
                     </div>
                   )}
-
-
 
                 </CardContent>
               </Card>
