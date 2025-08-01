@@ -2969,7 +2969,7 @@ export default function POSEnhanced() {
             </div>
           </div>
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-1 py-0.5">
+          <div className="bg-white border-b border-gray-200 px-1 py-1">
             {/* Unified Search and Barcode Scanner */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1 w-full">
               <div className="flex items-center justify-between mb-0">
@@ -2988,7 +2988,7 @@ export default function POSEnhanced() {
                 </Badge>
               </div>
 
-              <div className="flex items-center space-x-2 mt-1">
+              <div className="flex items-center gap-0 mt-1">
                 <div className="relative w-[70%]">
                   <div className="flex items-center gap-1.5 absolute left-2 top-1/2 transform -translate-y-1/2">
                     <Search className="h-3 w-3 text-blue-600" />
@@ -3027,7 +3027,7 @@ export default function POSEnhanced() {
                 </div>
                 
                 {/* Barcode Scanner Info Box - Moved to gap space */}
-                <div className="w-[28%]">
+                <div className="w-[28%] ml-2">
                   <Card className="border border-blue-200 bg-blue-50">
                     <CardContent className="p-2">
                       <div className="flex items-center justify-between mb-1">
