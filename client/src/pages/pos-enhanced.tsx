@@ -2969,7 +2969,7 @@ export default function POSEnhanced() {
             </div>
           </div>
           {/* Search Section */}
-          <div className="bg-white border-b border-gray-200 px-1 py-1">
+          <div className="bg-white border-b border-gray-200 px-1 py-2">
             {/* Unified Search and Barcode Scanner */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-1 w-full">
               <div className="flex items-center justify-between mb-0">
@@ -3067,7 +3067,7 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-160px)]'} gap-1 px-1 py-0.5`}>
+          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-[calc(100vh-220px)]'} gap-1 px-1 py-1`}>
             {/* LEFT COLUMN (70%) - Product Search & Cart */}
             <div className={`w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col h-full`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
