@@ -3243,7 +3243,7 @@ export default function POSEnhanced() {
             </div>
 
             {/* RIGHT COLUMN (30%) - Bill Summary, Payment */}
-            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
+            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-[60vh] flex flex-col overflow-hidden`}>
 
               <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center mb-1">
