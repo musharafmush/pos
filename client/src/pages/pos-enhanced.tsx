@@ -3010,7 +3010,7 @@ export default function POSEnhanced() {
                         }
                       }
                     }}
-                    className="text-sm py-1 pl-12 pr-16 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="text-sm py-0.5 pl-12 pr-16 border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                     autoFocus
                   />
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
