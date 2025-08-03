@@ -2649,15 +2649,6 @@ export default function POSEnhanced() {
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => setShowOceanDialog(true)}
-                    title="Enter Ocean Freight & Shipping Costs"
-                    className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs h-7 px-2 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
-                  >
-                    <Package className="h-3 w-3 mr-1" />
-                    Ocean
-                  </Button>
-                  <Button 
-                    variant="outline"
                     onClick={holdCurrentSale}
                     disabled={cart.length === 0}
                     title="Hold current sale (Alt+H)"
@@ -3379,47 +3370,6 @@ export default function POSEnhanced() {
 
               {/* Action Buttons */}
               <div className="space-y-1 flex-shrink-0">
-                {/* Ocean Freight Management Button */}
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 h-7"
-                  onClick={() => {
-                    // Auto-add test items if cart is empty
-                    if (cart.length === 0) {
-                      const testItems = [
-                        {
-                          id: 10,
-                          name: "SUGAR BULK",
-                          sku: "SUGAR-BULK-001",
-                          price: "45",
-                          mrp: 50,
-                          stockQuantity: 100,
-                          isWeightBased: true,
-                          pricePerKg: 45,
-                          actualWeight: 2.5,
-                          quantity: 1,
-                          total: 112.5,
-                          weightUnit: "kg"
-                        }
-                      ];
-                      setCart(testItems);
-                      
-                      // Auto-select Amit Patel
-                      const amitPatel = customers.find((c: Customer) => c.name === "Amit Patel");
-                      if (amitPatel) {
-                        setSelectedCustomer(amitPatel);
-                      }
-                      
-                      toast({
-                        title: "Demo Setup Complete",
-                        description: "Test products and customer added for Ocean freight demo",
-                      });
-                    }
-                    setShowOceanDialog(true);
-                  }}
-                >
-                  <Package className="h-3 w-3 mr-1" />
-                  Ocean Freight
-                </Button>
 
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-1 h-8"
