@@ -3099,7 +3099,7 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
-              <div className="h-64 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
+              <div className="h-20 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
                   <div className="text-center py-2">
                     <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
