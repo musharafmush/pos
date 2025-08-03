@@ -2589,8 +2589,8 @@ export default function POSEnhanced() {
   }, []);
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden' : 'min-h-screen'}`}>
-        <div className="h-screen bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900 flex flex-col">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
+        <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900 flex flex-col">
           {/* Modern Header */}
           <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
             <div className={`${isFullscreen ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
@@ -3061,9 +3061,9 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className="flex flex-1 gap-1 px-1 overflow-hidden">
+          <div className="flex flex-1 gap-1 px-1 pb-0 overflow-hidden min-h-0">
             {/* LEFT COLUMN (70%) - Product Search & Cart */}
-            <div className={`w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col h-full`}>
+            <div className="w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col flex-1 min-h-0">
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -3243,7 +3243,7 @@ export default function POSEnhanced() {
             </div>
 
             {/* RIGHT COLUMN (30%) - Bill Summary, Payment */}
-            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-[60vh] flex flex-col overflow-hidden`}>
+            <div className="w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
 
               <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center mb-1">
