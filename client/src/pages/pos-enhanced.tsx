@@ -594,12 +594,12 @@ export default function POSEnhanced() {
     );
   };
 
-  // Filter products based on search term or barcode
+  // Filter products based on search term or barcode - show latest products first
   const filteredProducts = products.filter((product: Product) => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  ).reverse();
 
   // Get only barcode-enabled products for scanner functionality
   const barcodeEnabledProducts = products.filter(isProductBarcodeEnabled);
