@@ -2649,6 +2649,15 @@ export default function POSEnhanced() {
                   </Button>
                   <Button 
                     variant="outline"
+                    onClick={() => setShowOceanDialog(true)}
+                    title="Enter Ocean Freight & Shipping Costs"
+                    className={`hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-xs h-7 px-2 ${oceanTotal > 0 ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}`}
+                  >
+                    <Package className="h-3 w-3 mr-1" />
+                    Ocean
+                  </Button>
+                  <Button 
+                    variant="outline"
                     onClick={holdCurrentSale}
                     disabled={cart.length === 0}
                     title="Hold current sale (Alt+H)"
