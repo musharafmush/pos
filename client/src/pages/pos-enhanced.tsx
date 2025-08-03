@@ -3122,7 +3122,7 @@ export default function POSEnhanced() {
                   </div>
                 ) : (
                   <div className="space-y-1 h-[45vh] overflow-y-auto pr-1">
-                    {cart.map((item) => (
+                    {cart.slice().reverse().map((item) => (
                       <Card key={item.id} className="p-1.5 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -4673,7 +4673,7 @@ export default function POSEnhanced() {
                           <p>No items in cart</p>
                         </div>
                       ) : (
-                        cart.map((item, index) => (
+                        cart.slice().reverse().map((item, index) => (
                           <div key={`${item.id}-${index}`} className="bg-white p-4 rounded-lg border shadow-sm">
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1">
