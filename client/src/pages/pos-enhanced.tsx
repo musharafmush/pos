@@ -2590,7 +2590,7 @@ export default function POSEnhanced() {
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden' : ''}`}>
-        <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'min-h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
+        <div className={`${isFullscreen ? 'h-full overflow-y-auto' : 'h-screen'} bg-gradient-to-br from-slate-50 to-blue-50 text-gray-900`}>
           {/* Modern Header */}
           <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
             <div className={`${isFullscreen ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
@@ -3061,7 +3061,7 @@ export default function POSEnhanced() {
             </div>
           </div>
 
-          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-[calc(100vh-220px)]'} gap-1 px-1 py-1`}>
+          <div className={`flex ${isFullscreen ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-160px)]'} gap-1 px-1`}>
             {/* LEFT COLUMN (70%) - Product Search & Cart */}
             <div className={`w-[70%] bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-sm flex flex-col h-full`}>
               <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
