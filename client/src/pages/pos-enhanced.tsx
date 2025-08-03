@@ -3099,7 +3099,7 @@ export default function POSEnhanced() {
                 </div>
               </div>
 
-              <div className="flex-1 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
+              <div className="h-[50vh] bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
                   <div className="text-center py-2">
                     <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
@@ -3121,7 +3121,7 @@ export default function POSEnhanced() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1 h-full overflow-y-auto pr-1">
+                  <div className="space-y-1 h-[45vh] overflow-y-auto pr-1">
                     {cart.map((item) => (
                       <Card key={item.id} className="p-1.5 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
@@ -3243,7 +3243,7 @@ export default function POSEnhanced() {
             </div>
 
             {/* RIGHT COLUMN (30%) - Bill Summary, Payment */}
-            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-full flex flex-col overflow-hidden`}>
+            <div className={`w-[30%] p-1 bg-white border-l border-gray-200 rounded-lg shadow-sm h-[60vh] flex flex-col overflow-hidden`}>
 
               <div className="bg-gradient-to-br from-purple-600 to-blue-600 text-white p-1 rounded-lg mb-1 shadow-md flex-shrink-0">
                 <div className="flex items-center mb-1">
