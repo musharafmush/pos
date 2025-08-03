@@ -3101,7 +3101,7 @@ export default function POSEnhanced() {
 
               <div className="flex-1 bg-gradient-to-br from-gray-50/80 to-blue-50/50 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 shadow-lg overflow-hidden">
                 {cart.length === 0 ? (
-                  <div className="text-center py-4">
+                  <div className="text-center py-2">
                     <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                     <h3 className="text-sm font-semibold text-gray-600 mb-1">Cart is Empty</h3>
                     <p className="text-gray-500 mb-2 text-xs">Start by searching for products above</p>
@@ -3123,7 +3123,7 @@ export default function POSEnhanced() {
                 ) : (
                   <div className="space-y-1 h-full overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <Card key={item.id} className="p-2 hover:shadow-md transition-shadow border border-gray-200">
+                      <Card key={item.id} className="p-1.5 hover:shadow-md transition-shadow border border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <h4 className="font-semibold text-base text-gray-900">{item.name}</h4>
