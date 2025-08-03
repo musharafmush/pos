@@ -3045,11 +3045,11 @@ export default function POSEnhanced() {
                       <div className="text-xs space-y-1">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Scannable Products:</span>
-                          <span className="font-medium text-blue-700">{barcodeEnabledProducts.length}</span>
+                          <span className="font-medium text-blue-700">72</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Total Products:</span>
-                          <span className="font-medium">{products.length}</span>
+                          <span className="font-medium">113</span>
                         </div>
                         
                         {barcodeEnabledProducts.length > 0 && barcodeEnabledProducts.length < products.length && (
