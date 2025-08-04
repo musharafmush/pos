@@ -1410,7 +1410,19 @@ export const storage = {
     try {
       const { sqlite } = await import('../db/index.js');
       const purchase = sqlite.prepare(`
-        SELECT * FROM purchases WHERE id = ?
+        SELECT 
+          p.*,
+          s.name as supplier_name,
+          s.email as supplier_email,
+          s.phone as supplier_phone,
+          s.address as supplier_address,
+          s.gstin as supplier_gstin,
+          s.tax_number as supplier_tax_number,
+          u.name as user_name
+        FROM purchases p
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
       `).get(id);
 
       if (!purchase) {
@@ -1465,6 +1477,19 @@ export const storage = {
 
       return {
         ...purchase,
+        supplier: purchase.supplier_name ? {
+          id: purchase.supplier_id,
+          name: purchase.supplier_name,
+          email: purchase.supplier_email,
+          phone: purchase.supplier_phone,
+          address: purchase.supplier_address,
+          gstin: purchase.supplier_gstin,
+          taxNumber: purchase.supplier_tax_number
+        } : null,
+        user: {
+          id: purchase.user_id,
+          name: purchase.user_name || 'System User'
+        },
         items: formattedItems
       };
     } catch (error) {
