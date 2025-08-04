@@ -84,32 +84,19 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   });
 
   // Fetch HSN codes
-  const { data: hsnCodes = [], refetch: refetchHSN } = useQuery({
-    queryKey: ['/api/tax/hsn-codes'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/tax/hsn-codes');
-      return response.json();
-    }
+  const { data: hsnCodes = [], refetch: refetchHSN } = useQuery<HSNCode[]>({
+    queryKey: ['/api/tax/hsn-codes']
   });
 
   // Fetch tax categories
-  const { data: taxCategories = [], refetch: refetchCategories } = useQuery({
-    queryKey: ['/api/tax/categories'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/tax/categories');
-      return response.json();
-    }
+  const { data: taxCategories = [], refetch: refetchCategories } = useQuery<TaxCategory[]>({
+    queryKey: ['/api/tax/categories']
   });
 
   // Create HSN code mutation
   const createHSNMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/tax/hsn-codes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return response.json();
+      return await apiRequest(`/api/tax/hsn-codes`, 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -140,12 +127,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Update HSN code mutation
   const updateHSNMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      const response = await apiRequest(`/api/tax/hsn-codes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return response.json();
+      return await apiRequest(`/api/tax/hsn-codes/${id}`, 'PUT', data);
     },
     onSuccess: () => {
       toast({
@@ -167,10 +149,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Delete HSN code mutation
   const deleteHSNMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest(`/api/tax/hsn-codes/${id}`, {
-        method: 'DELETE'
-      });
-      return response.json();
+      return await apiRequest(`/api/tax/hsn-codes/${id}`, 'DELETE');
     },
     onSuccess: () => {
       toast({
@@ -191,12 +170,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Create tax category mutation
   const createCategoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/tax/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return response.json();
+      return await apiRequest('/api/tax/categories', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -227,7 +201,8 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
       hsn.hsnCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       hsn.description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = !selectedCategory || 
+    const matchesCategory = !selectedCategory || selectedCategory === "all" || 
+      (selectedCategory === "none" && !hsn.taxCategoryId) ||
       hsn.taxCategoryId?.toString() === selectedCategory;
     
     return matchesSearch && matchesCategory;
@@ -310,7 +285,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
               <SelectValue placeholder="Filter by category..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {taxCategories.map((category: TaxCategory) => (
                 <SelectItem key={category.id} value={category.id.toString()}>
                   {category.name} ({category.rate}%)
@@ -497,7 +472,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
                     <SelectValue placeholder="Filter by category..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {taxCategories.map((category: TaxCategory) => (
                       <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name} ({category.rate}%)
@@ -711,7 +686,7 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
                       <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Category</SelectItem>
+                      <SelectItem value="none">No Category</SelectItem>
                       {taxCategories.map((category: TaxCategory) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
                           {category.name} ({category.rate}%)
