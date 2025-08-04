@@ -205,21 +205,9 @@ export default function AccountsDashboard() {
           bankTransferAmount: parseFloat(sale.bankTransferAmount || sale.bank_transfer_amount || '0'),
           chequeAmount: parseFloat(sale.chequeAmount || sale.cheque_amount || '0')
         };
-        if (sale.id <= 19 && sale.id >= 17) { // Debug recent sales
-          console.log(`💰 Sale ${sale.id} transformed:`, transformed);
-          console.log(`🔗 Payment method for linkability: "${transformed.paymentMethod}" (type: ${typeof transformed.paymentMethod})`);
-        }
         return transformed;
       }) || [];
       
-      // Calculate totals for debugging
-      const totals = {
-        cash: transformedData.reduce((sum, sale) => sum + sale.cashAmount, 0),
-        upi: transformedData.reduce((sum, sale) => sum + sale.upiAmount, 0),
-        card: transformedData.reduce((sum, sale) => sum + sale.cardAmount, 0),
-        bankTransfer: transformedData.reduce((sum, sale) => sum + sale.bankTransferAmount, 0)
-      };
-      console.log('📊 Payment totals calculated:', totals);
       
       return transformedData;
     }
@@ -1366,8 +1354,6 @@ export default function AccountsDashboard() {
                         let total = 0;
                         if (key === 'upi') {
                           total = posData.reduce((sum, sale) => sum + sale.upiAmount, 0);
-                          console.log(`💰 UPI Total Calculated: ₹${total} from ${posData.length} sales`);
-                          console.log('📊 UPI amounts per sale:', posData.map(sale => ({ id: sale.id, upiAmount: sale.upiAmount })));
                         } else if (key === 'card') {
                           total = posData.reduce((sum, sale) => sum + sale.cardAmount, 0);
                         } else if (key === 'bank_transfer') {
@@ -1431,14 +1417,6 @@ export default function AccountsDashboard() {
                               const isLinkable = ['upi', 'card', 'bank_transfer', 'cheque'].includes(paymentMethod);
                               const hasSplitUpi = sale.upiAmount > 0; // Check if there's a UPI portion in split payment
                               const shouldShowLink = (isNotCash && isLinkable) || hasSplitUpi;
-                              console.log(`🔗 Sale ${sale.id} linkability check:`, {
-                                paymentMethod,
-                                isNotCash,
-                                isLinkable,
-                                hasSplitUpi,
-                                upiAmount: sale.upiAmount,
-                                shouldShowLink
-                              });
                               return shouldShowLink;
                             })() ? (
                               <Button
@@ -1446,12 +1424,54 @@ export default function AccountsDashboard() {
                                 variant="outline"
                                 className="mt-1 text-xs"
                                 onClick={() => {
-                                  // Auto-link to first available account for demo
+                                  // Auto-link to first available account - handle split payments properly
                                   if (accounts.length > 0) {
-                                    createPosTransactionMutation.mutate({
-                                      sale,
-                                      accountId: accounts[0].id
-                                    });
+                                    const paymentMethod = sale.paymentMethod?.toLowerCase();
+                                    
+                                    // For split payments, create separate transactions for each payment type
+                                    if (paymentMethod?.includes('+')) {
+                                      // Handle split payments - create separate transactions for each part
+                                      if (sale.upiAmount > 0) {
+                                        createPosTransactionMutation.mutate({
+                                          sale,
+                                          accountId: accounts[0].id,
+                                          paymentType: 'upi'
+                                        });
+                                      }
+                                      if (sale.cardAmount > 0) {
+                                        setTimeout(() => {
+                                          createPosTransactionMutation.mutate({
+                                            sale,
+                                            accountId: accounts[0].id,
+                                            paymentType: 'card'
+                                          });
+                                        }, 500);
+                                      }
+                                      if (sale.bankTransferAmount > 0) {
+                                        setTimeout(() => {
+                                          createPosTransactionMutation.mutate({
+                                            sale,
+                                            accountId: accounts[1]?.id || accounts[0].id,
+                                            paymentType: 'bank_transfer'
+                                          });
+                                        }, 1000);
+                                      }
+                                      if (sale.chequeAmount > 0) {
+                                        setTimeout(() => {
+                                          createPosTransactionMutation.mutate({
+                                            sale,
+                                            accountId: accounts[0].id,
+                                            paymentType: 'cheque'
+                                          });
+                                        }, 1500);
+                                      }
+                                    } else {
+                                      // Single payment method - link normally
+                                      createPosTransactionMutation.mutate({
+                                        sale,
+                                        accountId: accounts[0].id
+                                      });
+                                    }
                                   }
                                 }}
                                 disabled={createPosTransactionMutation.isPending}
