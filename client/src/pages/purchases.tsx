@@ -48,8 +48,10 @@ import {
   ClipboardEditIcon, 
   ExternalLinkIcon, 
   TrashIcon,
-  PackageIcon
+  PackageIcon,
+  FileText
 } from "lucide-react";
+import PurchaseOrderPDF from "@/components/purchase/pdf-generator";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -340,6 +342,7 @@ export default function Purchases() {
                               size="icon"
                               onClick={() => handleViewPurchase(purchase)}
                               title="View Details"
+                              data-testid={`button-view-${purchase.id}`}
                             >
                               <ExternalLinkIcon className="h-4 w-4" />
                             </Button>
@@ -349,9 +352,15 @@ export default function Purchases() {
                               onClick={() => handleUpdateStatus(purchase)}
                               title="Update Status"
                               disabled={purchase.status === 'cancelled' || purchase.status === 'received'}
+                              data-testid={`button-status-${purchase.id}`}
                             >
                               <ClipboardEditIcon className="h-4 w-4" />
                             </Button>
+                            {purchase.items && purchase.items.length > 0 && (
+                              <div className="inline-flex">
+                                <PurchaseOrderPDF purchaseOrder={purchase} />
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -375,7 +384,12 @@ export default function Purchases() {
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Purchase Order Details</DialogTitle>
+              <DialogTitle className="flex items-center justify-between">
+                Purchase Order Details
+                {selectedPurchase.items && selectedPurchase.items.length > 0 && (
+                  <PurchaseOrderPDF purchaseOrder={selectedPurchase} />
+                )}
+              </DialogTitle>
               <DialogDescription>
                 {selectedPurchase.orderNumber}
               </DialogDescription>
