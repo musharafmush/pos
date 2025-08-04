@@ -1368,15 +1368,12 @@ export default function AccountsDashboard() {
                           total = posData.reduce((sum, sale) => sum + sale.upiAmount, 0);
                         } else if (key === 'card') {
                           total = posData.reduce((sum, sale) => sum + sale.cardAmount, 0);
-                        } else if (key === 'cash') {
-                          total = posData.reduce((sum, sale) => sum + sale.cashAmount, 0);
                         } else if (key === 'bank_transfer') {
                           total = posData.reduce((sum, sale) => sum + sale.bankTransferAmount, 0);
                         }
                         const methodSales = posData.filter(sale => {
                           if (key === 'upi') return sale.upiAmount > 0;
                           if (key === 'card') return sale.cardAmount > 0;
-                          if (key === 'cash') return sale.cashAmount > 0;
                           if (key === 'bank_transfer') return sale.bankTransferAmount > 0;
                           return false;
                         });
