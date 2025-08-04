@@ -1417,7 +1417,9 @@ export const storage = {
           s.phone as supplier_phone,
           s.address as supplier_address,
           s.gstin as supplier_gstin,
-          s.tax_number as supplier_tax_number,
+          s.tax_id as supplier_tax_id,
+          s.city as supplier_city,
+          s.state as supplier_state,
           u.name as user_name
         FROM purchases p
         LEFT JOIN suppliers s ON p.supplier_id = s.id
@@ -1484,7 +1486,9 @@ export const storage = {
           phone: purchase.supplier_phone,
           address: purchase.supplier_address,
           gstin: purchase.supplier_gstin,
-          taxNumber: purchase.supplier_tax_number
+          taxId: purchase.supplier_tax_id,
+          city: purchase.supplier_city,
+          state: purchase.supplier_state
         } : null,
         user: {
           id: purchase.user_id,

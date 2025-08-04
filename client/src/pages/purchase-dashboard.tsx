@@ -1951,10 +1951,9 @@ export default function PurchaseDashboard() {
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Tax Number</label>
+                          <label className="text-sm font-medium text-gray-600">Tax ID</label>
                           <p className="text-base mt-1">
-                            ```python
-{selectedPurchase.supplier?.taxNumber || "Not provided"}
+                            {selectedPurchase.supplier?.taxId || "Not provided"}
                           </p>
                         </div>
                       </div>
