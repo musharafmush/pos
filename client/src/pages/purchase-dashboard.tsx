@@ -686,6 +686,11 @@ export default function PurchaseDashboard() {
   const generatePrintContent = (purchase: any) => {
     const currentDate = new Date().toLocaleDateString();
     const items = purchase.items || purchase.purchaseItems || purchase.purchase_items || [];
+    const subtotal = parseFloat(purchase.subTotal || purchase.total || '0');
+    const freight = parseFloat(purchase.freight || '0');
+    const otherCharges = parseFloat(purchase.otherCharges || '0');
+    const discount = parseFloat(purchase.discount || '0');
+    const grandTotal = subtotal + freight + otherCharges - discount;
     
     return `
       <!DOCTYPE html>
@@ -693,156 +698,362 @@ export default function PurchaseDashboard() {
       <head>
         <title>Purchase Order - ${purchase.orderNumber}</title>
         <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            margin: 20px; 
-            color: #333;
-            line-height: 1.4;
+            font-size: 11px;
+            color: #000;
+            background: white;
+            padding: 10px;
           }
-          .header { 
-            text-align: center; 
-            border-bottom: 2px solid #333; 
-            padding-bottom: 10px; 
-            margin-bottom: 20px;
+          .invoice-container {
+            max-width: 210mm;
+            margin: 0 auto;
           }
-          .company-name { 
-            font-size: 24px; 
-            font-weight: bold; 
+          .header-section {
+            border: 2px solid #000;
             margin-bottom: 5px;
           }
-          .document-title { 
-            font-size: 18px; 
-            margin: 10px 0;
+          .header-row {
+            display: flex;
+            border-bottom: 1px solid #000;
           }
-          .info-section { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 20px;
+          .header-row:last-child {
+            border-bottom: none;
           }
-          .info-box { 
-            width: 45%;
+          .header-cell {
+            padding: 4px 8px;
+            border-right: 1px solid #000;
+            flex: 1;
           }
-          .info-title { 
-            font-weight: bold; 
-            margin-bottom: 5px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 2px;
+          .header-cell:last-child {
+            border-right: none;
           }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 20px 0;
-          }
-          th, td { 
-            border: 1px solid #333; 
-            padding: 8px; 
-            text-align: left;
-          }
-          th { 
-            background-color: #f5f5f5; 
+          .header-cell strong {
             font-weight: bold;
           }
-          .amount { 
-            text-align: right;
+          .company-section {
+            border: 2px solid #000;
+            padding: 8px;
+            margin-bottom: 5px;
           }
-          .total-section { 
-            margin-top: 20px; 
-            text-align: right;
-          }
-          .total-row { 
-            margin: 5px 0;
-          }
-          .grand-total { 
-            font-size: 18px; 
-            font-weight: bold; 
-            border-top: 2px solid #333; 
-            padding-top: 10px;
-          }
-          .footer { 
-            margin-top: 30px; 
-            border-top: 1px solid #ccc; 
-            padding-top: 10px;
+          .company-name {
+            font-size: 16px;
+            font-weight: bold;
             text-align: center;
-            font-size: 12px;
-            color: #666;
+            margin-bottom: 4px;
+          }
+          .company-details {
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.2;
+          }
+          .supplier-section {
+            border: 2px solid #000;
+            padding: 8px;
+            margin-bottom: 5px;
+          }
+          .supplier-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000;
+            margin-bottom: 5px;
+          }
+          .items-table th,
+          .items-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            text-align: left;
+            font-size: 10px;
+          }
+          .items-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+          }
+          .items-table .text-center {
+            text-align: center;
+          }
+          .items-table .text-right {
+            text-align: right;
+          }
+          .total-section {
+            border: 2px solid #000;
+            margin-bottom: 5px;
+          }
+          .total-row {
+            display: flex;
+            border-bottom: 1px solid #000;
+          }
+          .total-row:last-child {
+            border-bottom: none;
+          }
+          .total-label {
+            flex: 1;
+            padding: 4px 8px;
+            border-right: 1px solid #000;
+            font-weight: bold;
+          }
+          .total-value {
+            width: 120px;
+            padding: 4px 8px;
+            text-align: right;
+            font-weight: bold;
+          }
+          .amount-words {
+            border: 2px solid #000;
+            padding: 8px;
+            margin-bottom: 5px;
+            font-size: 10px;
+          }
+          .declaration-section {
+            border: 2px solid #000;
+            padding: 8px;
+            margin-bottom: 5px;
+            font-size: 9px;
+          }
+          .signature-section {
+            border: 2px solid #000;
+            padding: 8px;
+            text-align: right;
+            font-size: 10px;
+          }
+          .computer-generated {
+            text-align: center;
+            font-size: 9px;
+            margin-top: 10px;
+            font-style: italic;
           }
           @media print {
-            body { margin: 0; }
+            body { margin: 0; padding: 5px; }
             .no-print { display: none; }
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="company-name">Awesome Shop POS</div>
-          <div class="document-title">PURCHASE ORDER</div>
-        </div>
-        
-        <div class="info-section">
-          <div class="info-box">
-            <div class="info-title">Purchase Order Details</div>
-            <p><strong>Order Number:</strong> ${purchase.orderNumber || `PO-${purchase.id}`}</p>
-            <p><strong>Order Date:</strong> ${purchase.orderDate ? new Date(purchase.orderDate).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Expected Date:</strong> ${purchase.expectedDate ? new Date(purchase.expectedDate).toLocaleDateString() : 'Not set'}</p>
-            <p><strong>Status:</strong> ${purchase.status || 'Pending'}</p>
+        <div class="invoice-container">
+          <!-- Header Information -->
+          <div class="header-section">
+            <div class="header-row">
+              <div class="header-cell"><strong>Purchase Order</strong></div>
+              <div class="header-cell"><strong>(ORIGINAL FOR RECIPIENT)</strong></div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Invoice No.: <strong>${purchase.orderNumber || `PO-${purchase.id}`}</strong></div>
+              <div class="header-cell">Dated: <strong>${purchase.orderDate ? new Date(purchase.orderDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}</strong></div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Delivery Note:</div>
+              <div class="header-cell">Mode/Terms of Payment:</div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Reference No. & Date:</div>
+              <div class="header-cell">Other References:</div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Buyer's Order No.:</div>
+              <div class="header-cell">Dated:</div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Dispatch Doc No.:</div>
+              <div class="header-cell">Delivery Note Date:</div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Dispatched through:</div>
+              <div class="header-cell">Destination:</div>
+            </div>
+            <div class="header-row">
+              <div class="header-cell">Terms of Delivery:</div>
+              <div class="header-cell"></div>
+            </div>
           </div>
-          <div class="info-box">
-            <div class="info-title">Supplier Information</div>
-            <p><strong>Name:</strong> ${purchase.supplier?.name || 'Unknown Supplier'}</p>
-            <p><strong>Email:</strong> ${purchase.supplier?.email || 'N/A'}</p>
-            <p><strong>Phone:</strong> ${purchase.supplier?.phone || 'N/A'}</p>
-            <p><strong>Address:</strong> ${purchase.supplier?.address || 'N/A'}</p>
-          </div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>S.No</th>
-              <th>Product Name</th>
-              <th>Quantity</th>
-              <th>Unit Price</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map((item: any, index: number) => `
+          <!-- Company Information -->
+          <div class="company-section">
+            <div class="company-name">AWESOME SHOP POS</div>
+            <div class="company-details">
+              Modern POS System for Indian Retail<br>
+              Complete Business Management Solution<br>
+              GST Compliant | Multi-Language Support
+            </div>
+          </div>
+
+          <!-- Supplier Information -->
+          <div class="supplier-section">
+            <div class="supplier-title">Consignee (Ship to):</div>
+            <strong>${purchase.supplier?.name || 'SUPPLIER NAME'}</strong><br>
+            ${purchase.supplier?.address || 'Supplier Address'}<br>
+            ${purchase.supplier?.phone || 'Phone Number'}<br>
+            ${purchase.supplier?.email || 'Email Address'}<br>
+            GSTIN/UIN: <strong>${purchase.supplier?.gstin || 'N/A'}</strong><br>
+            State Name: ${purchase.supplier?.state || 'State'}, Code: ${purchase.supplier?.stateCode || '00'}<br>
+            Place of Supply: ${purchase.supplier?.city || 'City'}
+          </div>
+
+          <!-- Items Table -->
+          <table class="items-table">
+            <thead>
               <tr>
-                <td>${index + 1}</td>
-                <td>${item.product?.name || item.productName || 'Unknown Product'}</td>
-                <td>${item.quantity || 0}</td>
-                <td class="amount">₹${parseFloat(item.unitPrice || item.price || '0').toFixed(2)}</td>
-                <td class="amount">₹${parseFloat(item.total || item.subtotal || '0').toFixed(2)}</td>
+                <th rowspan="2">Sl</th>
+                <th rowspan="2">Description of Goods</th>
+                <th rowspan="2">HSN/SAC</th>
+                <th rowspan="2">Quantity</th>
+                <th rowspan="2">Rate</th>
+                <th rowspan="2">per</th>
+                <th rowspan="2">Amount</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${items.map((item: any, index: number) => `
+                <tr>
+                  <td class="text-center">${index + 1}</td>
+                  <td>${item.product?.name || item.productName || 'Product Name'}</td>
+                  <td class="text-center">${item.product?.hsnCode || '1006'}</td>
+                  <td class="text-center">${item.quantity || 0}</td>
+                  <td class="text-right">${parseFloat(item.unitPrice || item.price || '0').toFixed(2)}</td>
+                  <td class="text-center">NOS</td>
+                  <td class="text-right">${parseFloat(item.total || item.subtotal || '0').toFixed(2)}</td>
+                </tr>
+              `).join('')}
+              
+              <!-- Empty rows for spacing -->
+              ${Array(Math.max(0, 10 - items.length)).fill(0).map(() => `
+                <tr>
+                  <td class="text-center">&nbsp;</td>
+                  <td>&nbsp;</td>
+                  <td class="text-center">&nbsp;</td>
+                  <td class="text-center">&nbsp;</td>
+                  <td class="text-right">&nbsp;</td>
+                  <td class="text-center">&nbsp;</td>
+                  <td class="text-right">&nbsp;</td>
+                </tr>
+              `).join('')}
+              
+              <tr style="border-top: 2px solid #000;">
+                <td colspan="6" class="text-right"><strong>Total</strong></td>
+                <td class="text-right"><strong>₹ ${grandTotal.toFixed(2)}</strong></td>
+              </tr>
+            </tbody>
+          </table>
 
-        <div class="total-section">
-          <div class="total-row">
-            <strong>Subtotal: ₹${parseFloat(purchase.subTotal || purchase.total || '0').toFixed(2)}</strong>
+          <!-- Total Section -->
+          <div class="total-section">
+            <div class="total-row">
+              <div class="total-label">Amount Chargeable (in words):</div>
+              <div class="total-value">E. & O.E</div>
+            </div>
+            <div class="total-row">
+              <div class="total-label"><strong>INR ${convertNumberToWords(grandTotal)} Only</strong></div>
+              <div class="total-value">&nbsp;</div>
+            </div>
           </div>
-          ${purchase.discount ? `<div class="total-row">Discount: ₹${parseFloat(purchase.discount).toFixed(2)}</div>` : ''}
-          ${purchase.freight ? `<div class="total-row">Freight: ₹${parseFloat(purchase.freight).toFixed(2)}</div>` : ''}
-          ${purchase.otherCharges ? `<div class="total-row">Other Charges: ₹${parseFloat(purchase.otherCharges).toFixed(2)}</div>` : ''}
-          <div class="total-row grand-total">
-            Grand Total: ₹${parseFloat(purchase.total || purchase.totalAmount || '0').toFixed(2)}
-          </div>
-        </div>
 
-        ${purchase.notes ? `
-          <div style="margin-top: 20px;">
-            <div class="info-title">Notes</div>
-            <p>${purchase.notes}</p>
+          <!-- Tax Breakdown -->
+          <div class="total-section">
+            <div class="total-row">
+              <div class="total-label">HSN/SAC</div>
+              <div class="total-value">Taxable Value</div>
+            </div>
+            <div class="total-row">
+              <div class="total-label">1006</div>
+              <div class="total-value">₹ ${subtotal.toFixed(2)}</div>
+            </div>
+            <div class="total-row">
+              <div class="total-label"><strong>Total</strong></div>
+              <div class="total-value"><strong>₹ ${grandTotal.toFixed(2)}</strong></div>
+            </div>
           </div>
-        ` : ''}
 
-        <div class="footer">
-          <p>Generated on ${currentDate} | Awesome Shop POS System</p>
+          <!-- Tax Amount -->
+          <div class="amount-words">
+            <strong>Tax Amount (in words): NIL</strong>
+          </div>
+
+          <!-- Declaration -->
+          <div class="declaration-section">
+            <strong>Declaration:</strong><br>
+            We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+          </div>
+
+          <!-- Company Bank Details and Signature -->
+          <div class="signature-section">
+            <strong>Company's Bank Details</strong><br>
+            Bank Name: <strong>AWESOME BANK</strong><br>
+            A/c No.: <strong>1234567890</strong><br>
+            Branch & IFS Code: <strong>BRANCH & IFS0001234</strong><br>
+            <br>
+            for <strong>AWESOME SHOP POS</strong><br>
+            <br>
+            <br>
+            <strong>Authorised Signatory</strong>
+          </div>
+
+          <div class="computer-generated">
+            This is a Computer Generated Invoice
+          </div>
         </div>
       </body>
       </html>
     `;
+  };
+
+  // Helper function to convert number to words (simplified version)
+  const convertNumberToWords = (amount: number): string => {
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (amount === 0) return 'Zero';
+    
+    let integerPart = Math.floor(amount);
+    const decimalPart = Math.round((amount - integerPart) * 100);
+    
+    let result = '';
+    
+    if (integerPart >= 10000000) {
+      const crores = Math.floor(integerPart / 10000000);
+      result += convertNumberToWords(crores) + ' Crore ';
+      integerPart %= 10000000;
+    }
+    
+    if (integerPart >= 100000) {
+      const lakhs = Math.floor(integerPart / 100000);
+      result += convertNumberToWords(lakhs) + ' Lakh ';
+      integerPart %= 100000;
+    }
+    
+    if (integerPart >= 1000) {
+      const thousands = Math.floor(integerPart / 1000);
+      result += convertNumberToWords(thousands) + ' Thousand ';
+      integerPart %= 1000;
+    }
+    
+    if (integerPart >= 100) {
+      result += ones[Math.floor(integerPart / 100)] + ' Hundred ';
+      integerPart %= 100;
+    }
+    
+    if (integerPart >= 20) {
+      result += tens[Math.floor(integerPart / 10)] + ' ';
+      integerPart %= 10;
+    } else if (integerPart >= 10) {
+      result += teens[integerPart - 10] + ' ';
+      integerPart = 0;
+    }
+    
+    if (integerPart > 0) {
+      result += ones[integerPart] + ' ';
+    }
+    
+    if (decimalPart > 0) {
+      result += 'and ' + decimalPart + '/100 ';
+    }
+    
+    return result.trim();
   };
 
   const confirmPayment = () => {
