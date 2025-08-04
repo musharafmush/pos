@@ -1360,7 +1360,6 @@ export default function AccountsDashboard() {
                       {[
                         { method: 'UPI Payment', key: 'upi', icon: Smartphone, color: 'text-blue-600' },
                         { method: 'Card Payment', key: 'card', icon: CreditCard, color: 'text-purple-600' },
-                        { method: 'Cash Payment', key: 'cash', icon: Wallet, color: 'text-green-600' },
                         { method: 'Bank Transfer', key: 'bank_transfer', icon: Building2, color: 'text-indigo-600' }
                       ].map(({ method, key, icon: Icon, color }) => {
                         // Calculate total amounts for each payment type from split payment data
