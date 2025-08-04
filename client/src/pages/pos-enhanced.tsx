@@ -4437,6 +4437,22 @@ export default function POSEnhanced() {
                           placeholder="Search: name, phone, email, ID (e.g., 'Amit', '9876543212', 'amit@email.com', '3')"
                           value={customerSearchTerm}
                           onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const filtered = customers.filter((customer: Customer) => {
+                                const searchLower = customerSearchTerm.toLowerCase();
+                                return customer.name.toLowerCase().includes(searchLower) ||
+                                       (customer.phone && customer.phone.includes(customerSearchTerm)) ||
+                                       (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+                                       customer.id.toString().includes(customerSearchTerm);
+                              });
+                              if (filtered.length > 0) {
+                                setSelectedCustomer(filtered[0]);
+                                setCustomerSearchTerm("");
+                              }
+                            }
+                          }}
                           className="pr-12 text-sm"
                         />
                         <Button
@@ -5035,6 +5051,12 @@ export default function POSEnhanced() {
                         setEnteredWeight(value);
                       }
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addWeightBasedToCart();
+                      }
+                    }}
                     step="0.1"
                     min="0.1"
                     max="50"
@@ -5189,6 +5211,13 @@ export default function POSEnhanced() {
                                 setAmountPaid((cash + remaining).toFixed(2));
                               }
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const upiInput = document.querySelector('input[placeholder="UPI amount"]') as HTMLInputElement;
+                                if (upiInput) upiInput.focus();
+                              }
+                            }}
                             step="0.01"
                             min={0}
                             className="text-lg p-3"
@@ -5209,6 +5238,12 @@ export default function POSEnhanced() {
                                 const remaining = Math.max(0, total - upi);
                                 setCashAmount(remaining > 0 ? remaining.toFixed(2) : "");
                                 setAmountPaid((upi + remaining).toFixed(2));
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSplitPayment();
                               }
                             }}
                             step="0.01"
@@ -5286,6 +5321,12 @@ export default function POSEnhanced() {
                         // Allow empty string or valid decimal numbers
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setAmountPaid(value);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          processPayment();
                         }
                       }}
                       step="0.01"
