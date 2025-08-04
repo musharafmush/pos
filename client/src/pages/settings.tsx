@@ -25,7 +25,8 @@ import { z } from "zod";
 import { useTheme } from "@/components/ui/theme-provider";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DatabaseIcon, ShieldIcon, BellIcon, Settings as SettingsIcon, Printer, Zap } from "lucide-react";
+import { DatabaseIcon, ShieldIcon, BellIcon, Settings as SettingsIcon, Printer, Zap, Calculator } from "lucide-react";
+import { HSNManagement } from "@/components/hsn-management";
 
 // Tax Settings Component
 function TaxSettings({ onSave }: { onSave: (settings: any) => void }) {
@@ -1919,19 +1920,16 @@ ${receiptSettings.receiptFooter}
           <TabsContent value="tax">
             <Card>
               <CardHeader>
-                <CardTitle>Tax Settings</CardTitle>
-                <CardDescription>Configure tax rates and calculation methods</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Tax Settings & HSN Management
+                </CardTitle>
+                <CardDescription>
+                  Configure GST rates, HSN codes, and tax calculation methods. HSN codes sync between Add Item and Tax Settings.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <TaxSettings 
-                  onSave={(settings) => {
-                    localStorage.setItem('taxSettings', JSON.stringify(settings));
-                    toast({
-                      title: "Tax settings updated",
-                      description: "Tax settings have been saved successfully",
-                    });
-                  }}
-                />
+              <CardContent>
+                <HSNManagement mode="settings" />
               </CardContent>
             </Card>
           </TabsContent>
