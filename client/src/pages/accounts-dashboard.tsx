@@ -1366,6 +1366,8 @@ export default function AccountsDashboard() {
                         let total = 0;
                         if (key === 'upi') {
                           total = posData.reduce((sum, sale) => sum + sale.upiAmount, 0);
+                          console.log(`💰 UPI Total Calculated: ₹${total} from ${posData.length} sales`);
+                          console.log('📊 UPI amounts per sale:', posData.map(sale => ({ id: sale.id, upiAmount: sale.upiAmount })));
                         } else if (key === 'card') {
                           total = posData.reduce((sum, sale) => sum + sale.cardAmount, 0);
                         } else if (key === 'bank_transfer') {
