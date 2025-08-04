@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
-import { initializeDatabase } from "../db/sqlite-migrate";
+import { initializeDatabase } from "../db/sqlite-migrate.js";
 import labelPrintingRoutes from "./label-printing-routes.js";
 import { sqlite } from "../db/sqlite-index.js";
 
