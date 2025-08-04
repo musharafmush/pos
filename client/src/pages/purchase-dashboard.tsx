@@ -645,6 +645,206 @@ export default function PurchaseDashboard() {
     setStatusDialogOpen(true);
   };
 
+  const handlePrint = async (purchase: Purchase) => {
+    try {
+      // Fetch complete purchase details including items for printing
+      const response = await fetch(`/api/purchases/${purchase.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch purchase details');
+      }
+
+      const purchaseWithItems = await response.json();
+      
+      // Create print content
+      const printContent = generatePrintContent(purchaseWithItems);
+      
+      // Open print window
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        
+        toast({
+          title: "Print Ready",
+          description: "Purchase order has been sent to printer",
+        });
+      } else {
+        throw new Error('Unable to open print window');
+      }
+    } catch (error) {
+      console.error('❌ Error printing purchase order:', error);
+      toast({
+        title: "Print Error",
+        description: "Failed to print purchase order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generatePrintContent = (purchase: any) => {
+    const currentDate = new Date().toLocaleDateString();
+    const items = purchase.items || purchase.purchaseItems || purchase.purchase_items || [];
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Purchase Order - ${purchase.orderNumber}</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            color: #333;
+            line-height: 1.4;
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px;
+          }
+          .company-name { 
+            font-size: 24px; 
+            font-weight: bold; 
+            margin-bottom: 5px;
+          }
+          .document-title { 
+            font-size: 18px; 
+            margin: 10px 0;
+          }
+          .info-section { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px;
+          }
+          .info-box { 
+            width: 45%;
+          }
+          .info-title { 
+            font-weight: bold; 
+            margin-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0;
+          }
+          th, td { 
+            border: 1px solid #333; 
+            padding: 8px; 
+            text-align: left;
+          }
+          th { 
+            background-color: #f5f5f5; 
+            font-weight: bold;
+          }
+          .amount { 
+            text-align: right;
+          }
+          .total-section { 
+            margin-top: 20px; 
+            text-align: right;
+          }
+          .total-row { 
+            margin: 5px 0;
+          }
+          .grand-total { 
+            font-size: 18px; 
+            font-weight: bold; 
+            border-top: 2px solid #333; 
+            padding-top: 10px;
+          }
+          .footer { 
+            margin-top: 30px; 
+            border-top: 1px solid #ccc; 
+            padding-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company-name">Awesome Shop POS</div>
+          <div class="document-title">PURCHASE ORDER</div>
+        </div>
+        
+        <div class="info-section">
+          <div class="info-box">
+            <div class="info-title">Purchase Order Details</div>
+            <p><strong>Order Number:</strong> ${purchase.orderNumber || `PO-${purchase.id}`}</p>
+            <p><strong>Order Date:</strong> ${purchase.orderDate ? new Date(purchase.orderDate).toLocaleDateString() : 'N/A'}</p>
+            <p><strong>Expected Date:</strong> ${purchase.expectedDate ? new Date(purchase.expectedDate).toLocaleDateString() : 'Not set'}</p>
+            <p><strong>Status:</strong> ${purchase.status || 'Pending'}</p>
+          </div>
+          <div class="info-box">
+            <div class="info-title">Supplier Information</div>
+            <p><strong>Name:</strong> ${purchase.supplier?.name || 'Unknown Supplier'}</p>
+            <p><strong>Email:</strong> ${purchase.supplier?.email || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${purchase.supplier?.phone || 'N/A'}</p>
+            <p><strong>Address:</strong> ${purchase.supplier?.address || 'N/A'}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Product Name</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item: any, index: number) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${item.product?.name || item.productName || 'Unknown Product'}</td>
+                <td>${item.quantity || 0}</td>
+                <td class="amount">₹${parseFloat(item.unitPrice || item.price || '0').toFixed(2)}</td>
+                <td class="amount">₹${parseFloat(item.total || item.subtotal || '0').toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="total-section">
+          <div class="total-row">
+            <strong>Subtotal: ₹${parseFloat(purchase.subTotal || purchase.total || '0').toFixed(2)}</strong>
+          </div>
+          ${purchase.discount ? `<div class="total-row">Discount: ₹${parseFloat(purchase.discount).toFixed(2)}</div>` : ''}
+          ${purchase.freight ? `<div class="total-row">Freight: ₹${parseFloat(purchase.freight).toFixed(2)}</div>` : ''}
+          ${purchase.otherCharges ? `<div class="total-row">Other Charges: ₹${parseFloat(purchase.otherCharges).toFixed(2)}</div>` : ''}
+          <div class="total-row grand-total">
+            Grand Total: ₹${parseFloat(purchase.total || purchase.totalAmount || '0').toFixed(2)}
+          </div>
+        </div>
+
+        ${purchase.notes ? `
+          <div style="margin-top: 20px;">
+            <div class="info-title">Notes</div>
+            <p>${purchase.notes}</p>
+          </div>
+        ` : ''}
+
+        <div class="footer">
+          <p>Generated on ${currentDate} | Awesome Shop POS System</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
   const confirmPayment = () => {
     if (!selectedPurchaseForPayment) {
       toast({
@@ -1165,7 +1365,7 @@ export default function PurchaseDashboard() {
                                       <FileText className="h-4 w-4 mr-2" />
                                       Generate Report
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handlePrint(purchase)}>
                                       <Printer className="h-4 w-4 mr-2" />
                                       Print Order
                                     </DropdownMenuItem>
