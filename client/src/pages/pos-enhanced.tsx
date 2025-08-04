@@ -704,12 +704,21 @@ export default function POSEnhanced() {
       return;
     }
 
-    const pricePerKg = parseFloat(weightProduct.price);
+    // Determine price based on pricing mode (same logic as regular products)
+    let pricePerKg: number;
+    const wholesalePrice = parseFloat(String(weightProduct.wholesalePrice || 0));
+    if (pricingMode === 'wholesale' && wholesalePrice > 0) {
+      pricePerKg = wholesalePrice;
+    } else {
+      pricePerKg = parseFloat(weightProduct.price);
+    }
+    
     const totalPrice = weight * pricePerKg;
 
     const cartItem: CartItem = {
       ...weightProduct,
       quantity: weight, // Use actual weight as quantity for proper unit counting
+      price: pricePerKg.toString(), // Update price to reflect actual pricing mode
       total: totalPrice,
       isWeightBased: true,
       actualWeight: weight,
@@ -722,9 +731,10 @@ export default function POSEnhanced() {
     setEnteredWeight("");
     setWeightProduct(null);
 
+    const priceMode = pricingMode === 'wholesale' ? '(Wholesale)' : '(Retail)';
     toast({
       title: "Product Added",
-      description: `${weight}kg of ${weightProduct.name} added for ${formatCurrency(totalPrice)}`,
+      description: `${weight}kg of ${weightProduct.name} added ${priceMode} for ${formatCurrency(totalPrice)}`,
     });
   };
 
