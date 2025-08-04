@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1531,43 +1531,6 @@ function AddItemProfessional() {
                         />
                       </div>
 
-
-                                <Select onValueChange={(value) => {
-                                  field.onChange(value);
-                                  // Auto-calculate breakdown when GST code changes
-                                  const gstRate = parseFloat(value.replace("GST ","").replace("%", ""));
-                                  if (gstRate > 0) {
-                                    const cgstSgstRate = (gstRate / 2).toString();
-                                    form.setValue("cgstRate", cgstSgstRate);
-                                    form.setValue("sgstRate", cgstSgstRate);
-                                    form.setValue("igstRate", "0");
-                                  } else {
-                                    form.setValue("cgstRate", "0");
-                                    form.setValue("sgstRate", "0");
-                                    form.setValue("igstRate", "0");
-                                  }
-                                }} value={field.value || ""}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select GST rate" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="GST 0%">GST 0% - Nil Rate (Basic necessities)</SelectItem>
-                                    <SelectItem value="GST 5%">GST 5% - Essential goods (Food grains, medicines)</SelectItem>
-                                    <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
-                                    <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
-                                    <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
-                                    <SelectItem value="GST 40%">GST 40% - Premium luxury goods (High-end items)</SelectItem>
-                                    <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
-                                    <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
                       {/* GST Breakdown Section */}
                       <div className="border-t pt-6">
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -2904,7 +2867,7 @@ function AddItemProfessional() {
                                         <div className="flex justify-between text-xs">
                                           <span>Wholesale Margin:</span>
                                           <span>
-                                            {(((parseFloat(form.watch("wholesalePrice")) - parseFloat(form.watch("cost"))) / parseFloat(form.watch("cost"))) * 100).toFixed(1)}%
+                                            {(((parseFloat(form.watch("wholesalePrice") || "0") - parseFloat(form.watch("cost") || "0")) / parseFloat(form.watch("cost") || "1")) * 100).toFixed(1)}%
                                           </span>
                                         </div>
                                       </div>
