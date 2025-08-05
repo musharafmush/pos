@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon, CreditCard, DollarSign } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -322,6 +322,16 @@ export default function PurchaseEntryProfessional() {
     }
   });
   const [showHeldPurchases, setShowHeldPurchases] = useState(false);
+
+  // Bill Payment functionality
+  const [showBillPayment, setShowBillPayment] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    paymentAmount: 0,
+    paymentMethod: "Cash",
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentReference: "",
+    paymentNotes: "",
+  });
 
   // Modal state for Add Item
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
@@ -2096,6 +2106,15 @@ export default function PurchaseEntryProfessional() {
             >
               <Archive className="mr-2 h-4 w-4" />
               Hold
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowBillPayment(true)}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Bill Pay
             </Button>
             <Button 
               variant="outline" 
@@ -4446,6 +4465,239 @@ export default function PurchaseEntryProfessional() {
               >
                 Close
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bill Payment Dialog */}
+        <Dialog open={showBillPayment} onOpenChange={setShowBillPayment}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Bill Payment Management
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Payment Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-blue-900 mb-3">Purchase Order Summary</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-blue-700 font-medium">Order Number:</span>
+                    <span className="ml-2 text-blue-900">{form.getValues("orderNumber") || "Not set"}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">Supplier:</span>
+                    <span className="ml-2 text-blue-900">
+                      {suppliers.find(s => s.id === form.getValues("supplierId"))?.name || "Not selected"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">Total Amount:</span>
+                    <span className="ml-2 text-blue-900 font-bold text-lg">
+                      {formatCurrency(summary.grandTotal)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">Payment Status:</span>
+                    <span className="ml-2">
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                        {form.getValues("status") || "Pending"}
+                      </Badge>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Form */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Record Payment
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-amount">Payment Amount *</Label>
+                    <Input
+                      id="payment-amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={paymentData.paymentAmount}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentAmount: parseFloat(e.target.value) || 0
+                      })}
+                      placeholder="Enter amount"
+                    />
+                    <div className="text-xs text-gray-500">
+                      Outstanding: {formatCurrency(summary.grandTotal)}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-method">Payment Method</Label>
+                    <Select 
+                      value={paymentData.paymentMethod} 
+                      onValueChange={(value) => setPaymentData({
+                        ...paymentData,
+                        paymentMethod: value
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="UPI">UPI</SelectItem>
+                        <SelectItem value="Cheque">Cheque</SelectItem>
+                        <SelectItem value="Credit Card">Credit Card</SelectItem>
+                        <SelectItem value="Debit Card">Debit Card</SelectItem>
+                        <SelectItem value="Credit">Credit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-date">Payment Date</Label>
+                    <Input
+                      id="payment-date"
+                      type="date"
+                      value={paymentData.paymentDate}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentDate: e.target.value
+                      })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-reference">Reference/Transaction ID</Label>
+                    <Input
+                      id="payment-reference"
+                      value={paymentData.paymentReference}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentReference: e.target.value
+                      })}
+                      placeholder="Payment reference"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="payment-notes">Payment Notes</Label>
+                  <Textarea
+                    id="payment-notes"
+                    value={paymentData.paymentNotes}
+                    onChange={(e) => setPaymentData({
+                      ...paymentData,
+                      paymentNotes: e.target.value
+                    })}
+                    placeholder="Additional notes about this payment..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Payment Options */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-700">Quick Payment Options</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: summary.grandTotal * 0.25
+                    })}
+                    className="text-blue-600 hover:bg-blue-50"
+                  >
+                    25% (₹{(summary.grandTotal * 0.25).toFixed(2)})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: summary.grandTotal * 0.5
+                    })}
+                    className="text-green-600 hover:bg-green-50"
+                  >
+                    50% (₹{(summary.grandTotal * 0.5).toFixed(2)})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: summary.grandTotal
+                    })}
+                    className="text-purple-600 hover:bg-purple-50"
+                  >
+                    Full Amount (₹{summary.grandTotal.toFixed(2)})
+                  </Button>
+                </div>
+              </div>
+
+              {/* Payment Actions */}
+              <div className="flex justify-between items-center pt-4 border-t">
+                <div className="text-sm text-gray-600">
+                  {paymentData.paymentAmount > 0 && (
+                    <span>
+                      Balance after payment: {formatCurrency(summary.grandTotal - paymentData.paymentAmount)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowBillPayment(false);
+                      setPaymentData({
+                        paymentAmount: 0,
+                        paymentMethod: "Cash",
+                        paymentDate: new Date().toISOString().split('T')[0],
+                        paymentReference: "",
+                        paymentNotes: "",
+                      });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      // Update purchase payment information
+                      form.setValue("paymentMethod", paymentData.paymentMethod);
+                      
+                      toast({
+                        title: "Payment Recorded",
+                        description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}`,
+                      });
+                      
+                      setShowBillPayment(false);
+                      setPaymentData({
+                        paymentAmount: 0,
+                        paymentMethod: "Cash",
+                        paymentDate: new Date().toISOString().split('T')[0],
+                        paymentReference: "",
+                        paymentNotes: "",
+                      });
+                    }}
+                    disabled={paymentData.paymentAmount <= 0}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Record Payment
+                  </Button>
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
