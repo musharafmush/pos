@@ -1040,9 +1040,9 @@ export default function PurchaseEntryProfessional() {
     
     // Get additional charges for proportional distribution using form getValues
     const formValues = form.getValues();
-    const surchargeAmount = Number(formValues.surcharge) || 0;
-    const freightAmount = Number(formValues.freight) || 0;
-    const packingCharges = Number(formValues.packing) || 0;
+    const surchargeAmount = Number(formValues.surchargeAmount) || 0;
+    const freightAmount = Number(formValues.freightAmount) || 0;
+    const packingCharges = Number(formValues.packingCharges) || 0;
     const otherCharges = Number(formValues.otherCharges) || 0;
     const additionalDiscount = Number(formValues.additionalDiscount) || 0;
     
@@ -1392,6 +1392,7 @@ export default function PurchaseEntryProfessional() {
         expiryDate: item.expiryDate || "",
         batchNumber: item.batchNumber || "",
         sellingPrice: item.sellingPrice || 0,
+        wholesalePrice: item.wholesalePrice || 0,
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
@@ -1418,6 +1419,7 @@ export default function PurchaseEntryProfessional() {
         expiryDate: item.expiryDate || "",
         batchNumber: item.batchNumber || "",
         sellingPrice: item.sellingPrice || 0,
+        wholesalePrice: item.wholesalePrice || 0,
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
@@ -1440,6 +1442,7 @@ export default function PurchaseEntryProfessional() {
         expiryDate: "",
         batchNumber: newBatchNumber,
         sellingPrice: 0,
+        wholesalePrice: 0,
         mrp: 0,
         netAmount: 0,
         location: "",
