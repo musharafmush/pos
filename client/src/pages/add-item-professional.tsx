@@ -63,7 +63,7 @@ const productFormSchema = z.object({
 
   // Tax Information
   hsnCode: z.string().optional(),
-  gstCode: z.string().optional(),
+  gstCode: z.string().default("GST 12%"),
   purchaseGstCalculatedOn: z.string().default("MRP"),
   gstUom: z.string().default("PIECES"),
   purchaseAbatement: z.string().optional(),
@@ -1474,22 +1474,27 @@ function AddItemProfessional() {
                                 </span>
                               </FormLabel>
                               <FormControl>
-                                <Select onValueChange={(value) => {
-                                  field.onChange(value);
-                                  // Auto-calculate breakdown when GST code changes
-                                  const gstRate = parseFloat(value.replace("GST ","").replace("%", ""));
-                                  if (gstRate > 0) {
-                                    const cgstSgstRate = (gstRate / 2).toString();
-                                    form.setValue("cgstRate", cgstSgstRate);
-                                    form.setValue("sgstRate", cgstSgstRate);
-                                    form.setValue("igstRate", "0");
-                                  } else {
-                                    form.setValue("cgstRate", "0");
-                                    form.setValue("sgstRate", "0");
-                                    form.setValue("igstRate", "0");
-                                  }
-                                }} value={field.value || ""}>
-                                  <SelectTrigger>
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    console.log("GST Code selected:", value);
+                                    // Auto-calculate breakdown when GST code changes
+                                    const gstRate = parseFloat(value.replace("GST ","").replace("%", ""));
+                                    if (gstRate > 0) {
+                                      const cgstSgstRate = (gstRate / 2).toString();
+                                      form.setValue("cgstRate", cgstSgstRate);
+                                      form.setValue("sgstRate", cgstSgstRate);
+                                      form.setValue("igstRate", "0");
+                                    } else {
+                                      form.setValue("cgstRate", "0");
+                                      form.setValue("sgstRate", "0");
+                                      form.setValue("igstRate", "0");
+                                    }
+                                  }} 
+                                  value={field.value || ""}
+                                  defaultValue="GST 12%"
+                                >
+                                  <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Select GST rate" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -1498,6 +1503,7 @@ function AddItemProfessional() {
                                     <SelectItem value="GST 12%">GST 12% - Standard rate (Textiles, electronics)</SelectItem>
                                     <SelectItem value="GST 18%">GST 18% - Standard rate (Most goods & services)</SelectItem>
                                     <SelectItem value="GST 28%">GST 28% - Luxury goods (Cars, cigarettes)</SelectItem>
+                                    <SelectItem value="GST 40%">GST 40% - Premium luxury goods (Jewellery, aircraft)</SelectItem>
                                     <SelectItem value="EXEMPT">EXEMPT - Tax exempted items</SelectItem>
                                     <SelectItem value="ZERO RATED">ZERO RATED - Export goods</SelectItem>
                                   </SelectContent>
