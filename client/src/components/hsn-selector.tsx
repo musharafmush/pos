@@ -62,21 +62,13 @@ export function HSNSelector({ selectedHSN, onHSNSelect, onNewHSNRequest, classNa
   const [newHSNInput, setNewHSNInput] = useState("");
 
   // Fetch HSN codes
-  const { data: hsnCodes = [], refetch } = useQuery({
-    queryKey: ['/api/tax/hsn-codes'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/tax/hsn-codes');
-      return response.json();
-    }
+  const { data: hsnCodes = [], refetch } = useQuery<HSNCode[]>({
+    queryKey: ['/api/tax/hsn-codes']
   });
 
   // Fetch tax categories
-  const { data: taxCategories = [] } = useQuery({
-    queryKey: ['/api/tax/categories'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/tax/categories');
-      return response.json();
-    }
+  const { data: taxCategories = [] } = useQuery<TaxCategory[]>({
+    queryKey: ['/api/tax/categories']
   });
 
   // Filter HSN codes based on search

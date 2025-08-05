@@ -515,6 +515,141 @@ export async function initializeDatabase() {
     )
   `);
 
+  // Tax Categories table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tax_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      rate TEXT NOT NULL,
+      hsn_code_range TEXT,
+      description TEXT,
+      is_active BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Tax Settings table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tax_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tax_calculation_method TEXT DEFAULT 'exclusive',
+      prices_include_tax BOOLEAN DEFAULT 0,
+      enable_multiple_tax_rates BOOLEAN DEFAULT 1,
+      company_gstin TEXT,
+      company_state TEXT,
+      company_state_code TEXT,
+      default_tax_category_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (default_tax_category_id) REFERENCES tax_categories(id)
+    )
+  `);
+
+  // HSN Codes table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS hsn_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hsn_code TEXT NOT NULL UNIQUE,
+      description TEXT NOT NULL,
+      cgst_rate TEXT DEFAULT '0',
+      sgst_rate TEXT DEFAULT '0',
+      igst_rate TEXT DEFAULT '0',
+      cess_rate TEXT DEFAULT '0',
+      is_active BOOLEAN DEFAULT 1,
+      tax_category_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (tax_category_id) REFERENCES tax_categories(id)
+    )
+  `);
+
+  // Create default tax categories
+  const existingTaxCategories = db.prepare('SELECT COUNT(*) as count FROM tax_categories').get() as { count: number };
+  if (existingTaxCategories.count === 0) {
+    const insertTaxCategory = db.prepare(`
+      INSERT INTO tax_categories (name, rate, description, is_active) VALUES (?, ?, ?, ?)
+    `);
+
+    const taxCategories = [
+      ['GST 0%', '0', 'Zero rated goods and services', 1],
+      ['GST 5%', '5', 'Essential goods and services', 1],
+      ['GST 12%', '12', 'Standard goods and services', 1],
+      ['GST 18%', '18', 'Most goods and services', 1],
+      ['GST 28%', '28', 'Luxury goods and services', 1],
+      ['GST 40%', '40', 'Premium luxury goods', 1]
+    ];
+
+    taxCategories.forEach(category => {
+      insertTaxCategory.run(...category);
+    });
+
+    console.log('✅ Default tax categories created');
+  }
+
+  // Create default tax settings
+  const existingTaxSettings = db.prepare('SELECT COUNT(*) as count FROM tax_settings').get() as { count: number };
+  if (existingTaxSettings.count === 0) {
+    db.prepare(`
+      INSERT INTO tax_settings (
+        tax_calculation_method, 
+        prices_include_tax, 
+        enable_multiple_tax_rates,
+        company_state,
+        company_state_code
+      ) VALUES (?, ?, ?, ?, ?)
+    `).run('exclusive', 0, 1, 'Maharashtra', '27');
+
+    console.log('✅ Default tax settings created');
+  }
+
+  // Create sample HSN codes
+  const existingHsnCodes = db.prepare('SELECT COUNT(*) as count FROM hsn_codes').get() as { count: number };
+  if (existingHsnCodes.count === 0) {
+    const insertHsnCode = db.prepare(`
+      INSERT INTO hsn_codes (hsn_code, description, cgst_rate, sgst_rate, igst_rate, tax_category_id) VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const sampleHsnCodes = [
+      // GST 0% - Essential items
+      ['1001', 'Wheat and meslin', '0', '0', '0', 1],
+      ['1006', 'Rice', '0', '0', '0', 1],
+      ['0401', 'Milk and cream', '0', '0', '0', 1],
+      
+      // GST 5% - Essential goods
+      ['1701', 'Cane or beet sugar', '2.5', '2.5', '5', 2],
+      ['1511', 'Palm oil and its fractions', '2.5', '2.5', '5', 2],
+      ['2710', 'Petroleum oils (kerosene)', '2.5', '2.5', '5', 2],
+      
+      // GST 12% - Standard goods
+      ['1704', 'Sugar confectionery', '6', '6', '12', 3],
+      ['2202', 'Waters, including mineral waters', '6', '6', '12', 3],
+      ['4901', 'Printed books, brochures', '6', '6', '12', 3],
+      
+      // GST 18% - Most goods
+      ['6402', 'Other footwear with outer soles', '9', '9', '18', 4],
+      ['6110', 'Jerseys, pullovers, cardigans', '9', '9', '18', 4],
+      ['8517', 'Telephone sets, mobile phones', '9', '9', '18', 4],
+      ['3004', 'Medicaments for retail sale', '9', '9', '18', 4],
+      
+      // GST 28% - Luxury goods
+      ['8703', 'Motor cars and vehicles', '14', '14', '28', 5],
+      ['2402', 'Cigars, cigarettes', '14', '14', '28', 5],
+      ['3303', 'Perfumes and toilet waters', '14', '14', '28', 5],
+      
+      // GST 40% - Premium luxury items
+      ['7113', 'Articles of jewellery', '20', '20', '40', 6],
+      ['8802', 'Aircraft, aeroplanes', '20', '20', '40', 6],
+      ['8903', 'Yachts and pleasure vessels', '20', '20', '40', 6],
+    ];
+
+    sampleHsnCodes.forEach(hsn => {
+      insertHsnCode.run(...hsn);
+    });
+
+    console.log('✅ Sample HSN codes created');
+  }
+
   // Create default offers
   const existingOffers = db.prepare('SELECT COUNT(*) as count FROM offers').get() as { count: number };
   if (existingOffers.count === 0) {
