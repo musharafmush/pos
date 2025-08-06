@@ -2691,7 +2691,37 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Total Amount:</span>
-                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0"))}</div>
+                      <div className="text-blue-700 font-semibold">
+                        {(() => {
+                          // Calculate total from purchase items if available
+                          const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            // Calculate from items
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            
+                            // Add freight and other charges if available
+                            const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                            
+                            return formatCurrency(calculatedTotal);
+                          } else {
+                            // Fallback to stored values
+                            return formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0"));
+                          }
+                        })()}
+                      </div>
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Already Paid:</span>
@@ -2699,7 +2729,33 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                     </div>
                   </div>
                   {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      // Calculate total from purchase items if available
+                      const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                      let calculatedTotal = 0;
+                      
+                      if (items.length > 0) {
+                        // Calculate from items
+                        items.forEach(item => {
+                          const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                          const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                          const itemTotal = qty * cost;
+                          const discount = Number(item.discountAmount || item.discount_amount || 0);
+                          const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                          const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                          
+                          calculatedTotal += itemTotal - discount + taxAmount;
+                        });
+                        
+                        // Add freight and other charges if available
+                        const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                        const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                        calculatedTotal += freightCost + otherCharges;
+                      } else {
+                        // Fallback to stored values
+                        calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      }
+                      
+                      const totalAmount = calculatedTotal;
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
                       const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
@@ -2742,7 +2798,33 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       className="mt-1"
                     />
                     {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      // Calculate total from purchase items if available
+                      const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                      let calculatedTotal = 0;
+                      
+                      if (items.length > 0) {
+                        // Calculate from items
+                        items.forEach(item => {
+                          const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                          const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                          const itemTotal = qty * cost;
+                          const discount = Number(item.discountAmount || item.discount_amount || 0);
+                          const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                          const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                          
+                          calculatedTotal += itemTotal - discount + taxAmount;
+                        });
+                        
+                        // Add freight and other charges if available
+                        const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                        const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                        calculatedTotal += freightCost + otherCharges;
+                      } else {
+                        // Fallback to stored values
+                        calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      }
+                      
+                      const totalAmount = calculatedTotal;
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = totalAmount - paidAmount;
                       const currentPayment = parseFloat(paymentAmount || "0");
@@ -2760,7 +2842,33 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
                   <div className="grid grid-cols-2 gap-3">
                     {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      // Calculate total from purchase items if available
+                      const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                      let calculatedTotal = 0;
+                      
+                      if (items.length > 0) {
+                        // Calculate from items
+                        items.forEach(item => {
+                          const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                          const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                          const itemTotal = qty * cost;
+                          const discount = Number(item.discountAmount || item.discount_amount || 0);
+                          const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                          const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                          
+                          calculatedTotal += itemTotal - discount + taxAmount;
+                        });
+                        
+                        // Add freight and other charges if available
+                        const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                        const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                        calculatedTotal += freightCost + otherCharges;
+                      } else {
+                        // Fallback to stored values
+                        calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      }
+                      
+                      const totalAmount = calculatedTotal;
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
 
