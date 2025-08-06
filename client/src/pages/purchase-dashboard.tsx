@@ -463,26 +463,51 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
            (paymentStatus === "paid" && totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
   const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
-    // Use same calculation logic as in the table display
-    const totalAmountField = parseFloat(p.totalAmount?.toString() || "0");
-    const totalField = parseFloat(p.total?.toString() || "0");
-    const subTotalField = parseFloat(p.subTotal?.toString() || p.sub_total?.toString() || "0");
-    const freightCostField = parseFloat(p.freightCost?.toString() || p.freight_cost?.toString() || "0");
-    const otherChargesField = parseFloat(p.otherCharges?.toString() || p.other_charges?.toString() || "0");
-    const discountAmountField = parseFloat(p.discountAmount?.toString() || p.discount_amount?.toString() || "0");
+    // Calculate total from purchase items if available (same logic as table display)
+    const items = p.purchaseItems || p.items || [];
+    let calculatedTotal = 0;
     
-    let amount = 0;
-    if (totalAmountField > 0) {
-      amount = totalAmountField;
-    } else if (totalField > 0 && subTotalField > 0) {
-      amount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
-    } else if (totalField > 0) {
-      amount = totalField;
-    } else if (subTotalField > 0) {
-      amount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+    if (items.length > 0) {
+      // Calculate from items
+      items.forEach(item => {
+        const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+        const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+        const itemTotal = qty * cost;
+        const discount = Number(item.discountAmount || item.discount_amount || 0);
+        const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+        const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+        
+        calculatedTotal += itemTotal - discount + taxAmount;
+      });
+      
+      // Add freight and other charges if available
+      const freightCost = parseFloat(p.freightCost?.toString() || p.freight_cost?.toString() || "0");
+      const otherCharges = parseFloat(p.otherCharges?.toString() || p.other_charges?.toString() || "0");
+      calculatedTotal += freightCost + otherCharges;
+      
+      return sum + calculatedTotal;
+    } else {
+      // Fallback to stored values
+      const totalAmountField = parseFloat(p.totalAmount?.toString() || "0");
+      const totalField = parseFloat(p.total?.toString() || "0");
+      const subTotalField = parseFloat(p.subTotal?.toString() || p.sub_total?.toString() || "0");
+      const freightCostField = parseFloat(p.freightCost?.toString() || p.freight_cost?.toString() || "0");
+      const otherChargesField = parseFloat(p.otherCharges?.toString() || p.other_charges?.toString() || "0");
+      const discountAmountField = parseFloat(p.discountAmount?.toString() || p.discount_amount?.toString() || "0");
+      
+      let amount = 0;
+      if (totalAmountField > 0) {
+        amount = totalAmountField;
+      } else if (totalField > 0 && subTotalField > 0) {
+        amount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
+      } else if (totalField > 0) {
+        amount = totalField;
+      } else if (subTotalField > 0) {
+        amount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+      }
+      
+      return sum + amount;
     }
-    
-    return sum + amount;
   }, 0);
 
   // Payment statistics with improved calculation
