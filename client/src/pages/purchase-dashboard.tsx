@@ -2372,7 +2372,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       <div className="flex justify-between py-2 border-b">
                         <span className="font-medium">Subtotal (Before Tax):</span>
                         <span className="font-semibold">
-                          {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
+                          {formatCurrency(selectedPurchase.subTotal || selectedPurchase.sub_total || "0")}
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
@@ -2390,7 +2390,27 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
                         <span className="text-lg font-bold">Grand Total:</span>
                         <span className="text-xl font-bold text-purple-700">
-                          {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
+                          {(() => {
+                            // Use same calculation logic as in the table display
+                            const totalAmountField = parseFloat(selectedPurchase.totalAmount?.toString() || "0");
+                            const totalField = parseFloat(selectedPurchase.total?.toString() || "0");
+                            const subTotalField = parseFloat(selectedPurchase.subTotal?.toString() || selectedPurchase.sub_total?.toString() || "0");
+                            const freightCostField = parseFloat(selectedPurchase.freightCost?.toString() || selectedPurchase.freight_cost?.toString() || "0");
+                            const otherChargesField = parseFloat(selectedPurchase.otherCharges?.toString() || selectedPurchase.other_charges?.toString() || "0");
+                            const discountAmountField = parseFloat(selectedPurchase.discountAmount?.toString() || selectedPurchase.discount_amount?.toString() || "0");
+                            
+                            if (totalAmountField > 0) {
+                              return formatCurrency(totalAmountField);
+                            } else if (totalField > 0 && subTotalField > 0) {
+                              return formatCurrency(Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField));
+                            } else if (totalField > 0) {
+                              return formatCurrency(totalField);
+                            } else if (subTotalField > 0) {
+                              return formatCurrency(subTotalField + freightCostField + otherChargesField - discountAmountField);
+                            } else {
+                              return formatCurrency(0);
+                            }
+                          })()}
                         </span>
                       </div>
                     </div>
