@@ -463,7 +463,25 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
            (paymentStatus === "paid" && totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
   const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
-    const amount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+    // Use same calculation logic as in the table display
+    const totalAmountField = parseFloat(p.totalAmount?.toString() || "0");
+    const totalField = parseFloat(p.total?.toString() || "0");
+    const subTotalField = parseFloat(p.subTotal?.toString() || p.sub_total?.toString() || "0");
+    const freightCostField = parseFloat(p.freightCost?.toString() || p.freight_cost?.toString() || "0");
+    const otherChargesField = parseFloat(p.otherCharges?.toString() || p.other_charges?.toString() || "0");
+    const discountAmountField = parseFloat(p.discountAmount?.toString() || p.discount_amount?.toString() || "0");
+    
+    let amount = 0;
+    if (totalAmountField > 0) {
+      amount = totalAmountField;
+    } else if (totalField > 0 && subTotalField > 0) {
+      amount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
+    } else if (totalField > 0) {
+      amount = totalField;
+    } else if (subTotalField > 0) {
+      amount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+    }
+    
     return sum + amount;
   }, 0);
 
@@ -1703,7 +1721,30 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               <TableCell className="py-4">
                                 <div className="text-right">
                                   <p className="font-semibold text-lg text-gray-900">
-                                    {formatCurrency(purchase.totalAmount || purchase.total || "0")}
+                                    {(() => {
+                                      // Try to get total from multiple possible fields with proper parsing
+                                      const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+                                      const total = parseFloat(purchase.total?.toString() || "0");
+                                      const subTotal = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
+                                      const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                      const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                      const discountAmount = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
+                                      
+                                      // Use totalAmount if available, otherwise use total, otherwise calculate
+                                      if (totalAmount > 0) {
+                                        return formatCurrency(totalAmount);
+                                      } else if (total > 0 && subTotal > 0) {
+                                        // If we have both total and subtotal, use the higher value (likely the grand total)
+                                        return formatCurrency(Math.max(total, subTotal + freightCost + otherCharges - discountAmount));
+                                      } else if (total > 0) {
+                                        return formatCurrency(total);
+                                      } else if (subTotal > 0) {
+                                        // Calculate grand total from subtotal
+                                        return formatCurrency(subTotal + freightCost + otherCharges - discountAmount);
+                                      } else {
+                                        return formatCurrency(0);
+                                      }
+                                    })()}
                                   </p>
                                   {purchase.subTotal && (
                                     <p className="text-sm text-gray-500">
@@ -1736,7 +1777,25 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               </TableCell>
                               <TableCell className="py-4">
                                 {(() => {
-                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+                                  // Calculate total amount using same logic as display above
+                                  const totalAmountField = parseFloat(purchase.totalAmount?.toString() || "0");
+                                  const totalField = parseFloat(purchase.total?.toString() || "0");
+                                  const subTotalField = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
+                                  const freightCostField = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                  const otherChargesField = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                  const discountAmountField = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
+                                  
+                                  let totalAmount = 0;
+                                  if (totalAmountField > 0) {
+                                    totalAmount = totalAmountField;
+                                  } else if (totalField > 0 && subTotalField > 0) {
+                                    totalAmount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
+                                  } else if (totalField > 0) {
+                                    totalAmount = totalField;
+                                  } else if (subTotalField > 0) {
+                                    totalAmount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+                                  }
+
                                   const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
 
                                   // Determine payment status based on amounts
