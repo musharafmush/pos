@@ -193,16 +193,54 @@ export default function PurchaseDashboard() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  // Fetch purchases
-  const { data: purchases = [], isLoading, error } = useQuery({
-    queryKey: ["/api/purchases"],
-    onSuccess: (data) => {
-      console.log('📊 Purchase data received:', {
-        count: data?.length || 0,
-        sample: data?.slice(0, 3) || [],
-        statuses: data?.map(p => p.status) || []
-      });
-    }
+  // Placeholder for dashboard stats refetch if needed
+  const [refetchDashboardStats, setRefetchDashboardStats] = useState<(() => Promise<void>) | null>(null);
+
+  // Fetch purchases with enhanced error handling and real-time updates
+  const { data: purchases, isLoading: purchasesLoading, error: purchasesError, refetch: refetchPurchases } = useQuery({
+    queryKey: ['/api/purchases', searchTerm, activeTab], // Simplified query key for now
+    queryFn: async () => {
+      try {
+        let url = '/api/purchases?limit=100&include=supplier,items,payments';
+
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        // Add other filters here if they are managed by state
+        // if (filterStatus !== 'all') params.append('status', filterStatus);
+        // if (selectedSupplier !== 'all') params.append('supplierId', selectedSupplier);
+        // if (selectedDateRange !== 'all') params.append('dateRange', selectedDateRange);
+
+        if (params.toString()) {
+          url += '&' + params.toString();
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch purchases: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('📊 Purchases data received:', data);
+
+        // Ensure payment data is properly loaded for each purchase
+        const purchasesWithPayments = data.map((purchase: Purchase) => ({
+          ...purchase,
+          paidAmount: purchase.paidAmount || purchase.paid_amount || '0',
+          paymentStatus: purchase.paymentStatus || purchase.payment_status || 'due',
+          paymentDate: purchase.paymentDate || purchase.payment_date,
+          paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash'
+        }));
+
+        return Array.isArray(purchasesWithPayments) ? purchasesWithPayments : [];
+      } catch (error) {
+        console.error('❌ Error fetching purchases:', error);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000,
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time payment updates
+    refetchOnWindowFocus: true,
+    staleTime: 2000 // Data considered fresh for 2 seconds to ensure payment updates are visible
   });
 
   // Delete purchase mutation
@@ -428,6 +466,13 @@ export default function PurchaseDashboard() {
     },
   });
 
+  // Filter state (example, adjust based on actual filter implementations)
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('orderDate');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedSupplier, setSelectedSupplier] = useState('all');
+  const [selectedDateRange, setSelectedDateRange] = useState('all');
+
   // Filter purchases based on search
   const filteredPurchases = purchases.filter((purchase: Purchase) =>
     purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -578,7 +623,7 @@ export default function PurchaseDashboard() {
     const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
     const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - currentPaidAmount);
-    
+
     const paymentData = {
       paymentStatus: 'paid',
       paymentAmount: remainingAmount, // Pay only the remaining amount
@@ -635,7 +680,13 @@ export default function PurchaseDashboard() {
 
   const handleRecordPayment = (purchase: Purchase) => {
     setSelectedPurchaseForPayment(purchase);
-    setPaymentAmount(purchase.totalAmount?.toString() || "0");
+    // Pre-fill payment amount with remaining balance or 0 if fully paid
+    const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+    const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+    const remaining = Math.max(0, totalAmount - paidAmount);
+    setPaymentAmount(remaining > 0 ? remaining.toFixed(2) : "0.00");
+    setPaymentMethod(purchase.paymentMethod || "cash");
+    setPaymentNotes(purchase.notes || "");
     setPaymentDialogOpen(true);
   };
 
@@ -657,10 +708,10 @@ export default function PurchaseDashboard() {
 
     // Validate payment amount with better error messages
     const newPaymentAmount = parseFloat(paymentAmount || "0");
-    if (isNaN(newPaymentAmount) || newPaymentAmount <= 0) {
+    if (isNaN(newPaymentAmount) || newPaymentAmount < 0) { // Allow 0 for status updates if needed, but for recording, usually > 0
       toast({
         title: "Invalid Payment Amount",
-        description: "Please enter a valid payment amount greater than 0",
+        description: "Please enter a valid payment amount.",
         variant: "destructive",
       });
       return;
@@ -670,7 +721,7 @@ export default function PurchaseDashboard() {
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
 
     // Check if payment amount is reasonable
-    if (newPaymentAmount > (totalAmount * 2)) {
+    if (newPaymentAmount > (totalAmount * 2) && totalAmount > 0) { // Allow overpayment, but warn if excessive
       toast({
         title: "Warning",
         description: "Payment amount seems unusually high. Please verify the amount.",
@@ -688,12 +739,15 @@ export default function PurchaseDashboard() {
     if (totalAmount > 0) {
       if (totalPaidAfterPayment >= totalAmount) {
         paymentStatus = 'paid';
-        shouldUpdatePurchaseStatus = true;
+        shouldUpdatePurchaseStatus = true; // Mark as completed if fully paid
       } else if (totalPaidAfterPayment > 0) {
         paymentStatus = 'partial';
       } else {
-        paymentStatus = 'due';
+        paymentStatus = 'due'; // If payment amount is 0, status remains due
       }
+    } else { // Handle case where totalAmount is 0
+      paymentStatus = 'paid'; // Consider it paid if total is 0
+      shouldUpdatePurchaseStatus = true;
     }
 
     // Validate payment method
@@ -711,7 +765,7 @@ export default function PurchaseDashboard() {
       paymentAmount: newPaymentAmount,
       totalPaidAmount: totalPaidAfterPayment,
       paymentMethod: paymentMethod.trim(),
-      paymentDate: new Date().toISOString(),
+      paymentDate: new Date().toISOString(), // Use current date/time for recording
       notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
     };
 
@@ -747,8 +801,8 @@ export default function PurchaseDashboard() {
     }
   };
 
-  if (error) {
-    console.error('❌ Purchase dashboard error:', error);
+  if (purchasesError) { // Use the specific error state
+    console.error('❌ Purchase dashboard error:', purchasesError);
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -758,7 +812,7 @@ export default function PurchaseDashboard() {
             <p className="text-gray-600">Failed to load purchase data. Please try again.</p>
             <div className="mt-4 space-x-2">
               <Button 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/purchases"] })}
+                onClick={() => refetchPurchases()} // Use the refetch function
                 variant="outline"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -1037,6 +1091,20 @@ export default function PurchaseDashboard() {
                         className="pl-10 w-80"
                       />
                     </div>
+                    {/* Add more filter components here if needed */}
+                    {/* Example:
+                    <Select onValueChange={setFilterStatus} value={filterStatus}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Filter by Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    */}
                     <Button variant="outline" size="sm" className="flex items-center gap-2">
                       <Filter className="w-4 h-4" />
                       Filters
@@ -1057,7 +1125,7 @@ export default function PurchaseDashboard() {
                 {/* Enhanced Table */}
                 <Card>
                   <CardContent className="p-0">
-                    {isLoading ? (
+                    {purchasesLoading ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         <span className="ml-3 text-gray-600">Loading purchases...</span>
@@ -1066,12 +1134,12 @@ export default function PurchaseDashboard() {
                       <div className="text-center py-12">
                         <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          {purchases.length === 0 ? 'No Purchase Orders' : 'No Matching Orders'}
+                          {purchases.length === 0 ? 'No Purchase Orders Yet' : 'No Orders Found'}
                         </h3>
                         <p className="text-gray-600 mb-4">
                           {purchases.length === 0 
-                            ? 'Get started by creating your first purchase order' 
-                            : 'Try adjusting your search or filters to find orders'
+                            ? 'Start by creating your first purchase order to track your procurement.' 
+                            : 'Try adjusting your search or filters to find the orders you are looking for.'
                           }
                         </p>
                         <div className="space-x-2">
@@ -1087,19 +1155,13 @@ export default function PurchaseDashboard() {
                               variant="outline" 
                               onClick={() => {
                                 setSearchTerm("");
-                                // Reset any other filters if they exist
+                                // Reset other filters here if applicable
                               }}
                             >
-                              Clear Filters
+                              Clear Search
                             </Button>
                           )}
                         </div>
-                        {/* Debug info for development */}
-                        {process.env.NODE_ENV === 'development' && purchases.length > 0 && (
-                          <div className="mt-4 text-xs text-gray-500">
-                            Debug: Found {purchases.length} total purchases, but 0 after filtering
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <Table>
@@ -1542,8 +1604,7 @@ export default function PurchaseDashboard() {
                         <div>
                           <label className="text-sm font-medium text-gray-600">Tax Number</label>
                           <p className="text-base mt-1">
-                            ```python
-{selectedPurchase.supplier?.taxNumber || "Not provided"}
+                            {selectedPurchase.supplier?.taxNumber || "Not provided"}
                           </p>
                         </div>
                       </div>
@@ -1558,7 +1619,7 @@ export default function PurchaseDashboard() {
                         Business Information
                       </CardTitle>
                     </CardHeader>
-<CardContent className="pt-4">
+                    <CardContent className="pt-4">
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm font-medium text-gray-600">Business</label>
@@ -1618,14 +1679,14 @@ export default function PurchaseDashboard() {
                         </p>
                       </div>
                       <div>
-                      <label className="text-sm font-medium text-gray-600">Payment Status:</label>
-                      <div className="mt-1">
-                        <Badge variant="destructive" className="bg-orange-100 text-orange-800 border-orange-300">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Due Payment
-                        </Badge>
+                        <label className="text-sm font-medium text-gray-600">Payment Status:</label>
+                        <div className="mt-1">
+                          <Badge variant="destructive" className="bg-orange-100 text-orange-800 border-orange-300">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Due Payment
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1798,7 +1859,7 @@ export default function PurchaseDashboard() {
                           const totalReceived = items.reduce((sum, item) => sum + Number(item.receivedQty || item.received_qty || item.quantity || 0), 0);
                           const totalFree = items.reduce((sum, item) => sum + Number(item.freeQty || item.free_qty || 0), 0);
                           const totalStock = totalReceived + totalFree;
-                          
+
                           return (
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div className="flex justify-between">
@@ -1983,8 +2044,9 @@ export default function PurchaseDashboard() {
                       const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
+                      const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
 
-                      if (remaining <= 0) {
+                      if (isFullyPaid) {
                         return (
                           <div className="col-span-2 text-center py-2">
                             <span className="text-sm text-green-600 font-medium">
@@ -2063,7 +2125,7 @@ export default function PurchaseDashboard() {
                 disabled={
                   updatePaymentStatus.isPending || 
                   !paymentAmount || 
-                  parseFloat(paymentAmount || "0") <= 0 ||
+                  parseFloat(paymentAmount || "0") < 0 || // Allow 0 but not negative
                   !paymentMethod ||
                   !selectedPurchaseForPayment
                 }
