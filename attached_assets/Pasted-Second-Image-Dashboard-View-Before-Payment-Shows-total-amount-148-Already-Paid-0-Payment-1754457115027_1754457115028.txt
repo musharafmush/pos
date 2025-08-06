@@ -1,0 +1,78 @@
+Second Image (Dashboard View - Before Payment):
+
+Shows total amount: ₹148
+
+Already Paid: ₹0
+
+Payment Amount input is ₹148
+
+So far, everything looks correct before making the payment.
+
+First Image (Purchase Detail View - After Payment):
+
+Shows total amount: ₹148
+
+Amount Paid: ₹100
+
+Balance Due: ₹48
+
+Payment Status: Partially Paid
+
+However, the record payment section is still editable with ₹100 input, which suggests it hasn’t been finalized.
+
+❌ Problem:
+After recording the payment (₹148 or ₹100), the dashboard view and detailed view are not in sync. Specifically:
+
+In the dashboard, it shows ₹0 paid even though a payment was made.
+
+In the detail view, it shows partial payment (₹100), but this does not reflect back in the dashboard.
+
+🔍 Possible Causes:
+Backend API or DB not updating properly:
+
+The record might be saved in a local state or cache but not persisted to the database.
+
+The API used for updating payment might not be refreshing the dashboard data.
+
+Asynchronous update issue:
+
+Payment recorded successfully, but the dashboard is not refreshed after the transaction.
+
+Missing call to reload the latest data in dashboard after redirection or submission.
+
+Multiple payment entry forms may cause inconsistency if:
+
+The modal (second image) and page view (first image) use different logic or models for saving/updating payments.
+
+✅ Suggested Fixes:
+Ensure successful payment API call:
+
+Verify that when the “Record Payment” button is clicked, the payment is properly saved and confirmed via API response (e.g., 200 OK).
+
+Add console logging or debugging to confirm payment is saved in DB.
+
+Update dashboard data immediately after payment:
+
+After payment is recorded, call the function or API to refresh dashboard stats.
+
+If you're using a state management library (like Redux, Vuex, etc.), make sure it updates after transaction.
+
+Unify payment logic:
+
+Avoid separate forms/modal windows for the same data unless they share the same backend method.
+
+Ensure both use a shared function or endpoint to update payment records.
+
+Confirm database write-back:
+
+Sometimes, the payment shows on frontend but isn't written to the database. Check for DB update errors silently failing.
+
+🛠 Development Checklist:
+ Check console logs / network tab (in DevTools) for failed requests.
+
+ Inspect backend controller or API that saves the payment.
+
+ Add dashboard refresh or re-fetch logic after payment is recorded.
+
+ Validate both partial and full payments update consistently across all views.
+
