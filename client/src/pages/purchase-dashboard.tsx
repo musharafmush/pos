@@ -2093,7 +2093,35 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                     <div>
                       <label className="text-sm font-medium text-gray-600">Total Amount</label>
                       <p className="text-xl font-bold text-green-600 mt-1">
-                        {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
+                        {(() => {
+                          // Calculate total from purchase items if available
+                          const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            // Calculate from items
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            
+                            // Add freight and other charges if available
+                            const freightCost = parseFloat(selectedPurchase.freightCost?.toString() || selectedPurchase.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchase.otherCharges?.toString() || selectedPurchase.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                            
+                            return formatCurrency(calculatedTotal);
+                          } else {
+                            // Fallback to stored values
+                            return formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0");
+                          }
+                        })()}
                       </p>
                     </div>
                   </div>
