@@ -1722,27 +1722,49 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                                 <div className="text-right">
                                   <p className="font-semibold text-lg text-gray-900">
                                     {(() => {
-                                      // Try to get total from multiple possible fields with proper parsing
-                                      const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
-                                      const total = parseFloat(purchase.total?.toString() || "0");
-                                      const subTotal = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
-                                      const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
-                                      const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
-                                      const discountAmount = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
+                                      // Calculate total from purchase items if available
+                                      const items = purchase.purchaseItems || purchase.items || [];
+                                      let calculatedTotal = 0;
                                       
-                                      // Use totalAmount if available, otherwise use total, otherwise calculate
-                                      if (totalAmount > 0) {
-                                        return formatCurrency(totalAmount);
-                                      } else if (total > 0 && subTotal > 0) {
-                                        // If we have both total and subtotal, use the higher value (likely the grand total)
-                                        return formatCurrency(Math.max(total, subTotal + freightCost + otherCharges - discountAmount));
-                                      } else if (total > 0) {
-                                        return formatCurrency(total);
-                                      } else if (subTotal > 0) {
-                                        // Calculate grand total from subtotal
-                                        return formatCurrency(subTotal + freightCost + otherCharges - discountAmount);
+                                      if (items.length > 0) {
+                                        // Calculate from items
+                                        items.forEach(item => {
+                                          const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                          const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                          const itemTotal = qty * cost;
+                                          const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                          const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                          const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                          
+                                          calculatedTotal += itemTotal - discount + taxAmount;
+                                        });
+                                        
+                                        // Add freight and other charges if available
+                                        const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                        const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                        calculatedTotal += freightCost + otherCharges;
+                                        
+                                        return formatCurrency(calculatedTotal);
                                       } else {
-                                        return formatCurrency(0);
+                                        // Fallback to stored values
+                                        const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+                                        const total = parseFloat(purchase.total?.toString() || "0");
+                                        const subTotal = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
+                                        const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                        const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                        const discountAmount = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
+                                        
+                                        if (totalAmount > 0) {
+                                          return formatCurrency(totalAmount);
+                                        } else if (total > 0 && subTotal > 0) {
+                                          return formatCurrency(Math.max(total, subTotal + freightCost + otherCharges - discountAmount));
+                                        } else if (total > 0) {
+                                          return formatCurrency(total);
+                                        } else if (subTotal > 0) {
+                                          return formatCurrency(subTotal + freightCost + otherCharges - discountAmount);
+                                        } else {
+                                          return formatCurrency(0);
+                                        }
                                       }
                                     })()}
                                   </p>
@@ -1777,23 +1799,45 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               </TableCell>
                               <TableCell className="py-4">
                                 {(() => {
-                                  // Calculate total amount using same logic as display above
-                                  const totalAmountField = parseFloat(purchase.totalAmount?.toString() || "0");
-                                  const totalField = parseFloat(purchase.total?.toString() || "0");
-                                  const subTotalField = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
-                                  const freightCostField = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
-                                  const otherChargesField = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
-                                  const discountAmountField = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
-                                  
+                                  // Calculate total amount using same item-based logic as the Total Amount column
+                                  const items = purchase.purchaseItems || purchase.items || [];
                                   let totalAmount = 0;
-                                  if (totalAmountField > 0) {
-                                    totalAmount = totalAmountField;
-                                  } else if (totalField > 0 && subTotalField > 0) {
-                                    totalAmount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
-                                  } else if (totalField > 0) {
-                                    totalAmount = totalField;
-                                  } else if (subTotalField > 0) {
-                                    totalAmount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+                                  
+                                  if (items.length > 0) {
+                                    // Calculate from items
+                                    items.forEach(item => {
+                                      const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                      const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                      const itemTotal = qty * cost;
+                                      const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                      const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                      const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                      
+                                      totalAmount += itemTotal - discount + taxAmount;
+                                    });
+                                    
+                                    // Add freight and other charges if available
+                                    const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                    const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                    totalAmount += freightCost + otherCharges;
+                                  } else {
+                                    // Fallback to stored calculation logic
+                                    const totalAmountField = parseFloat(purchase.totalAmount?.toString() || "0");
+                                    const totalField = parseFloat(purchase.total?.toString() || "0");
+                                    const subTotalField = parseFloat(purchase.subTotal?.toString() || purchase.sub_total?.toString() || "0");
+                                    const freightCostField = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                    const otherChargesField = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                    const discountAmountField = parseFloat(purchase.discountAmount?.toString() || purchase.discount_amount?.toString() || "0");
+                                    
+                                    if (totalAmountField > 0) {
+                                      totalAmount = totalAmountField;
+                                    } else if (totalField > 0 && subTotalField > 0) {
+                                      totalAmount = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
+                                    } else if (totalField > 0) {
+                                      totalAmount = totalField;
+                                    } else if (subTotalField > 0) {
+                                      totalAmount = subTotalField + freightCostField + otherChargesField - discountAmountField;
+                                    }
                                   }
 
                                   const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
