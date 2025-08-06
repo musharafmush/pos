@@ -476,15 +476,16 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   // Payment statistics with improved calculation
   const paidPurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
-    return p.paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
+    const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
+    const paymentStatus = p.paymentStatus || p.payment_status;
+    return paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
 
   const duePurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
-    const paymentStatus = p.paymentStatus;
+    const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
+    const paymentStatus = p.paymentStatus || p.payment_status;
 
     // Consider as due if explicitly marked as due, or if no payment status and unpaid
     return paymentStatus === "due" || 
@@ -495,9 +496,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   const totalDueAmount = purchases
     .filter((p: Purchase) => {
-      const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
-      const paymentStatus = p.paymentStatus;
+      const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
+      const paymentStatus = p.paymentStatus || p.payment_status;
 
       return paymentStatus === "due" || 
              paymentStatus === "overdue" || 
@@ -505,8 +506,8 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
              (paymentStatus === "partial" && paidAmount < totalAmount);
     })
     .reduce((sum: number, p: Purchase) => {
-      const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+      const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
 
@@ -1743,8 +1744,8 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               </TableCell>
                               <TableCell className="py-4">
                                 {(() => {
-                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
-                                  const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+                                  const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
 
                                   // Determine payment status based on amounts
                                   let paymentStatus = 'due';
@@ -1770,7 +1771,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                                   }
 
                                   // Override with stored payment status if it exists and is valid
-                                  const storedStatus = purchase.paymentStatus;
+                                  const storedStatus = purchase.paymentStatus || purchase.payment_status;
                                   if (storedStatus && ['paid', 'partial', 'due', 'overdue'].includes(storedStatus)) {
                                     paymentStatus = storedStatus;
                                   }

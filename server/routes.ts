@@ -47,7 +47,7 @@ const isAdminOrManager = hasRole(['admin', 'manager']);
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
-  
+
   // Configure session storage for desktop SQLite mode
   // Use memory store for desktop app - perfect for offline use
 
@@ -419,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ 
-          message: 'Invalid product ID', 
+          message: 'Invalid product ID',
           error: 'Product ID must be a valid positive number' 
         });
       }
@@ -2644,7 +2644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('❌ Transaction error:', transactionError);
           throw transactionError;
         }
-      })();
+      });
 
       // Return success response
       res.json({
@@ -2944,7 +2944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
       const newPaymentAmount = parseFloat(paymentAmount || '0');
       const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
-      
+
       // Use totalPaidAmount if provided, otherwise add newPaymentAmount to currentPaidAmount
       let finalPaidAmount = totalPaidAmount !== undefined ? 
         parseFloat(totalPaidAmount.toString()) : 
@@ -2965,10 +2965,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate payment status based on amounts
       let calculatedPaymentStatus = paymentStatus;
 
-      if (!calculatedPaymentStatus || calculatedPaymentStatus === 'auto') {
+      if (!calculatedPaymentStatus) {
         if (purchaseTotal > 0) {
           const paymentPercentage = (finalPaidAmount / purchaseTotal) * 100;
-          
+
           if (finalPaidAmount >= purchaseTotal) {
             calculatedPaymentStatus = 'paid';
           } else if (finalPaidAmount > 0) {
@@ -2992,96 +2992,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentPercentage: purchaseTotal > 0 ? Math.round((finalPaidAmount / purchaseTotal) * 100) : 0
       });
 
-      // Build dynamic update query - always update these core payment fields
-      const updateFields = [];
-      const updateValues = [];
+      // Prepare update data based on available columns
+      const updateData: any = {};
 
-      // Always update payment status if provided
-      if (calculatedPaymentStatus) {
-        updateFields.push('payment_status = ?');
-        updateValues.push(calculatedPaymentStatus);
+      // Core payment fields that should exist
+      if (columnNames.includes('paid_amount')) {
+        updateData.paid_amount = finalPaidAmount.toString();
       }
 
-      // Always update paid amount 
-      updateFields.push('paid_amount = ?');
-      updateValues.push(finalPaidAmount.toString());
-
-      // Update payment method if provided
-      if (paymentMethod) {
-        updateFields.push('payment_method = ?');
-        updateValues.push(paymentMethod);
+      if (columnNames.includes('payment_status')) {
+        updateData.payment_status = calculatedPaymentStatus;
       }
 
-      // Update payment date if provided
-      if (paymentDate) {
-        updateFields.push('payment_date = ?');
-        updateValues.push(paymentDate);
+      if (columnNames.includes('payment_method') && paymentMethod) {
+        updateData.payment_method = paymentMethod;
       }
 
-      // Always update timestamp if column exists
+      if (columnNames.includes('payment_date') && paymentDate) {
+        updateData.payment_date = paymentDate;
+      }
+
+      // Always update the updated timestamp if column exists
       if (columnNames.includes('updated_at')) {
-        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+        updateData.updated_at = new Date().toISOString();
       }
 
-      if (updateFields.length === 0) {
+      // Build dynamic update query
+      const updateColumns = Object.keys(updateData);
+      if (updateColumns.length === 0) {
         return res.status(400).json({ 
-          error: 'No valid fields to update',
-          message: 'No payment fields provided for update'
+          error: 'No updatable payment columns found',
+          message: 'The purchases table is missing required payment tracking columns'
         });
       }
 
-      updateValues.push(id); // For WHERE clause
+      const setClause = updateColumns.map(col => `${col} = ?`).join(', ');
+      const updateValues = updateColumns.map(col => updateData[col]);
 
-      const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
-      console.log('🔧 Update query:', updateQuery);
-      console.log('📊 Update values:', updateValues);
+      // Execute update
+      const updateQuery = `UPDATE purchases SET ${setClause} WHERE id = ?`;
+      const updateResult = sqlite.prepare(updateQuery).run(...updateValues, id);
 
-      const updateResult = sqlite.prepare(updateQuery).run(...updateValues);
+      console.log('💰 Payment update executed:', {
+        query: updateQuery,
+        values: [...updateValues, id],
+        changes: updateResult.changes,
+        finalPaidAmount: finalPaidAmount,
+        calculatedPaymentStatus: calculatedPaymentStatus
+      });
 
       if (updateResult.changes === 0) {
         return res.status(404).json({ 
           error: 'Update failed',
-          message: 'No changes were made to the purchase record'
+          message: 'No purchase record was updated. Please check the purchase ID.'
         });
       }
 
-      // Get updated purchase
-      const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
-
       // Auto-update purchase status to completed if fully paid
-      let finalStatus = updatedPurchase.status;
       let statusAutoUpdated = false;
+      let finalStatus = existingPurchase.status;
 
-      if (calculatedPaymentStatus === 'paid' && 
-          purchaseTotal > 0 && 
-          finalPaidAmount >= purchaseTotal && 
-          updatedPurchase.status !== 'completed') {
+      // Determine if status should be auto-updated
+      const updatePurchaseStatus = calculatedPaymentStatus === 'paid';
+      const newPurchaseStatus = 'completed';
 
-        console.log('🔄 Auto-updating purchase status to completed (fully paid)');
-
+      if (updatePurchaseStatus && (finalPaidAmount >= purchaseTotal)) {
         try {
-          // Check if received_date column exists
-          const statusUpdateFields = ['status = ?'];
-          const statusUpdateValues = ['completed'];
-
-          if (columnNames.includes('received_date')) {
-            statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
-          }
-          if (columnNames.includes('updated_at')) {
-            statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
-          }
-
-          const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
-          statusUpdateValues.push(id);
-
-          console.log('🔧 Auto-completing purchase - Status update query:', updateStatusQuery);
-
-          const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
+          const targetStatus = newPurchaseStatus; // Use 'completed' for fully paid
+          console.log('🔄 Auto-updating purchase status to:', targetStatus);
+          const statusUpdateQuery = 'UPDATE purchases SET status = ? WHERE id = ?';
+          const statusResult = sqlite.prepare(statusUpdateQuery).run(targetStatus, id);
 
           if (statusResult.changes > 0) {
-            finalStatus = 'completed';
+            finalStatus = targetStatus;
             statusAutoUpdated = true;
-            console.log('✅ Successfully auto-updated purchase status to completed');
+            console.log('✅ Successfully auto-updated purchase status to', targetStatus);
           } else {
             console.error('❌ Status update failed - no changes made');
           }
@@ -3484,7 +3469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create customer
+// Create customer
 app.post("/api/customers", async (req, res) => {
   try {
     const { name, email, phone, address, taxNumber, creditLimit, businessName } = req.body;
@@ -6040,8 +6025,7 @@ app.post("/api/customers", async (req, res) => {
           COUNT(DISTINCT s.id) as salesCount,
           ROUND(SUM(si.subtotal), 2) as salesAmount,
           ROUND(SUM(
-            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != '' 
-            THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
+            CASE WHEN p.cgst_rate IS NOT NULL AND p.cgst_rate != ''             THEN (si.subtotal * CAST(p.cgst_rate AS DECIMAL) / 100) 
             ELSE 0 END
           ), 2) as cgstAmount,
           ROUND(SUM(

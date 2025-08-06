@@ -5094,6 +5094,14 @@ export default function PurchaseEntryProfessional() {
                         form.setValue("paid_amount", paymentData.paymentAmount);
                         form.setValue("payment_date", paymentData.paymentDate);
 
+                        // Update local state to reflect payment
+                        setPaymentData(prev => ({
+                          ...prev,
+                          paymentAmount: 0,
+                          paymentNotes: "",
+                          paymentReference: ""
+                        }));
+
                         console.log('Payment recorded:', paymentRecord);
 
                         toast({
