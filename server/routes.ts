@@ -2734,35 +2734,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Executing purchases query');
       const purchases = sqlite.prepare(query).all(limit, offset);
 
-      // Format the results to match expected structure
-      const formattedPurchases = purchases.map((purchase: any) => ({
-        id: purchase.id,
-        orderNumber: purchase.order_number || `PO-${purchase.id}`,
-        supplierId: purchase.supplier_id,
-        userId: purchase.user_id,
-        total: purchase.total || '0',
-        totalAmount: purchase.total || '0',
-        status: purchase.status || 'pending',
-        orderDate: purchase.order_date || purchase.created_at,
-        createdAt: purchase.created_at,
-        dueDate: purchase.due_date,
-        receivedDate: purchase.received_date,
-        paymentStatus: purchase.payment_status || 'due',
-        paidAmount: purchase.paid_amount || '0',
-        paymentMethod: purchase.payment_method || 'cash',
-        itemCount: purchase.item_count || 0, // Add the actual item count from database
-        supplier: purchase.supplier_name ? {
-          id: purchase.supplier_id,
-          name: purchase.supplier_name,
-          email: purchase.supplier_email,
-          phone: purchase.supplier_phone
-        } : null,
-        user: {
-          id: purchase.user_id,
-          name: purchase.user_name || 'System User'
-        },
-        items: [] // Will be populated separately if needed
-      }));
+      // Format the results and include purchase items
+      const formattedPurchases = purchases.map((purchase: any) => {
+        // Get purchase items for this purchase
+        let purchaseItems = [];
+        try {
+          const itemsQuery = `
+            SELECT 
+              pi.*,
+              p.name as product_name,
+              p.sku as product_sku
+            FROM purchase_items pi
+            LEFT JOIN products p ON pi.product_id = p.id
+            WHERE pi.purchase_id = ?
+          `;
+          purchaseItems = sqlite.prepare(itemsQuery).all(purchase.id);
+        } catch (itemsError) {
+          console.log(`⚠️ Could not fetch items for purchase ${purchase.id}:`, itemsError.message);
+          purchaseItems = [];
+        }
+
+        return {
+          id: purchase.id,
+          orderNumber: purchase.order_number || `PO-${purchase.id}`,
+          supplierId: purchase.supplier_id,
+          userId: purchase.user_id,
+          total: purchase.total || '0',
+          totalAmount: purchase.total || '0',
+          status: purchase.status || 'pending',
+          orderDate: purchase.order_date || purchase.created_at,
+          createdAt: purchase.created_at,
+          dueDate: purchase.due_date,
+          receivedDate: purchase.received_date,
+          paymentStatus: purchase.payment_status || 'due',
+          paidAmount: purchase.paid_amount || '0',
+          paymentMethod: purchase.payment_method || 'cash',
+          itemCount: purchase.item_count || 0,
+          supplier: purchase.supplier_name ? {
+            id: purchase.supplier_id,
+            name: purchase.supplier_name,
+            email: purchase.supplier_email,
+            phone: purchase.supplier_phone
+          } : null,
+          user: {
+            id: purchase.user_id,
+            name: purchase.user_name || 'System User'
+          },
+          items: purchaseItems, // Include actual purchase items
+          purchaseItems: purchaseItems // Alternative property name for compatibility
+        };
+      });
 
       console.log(`✅ Found ${formattedPurchases.length} purchases`);
       res.json(formattedPurchases);
