@@ -267,6 +267,11 @@ const purchaseSchema = z.object({
   remarks: z.string().optional(),
   internalNotes: z.string().optional(),
   items: z.array(purchaseItemSchema).min(1, "At least one item is required"),
+  // Payment fields
+  paymentType: z.string().optional(),
+  payment_status: z.string().optional(),
+  paid_amount: z.number().optional(),
+  payment_date: z.string().optional(),
 });
 
 type PurchaseFormData = z.infer<typeof purchaseSchema>;
@@ -428,6 +433,11 @@ export default function PurchaseEntryProfessional() {
           unit: "PCS",
         }
       ],
+      // Initialize payment fields
+      paymentType: "Credit",
+      payment_status: "unpaid",
+      paid_amount: 0,
+      payment_date: null,
     },
   });
 
@@ -516,7 +526,7 @@ export default function PurchaseEntryProfessional() {
 
     const updatedHeldPurchases = [...heldPurchases, heldPurchase];
     setHeldPurchases(updatedHeldPurchases);
-    
+
     // Persist to localStorage
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
@@ -572,6 +582,11 @@ export default function PurchaseEntryProfessional() {
           unit: "PCS",
         }
       ],
+      // Reset payment fields
+      paymentType: "Credit",
+      payment_status: "unpaid",
+      paid_amount: 0,
+      payment_date: null,
     });
 
     // Force form to refresh
@@ -643,13 +658,13 @@ export default function PurchaseEntryProfessional() {
       // Remove from held purchases and update localStorage
       const updatedHeldPurchases = heldPurchases.filter(p => p.id !== heldPurchase.id);
       setHeldPurchases(updatedHeldPurchases);
-      
+
       try {
         localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
       } catch (error) {
         console.error('Failed to update localStorage:', error);
       }
-      
+
       setShowHeldPurchases(false);
 
       // Switch to details tab
@@ -672,13 +687,13 @@ export default function PurchaseEntryProfessional() {
   const deleteHeldPurchase = (holdId: string) => {
     const updatedHeldPurchases = heldPurchases.filter(p => p.id !== holdId);
     setHeldPurchases(updatedHeldPurchases);
-    
+
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
     } catch (error) {
       console.error('Failed to update localStorage:', error);
     }
-    
+
     toast({
       title: "Held Purchase Deleted",
       description: `Held purchase order has been deleted.`,
@@ -744,7 +759,7 @@ export default function PurchaseEntryProfessional() {
             let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
             let wholesalePrice = Number(item.wholesalePrice || item.wholesale_price) || 0;
             let mrp = Number(item.mrp) || 0;
-            
+
             // If selling price is not set, try to get from product or calculate from cost
             if (sellingPrice === 0) {
               if (product?.price && parseFloat(product.price) > 0) {
@@ -757,14 +772,14 @@ export default function PurchaseEntryProfessional() {
                 }
               }
             }
-            
+
             // If wholesale price is not set, try to get from product
             if (wholesalePrice === 0) {
               if (product?.wholesalePrice && parseFloat(product.wholesalePrice) > 0) {
                 wholesalePrice = parseFloat(product.wholesalePrice);
               }
             }
-            
+
             // If MRP is not set, try to get from product or calculate from selling price
             if (mrp === 0) {
               if (product?.mrp && parseFloat(product.mrp) > 0) {
@@ -851,6 +866,11 @@ export default function PurchaseEntryProfessional() {
         remarks: existingPurchase.remarks || "",
         internalNotes: existingPurchase.internalNotes || existingPurchase.internal_notes || "",
         items: mappedItems,
+        // Populate payment fields from existing purchase
+        paymentType: existingPurchase.paymentType || "Credit",
+        payment_status: existingPurchase.payment_status || "unpaid",
+        paid_amount: Number(existingPurchase.paid_amount) || 0,
+        payment_date: existingPurchase.payment_date ? existingPurchase.payment_date.split('T')[0] : null,
       };
 
       console.log('Form data to populate:', formData);
@@ -1030,14 +1050,14 @@ export default function PurchaseEntryProfessional() {
   const recalculateItemNetAmount = (index: number) => {
     const item = form.getValues(`items.${index}`);
     const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
-    
+
     if (!item || item.productId === 0) return;
 
     const qty = Number(item.receivedQty) || 0;
     const unitCost = Number(item.unitCost) || 0;
     const discount = Number(item.discountAmount) || 0;
     const taxPercentage = Number(item.taxPercentage) || 0;
-    
+
     // Get additional charges for proportional distribution using form getValues
     const formValues = form.getValues();
     const surchargeAmount = Number(formValues.surchargeAmount) || 0;
@@ -1045,9 +1065,9 @@ export default function PurchaseEntryProfessional() {
     const packingCharges = Number(formValues.packingCharges) || 0;
     const otherCharges = Number(formValues.otherCharges) || 0;
     const additionalDiscount = Number(formValues.additionalDiscount) || 0;
-    
+
     const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
-    
+
     // Calculate total order value for proportional distribution
     const allItems = form.getValues("items") || [];
     const totalOrderValue = allItems.reduce((sum, item) => {
@@ -1056,23 +1076,23 @@ export default function PurchaseEntryProfessional() {
       }
       return sum;
     }, 0);
-    
+
     // Calculate proportional additional charges for this item
     let itemAdditionalCharges = 0;
     let itemAdditionalDiscount = 0;
-    
+
     const subtotal = qty * unitCost;
     if (totalOrderValue > 0) {
       const itemProportion = subtotal / totalOrderValue;
       itemAdditionalCharges = totalAdditionalCharges * itemProportion;
       itemAdditionalDiscount = additionalDiscount * itemProportion;
     }
-    
+
     let netAmount = 0;
-    
+
     switch (taxCalculationMethod) {
       case "inclusive":
-        // Tax included in cost price - net amount is same as taxable amount
+        // Tax is included in cost price - net amount is same as taxable amount
         const taxableAmountIncl = subtotal - discount;
         netAmount = taxableAmountIncl + itemAdditionalCharges - itemAdditionalDiscount;
         break;
@@ -1095,7 +1115,7 @@ export default function PurchaseEntryProfessional() {
         netAmount = taxableAmountExcl + tax + itemAdditionalCharges - itemAdditionalDiscount;
         break;
     }
-    
+
     // Update netAmount field
     form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
   };
@@ -1134,7 +1154,7 @@ export default function PurchaseEntryProfessional() {
     const sgstRate = parseFloat(product.sgstRate || "0");
     const igstRate = parseFloat(product.igstRate || "0");
     const cessRate = 0; // Cess rate not implemented in current product schema
-    
+
     // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
     let totalGst = 0;
     let gstBreakdown = {
@@ -1226,7 +1246,7 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
-      
+
       // Enhanced cost price calculation with multiple fallbacks
       let costPrice = 0;
       if (product.cost && parseFloat(product.cost) > 0) {
@@ -1238,10 +1258,10 @@ export default function PurchaseEntryProfessional() {
         // Default minimum cost
         costPrice = 10;
       }
-      
+
       const sellingPrice = parseFloat(product.price) || 0;
       const wholesalePrice = parseFloat(product.wholesalePrice || "0") || 0;
-      
+
       // Calculate MRP: use product MRP if available, otherwise calculate from selling price
       let mrpPrice = 0;
       if (product.mrp && parseFloat(product.mrp) > 0) {
@@ -1253,7 +1273,7 @@ export default function PurchaseEntryProfessional() {
         // If no selling price, calculate from cost with typical markup
         mrpPrice = Math.round(costPrice * 1.5 * 100) / 100;
       }
-      
+
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
       form.setValue(`items.${index}.wholesalePrice`, wholesalePrice);
@@ -1279,10 +1299,10 @@ export default function PurchaseEntryProfessional() {
       const qty = form.getValues(`items.${index}.receivedQty`) || 1;
       const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
       const discountAmount = form.getValues(`items.${index}.discountAmount`) || 0;
-      
+
       let netAmount = 0;
       const subtotal = qty * costPrice;
-      
+
       switch (taxCalculationMethod) {
         case "inclusive":
           // Tax included in cost price - extract base amount first
@@ -1314,7 +1334,7 @@ export default function PurchaseEntryProfessional() {
           netAmount = taxableAmountExcl + taxExcl;
           break;
       }
-      
+
       form.setValue(`items.${index}.netAmount`, netAmount);
 
       // Trigger form validation and update
@@ -1396,7 +1416,7 @@ export default function PurchaseEntryProfessional() {
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
-        unit: item.unit || "PCS",
+        unit: "PCS",
       });
     }
   };
@@ -1539,7 +1559,7 @@ export default function PurchaseEntryProfessional() {
         } else {
           // Add as new item if first occurrence
           const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-          
+
           // Use cost price from product if available, otherwise use selling price
           const costPrice = parseFloat(product.cost || product.price) || 0;
           const sellingPrice = parseFloat(product.price) || 0;
@@ -1629,7 +1649,7 @@ export default function PurchaseEntryProfessional() {
         location: "",
         unit: "PCS",
       });
-      
+
       toast({
         title: "Item Added",
         description: `New line item ${fields.length + 1} added successfully.`,
@@ -1675,7 +1695,7 @@ export default function PurchaseEntryProfessional() {
     mutationFn: async (data: PurchaseFormData) => {
       try {
         console.log('🔄 Starting purchase save/update process...');
-        
+
         const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
         const method = isEditMode ? "PUT" : "POST";
 
@@ -1699,7 +1719,7 @@ export default function PurchaseEntryProfessional() {
         const validItems = data.items.filter(item => 
           item.productId && 
           item.productId > 0 && 
-          ((item.receivedQty ?? 0) > 0 || (item.quantity ?? 0) > 0) &&
+          ((item.receivedQty || 0) > 0 || (item.quantity || 0) > 0) &&
           item.unitCost >= 0
         );
 
@@ -1729,20 +1749,20 @@ export default function PurchaseEntryProfessional() {
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
-          
+
           if (contentType && contentType.includes('application/json')) {
             try {
               const errorData = await response.json();
               console.error('❌ Server error response:', errorData);
-              
+
               // Use the most specific error message available
               errorMessage = errorData.error || errorData.message || errorMessage;
-              
+
               // Add technical details if available
               if (errorData.technical && errorData.technical !== errorMessage) {
                 console.error('🔧 Technical details:', errorData.technical);
               }
-              
+
             } catch (jsonError) {
               console.error('❌ Failed to parse error JSON:', jsonError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -1752,7 +1772,7 @@ export default function PurchaseEntryProfessional() {
             try {
               const errorText = await response.text();
               console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
-              
+
               if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
                 errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
               } else {
@@ -1763,7 +1783,7 @@ export default function PurchaseEntryProfessional() {
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           }
-          
+
           throw new Error(errorMessage);
         }
 
@@ -1784,15 +1804,15 @@ export default function PurchaseEntryProfessional() {
         }
 
         return result;
-        
+
       } catch (error) {
         console.error('💥 Purchase save/update error:', error);
-        
+
         // Re-throw with enhanced error context
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
         }
-        
+
         throw error;
       }
     },
@@ -1866,8 +1886,13 @@ export default function PurchaseEntryProfessional() {
               unit: "PCS",
             }
           ],
+          // Reset payment fields
+          paymentType: "Credit",
+          payment_status: "unpaid",
+          paid_amount: 0,
+          payment_date: null,
         });
-        
+
         // Force form to re-render with clean state
         setTimeout(() => {
           setActiveTab("details");
@@ -1911,7 +1936,7 @@ export default function PurchaseEntryProfessional() {
         const hasProduct = item.productId && item.productId > 0;
         const hasValidQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
         const hasCost = (Number(item.unitCost) || 0) >= 0;
-        
+
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
       });
@@ -1979,6 +2004,12 @@ export default function PurchaseEntryProfessional() {
         paymentTerms: data.paymentTerms || "Net 30",
         status: data.status || "Pending",
         taxCalculationMethod: data.taxCalculationMethod || "exclusive",
+
+        // Payment information
+        paymentType: data.paymentType || data.paymentMethod || "Credit",
+        payment_status: data.payment_status || "unpaid",
+        paid_amount: Number(data.paid_amount) || 0,
+        payment_date: data.payment_date || null,
 
         // Invoice details
         invoiceNumber: data.invoiceNumber || "",
@@ -2276,1686 +2307,1764 @@ export default function PurchaseEntryProfessional() {
                           <SelectItem value="exclusive">Tax Exclusive - Tax added on top of base amount</SelectItem>
                           <SelectItem value="inclusive">Tax Inclusive - Tax included in the base amount</SelectItem>
                           <SelectItem value="compound">Compound Tax - Tax calculated on tax (compound)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Current method: <span className="font-medium text-blue-600">
-                          {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
-                           form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
+                                    </SelectContent>
+          </Select>
+          <div className="text-xs text-muted-foreground mt-1">
+            Current method: <span className="font-medium text-blue-600">
+              {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
+               form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">Order Status</Label>
+          <Select onValueChange={(value) => form.setValue("status", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="pending_approval">Pending Approval</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="ordered">Ordered</SelectItem>
+              <SelectItem value="partially_received">Partially Received</SelectItem>                          <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority Level</Label>
+          <Select onValueChange={(value) => form.setValue("priority", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="shippingMethod">Shipping Method</Label>
+          <Select onValueChange={(value) => form.setValue("shippingMethod", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select shipping method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="standard">Standard Delivery</SelectItem>
+              <SelectItem value="express">Express Delivery</SelectItem>
+              <SelectItem value="overnight">Overnight</SelectItem>
+              <SelectItem value="pickup">Supplier Pickup</SelectItem>
+              <SelectItem value="freight">Freight</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Enhanced Additional Charges Section */}
+  <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100">
+      <CardTitle className="flex items-center gap-2 text-blue-800">
+        <Package className="w-5 h-5" />
+        Additional Charges
+      </CardTitle>
+      <p className="text-sm text-blue-600">These charges will be distributed proportionally across all line items</p>
+    </CardHeader>
+    <CardContent className="space-y-6 pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="surchargeAmount" className="text-sm font-semibold text-gray-700">
+            Surcharge (₹)
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              {...form.register("surchargeAmount", { 
+                valueAsNumber: true
+              })}
+              className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="freightAmount" className="text-sm font-semibold text-gray-700">
+            Freight Charges (₹)
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              {...form.register("freightAmount", { 
+                valueAsNumber: true
+              })}
+              className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="packingCharges" className="text-sm font-semibold text-gray-700">
+            Packing Charges (₹)
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              {...form.register("packingCharges", { 
+                valueAsNumber: true
+              })}
+              className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="otherCharges" className="text-sm font-semibold text-gray-700">
+            Other Charges (₹)
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              {...form.register("otherCharges", { 
+                valueAsNumber: true
+              })}
+              className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="additionalDiscount" className="text-sm font-semibold text-gray-700">
+            Additional Discount (₹)
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              {...form.register("additionalDiscount", { 
+                valueAsNumber: true
+              })}
+              className="pl-8 border-red-200 focus:border-red-500 focus:ring-red-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Charges Summary */}
+      <div className="bg-white rounded-lg p-4 border border-blue-200">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold text-gray-700">Charges Summary</h4>
+          <Badge variant="outline" className="text-blue-700 border-blue-300">
+            Auto-calculated
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="bg-green-50 p-3 rounded-lg text-center">
+            <div className="text-green-600 font-medium">Total Charges</div>
+            <div className="text-lg font-bold text-green-800">
+              ₹{(
+                (Number(watchedSurcharge) || 0) + 
+                (Number(watchedFreight) || 0) + 
+                (Number(watchedPacking) || 0) + 
+                (Number(watchedOther) || 0)
+              ).toFixed(2)}
+            </div>
+          </div>
+          <div className="bg-red-50 p-3 rounded-lg text-center">
+            <div className="text-red-600 font-medium">Total Discount</div>
+            <div className="text-lg font-bold text-red-800">
+              ₹{(Number(watchedAdditionalDiscount) || 0).toFixed(2)}
+            </div>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg text-center">
+            <div className="text-blue-600 font-medium">Net Additional</div>
+            <div className="text-lg font-bold text-blue-800">
+              ₹{(
+                (Number(watchedSurcharge) || 0) + 
+                (Number(watchedFreight) || 0) + 
+                (Number(watchedPacking) || 0) + 
+                (Number(watchedOther) || 0) - 
+                (Number(watchedAdditionalDiscount) || 0)
+              ).toFixed(2)}
+            </div>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg text-center">
+            <div className="text-purple-600 font-medium">Impact on Cost</div>
+            <div className="text-sm font-bold text-purple-800">
+              Distributed across {form.watch("items")?.filter(item => item.productId > 0).length || 0} items
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Invoice Details Section */}
+  <Card>
+    <CardHeader>
+      <CardTitle>Invoice Details</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="invoiceNumber">Invoice Number</Label>
+          <Input
+            {...form.register("invoiceNumber")}
+            placeholder="Enter invoice number"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="invoiceDate">Invoice Date</Label>
+          <Input
+            type="date"
+            {...form.register("invoiceDate")}
+            placeholder="dd-mm-yyyy"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="invoiceAmount">Invoice Amount</Label>
+          <Input
+            type="number"
+            step="0.01"
+            {...form.register("invoiceAmount", { valueAsNumber: true })}
+            placeholder="0"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="lrNumber">LR Number</Label>
+          <Input
+            {...form.register("lrNumber")}
+            placeholder="Enter LR number"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="shippingAddress">Shipping Address</Label>
+          <Textarea
+            {...form.register(`shippingAddress`)}
+            placeholder="Enter shipping address..."
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="billingAddress">Billing Address</Label>
+          <Textarea
+            {...form.register("billingAddress")}
+            placeholder="Enter billing address..."
+            rows={3}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="remarks">Public Remarks</Label>
+          <Textarea
+            {...form.register("remarks")}
+            placeholder="Remarks visible to supplier..."
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="internalNotes">Internal Notes</Label>
+          <Textarea
+            {...form.register("internalNotes")}
+            placeholder="Internal notes (not visible to supplier)..."
+            rows={3}
+          />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
+
+{/* Line Items Tab */}
+<TabsContent value="items" className="space-y-4">
+  {/* Barcode Scanner Section */}
+  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-lg font-semibold text-blue-800 flex items-center gap-2">
+        <QrCodeIcon className="h-5 w-5" />
+        Quick Barcode Entry
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <QrCodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
+          <Input
+            placeholder="Scan barcode or type product code to quickly add items..."
+            value={barcodeInput}
+            onChange={(e) => setBarcodeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleBarcodeSubmit();
+              }
+            }}
+            className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+            Tax Method: {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
+                       form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
+          </Badge>
+          <Button
+            onClick={handleBarcodeSubmit}
+            disabled={!barcodeInput.trim()}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add to Purchase
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-blue-600 mt-2">
+        💡 Tip: Use a barcode scanner or manually enter product barcodes for instant item addition
+      </p>
+    </CardContent>
+  </Card>
+
+  <Card className="w-full">
+    <CardHeader className="pb-4">
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-xl font-semibold">Line Items</CardTitle>
+        <div className="flex gap-2">
+          <Button onClick={addItem} size="sm" variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Item
+          </Button>
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent className="p-6">
+      <div className="w-full overflow-x-auto border border-gray-200 rounded-lg">
+        <div className="min-w-[3200px] bg-white shadow-sm">
+          <Table className="text-sm border-collapse">
+            <TableHeader>
+              <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-300">
+                <TableHead className="w-20 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">No</TableHead>
+                <TableHead className="w-40 font-bold border-r border-blue-200 px-4 py-4 text-sm">Code</TableHead>
+                <TableHead className="min-w-[280px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Product Name</TableHead>
+                <TableHead className="min-w-[200px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Description</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Previous Stock</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Received Qty</TableHead>
+                <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Free Qty</span>
+                    <div className="group relative">
+                      <span className="cursor-help text-green-600">🎁</span>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                        Free quantities automatically add to stock
+                      </div>
+                    </div>
+                  </div>
+                </TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cost</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">HSN Code</TableHead>
+                <TableHead className="w-28 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Tax %</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Disc Amt</TableHead>
+                <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Exp. Date</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Cost</TableHead>
+                <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">ROI %</TableHead>
+                <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Gross Profit %</TableHead>
+                <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Selling Price</TableHead>
+                <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Wholesale Price</TableHead>
+                <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">MRP</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Amount</TableHead>
+                <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Amount</TableHead>
+                <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash %</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash Amt</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Batch No</TableHead>
+                <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Location</TableHead>
+                <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Unit</TableHead>
+                <TableHead className="w-28 text-center font-bold px-4 py-4 text-sm">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fields.map((field, index) => {
+                const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+
+                // Calculate values
+                const qty = form.watch(`items.${index}.receivedQty`) || 0;
+                const freeQty = form.watch(`items.${index}.freeQty`) || 0;
+                const cost = form.watch(`items.${index}.unitCost`) || 0;
+                const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
+                const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
+                const cashPercent = form.watch(`items.${index}.cashPercent`) || 0;
+                const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+
+                const amount = qty * cost;
+
+                // Get additional charges for proportional distribution
+                const surchargeAmount = Number(watchedSurcharge) || 0;
+                const freightAmount = Number(watchedFreight) || 0;
+                const packingCharges = Number(watchedPacking) || 0;
+                const otherCharges = Number(watchedOther) || 0;
+                const additionalDiscount = Number(watchedAdditionalDiscount) || 0;
+
+                const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
+
+                // Calculate total order value for proportional distribution
+                const allItems = form.watch("items") || [];
+                const totalOrderValue = allItems.reduce((sum, item) => {
+                  if (item.productId && item.productId > 0) {
+                    return sum + ((item.receivedQty || 0) * (item.unitCost || 0));
+                  }
+                  return sum;
+                }, 0);
+
+                // Calculate proportional additional charges for this item
+                let itemAdditionalCharges = 0;
+                let itemAdditionalDiscount = 0;
+
+                const subtotal = qty * cost;
+                if (totalOrderValue > 0) {
+                  const itemProportion = subtotal / totalOrderValue;
+                  itemAdditionalCharges = totalAdditionalCharges * itemProportion;
+                  itemAdditionalDiscount = additionalDiscount * itemProportion;
+                }
+
+                // Enhanced Net Cost and Net Amount calculation using proper tax method
+                const taxCalculationMethod = form.watch("taxCalculationMethod") || "exclusive";
+                let baseCostWithTax = cost;
+                let netAmount = 0;
+                let taxableAmount = amount - discountAmount;
+
+                // Calculate based on tax method
+                switch (taxCalculationMethod) {
+                  case "inclusive":
+                    // Tax is included in cost - extract base amount
+                    if (taxPercent > 0) {
+                      baseCostWithTax = cost / (1 + (taxPercent / 100));
+                      netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                    } else {
+                      baseCostWithTax = cost;
+                      netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                    }
+                    break;
+                  case "compound":
+                    // Compound tax calculation
+                    baseCostWithTax = cost;
+                    if (taxPercent > 0) {
+                      const primaryTax = (taxableAmount * taxPercent) / 100;
+                      const compoundTax = (primaryTax * taxPercent) / 100;
+                      netAmount = taxableAmount + primaryTax + compoundTax + itemAdditionalCharges - itemAdditionalDiscount;
+                    } else {
+                      netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
+                    }
+                    break;
+                  case "exclusive":
+                  default:
+                    // Tax exclusive - tax added on top
+                    baseCostWithTax = cost;
+                    const tax = (taxableAmount * taxPercent) / 100;
+                    netAmount = taxableAmount + tax + itemAdditionalCharges - itemAdditionalDiscount;
+                    break;
+                }
+
+                const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
+                const cashAmount = amount * cashPercent / 100;
+                const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
+                const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
+
+                return (
+                  <TableRow key={field.id} className="hover:bg-blue-50 border-b border-gray-200 transition-colors">
+                    <TableCell className="border-r border-gray-200 px-2 py-2">
+                      <div className="flex items-center justify-center h-8">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+                          {index + 1}
                         </span>
                       </div>
-                    </div>
-                  </div>
+                    </TableCell>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Order Status</Label>
-                      <Select onValueChange={(value) => form.setValue("status", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="ordered">Ordered</SelectItem>
-                          <SelectItem value="partially_received">Partially Received</SelectItem>                          <SelectItem value="closed">Closed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="priority">Priority Level</Label>
-                      <Select onValueChange={(value) => form.setValue("priority", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shippingMethod">Shipping Method</Label>
-                      <Select onValueChange={(value) => form.setValue("shippingMethod", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select shipping method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="standard">Standard Delivery</SelectItem>
-                          <SelectItem value="express">Express Delivery</SelectItem>
-                          <SelectItem value="overnight">Overnight</SelectItem>
-                          <SelectItem value="pickup">Supplier Pickup</SelectItem>
-                          <SelectItem value="freight">Freight</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Enhanced Additional Charges Section */}
-              <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100">
-                  <CardTitle className="flex items-center gap-2 text-blue-800">
-                    <Package className="w-5 h-5" />
-                    Additional Charges
-                  </CardTitle>
-                  <p className="text-sm text-blue-600">These charges will be distributed proportionally across all line items</p>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="surchargeAmount" className="text-sm font-semibold text-gray-700">
-                        Surcharge (₹)
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register("surchargeAmount", { 
-                            valueAsNumber: true
-                          })}
-                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="freightAmount" className="text-sm font-semibold text-gray-700">
-                        Freight Charges (₹)
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register("freightAmount", { 
-                            valueAsNumber: true
-                          })}
-                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="packingCharges" className="text-sm font-semibold text-gray-700">
-                        Packing Charges (₹)
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register("packingCharges", { 
-                            valueAsNumber: true
-                          })}
-                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="otherCharges" className="text-sm font-semibold text-gray-700">
-                        Other Charges (₹)
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register("otherCharges", { 
-                            valueAsNumber: true
-                          })}
-                          className="pl-8 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="additionalDiscount" className="text-sm font-semibold text-gray-700">
-                        Additional Discount (₹)
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register("additionalDiscount", { 
-                            valueAsNumber: true
-                          })}
-                          className="pl-8 border-red-200 focus:border-red-500 focus:ring-red-500"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Charges Summary */}
-                  <div className="bg-white rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700">Charges Summary</h4>
-                      <Badge variant="outline" className="text-blue-700 border-blue-300">
-                        Auto-calculated
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="bg-green-50 p-3 rounded-lg text-center">
-                        <div className="text-green-600 font-medium">Total Charges</div>
-                        <div className="text-lg font-bold text-green-800">
-                          ₹{(
-                            (Number(watchedSurcharge) || 0) + 
-                            (Number(watchedFreight) || 0) + 
-                            (Number(watchedPacking) || 0) + 
-                            (Number(watchedOther) || 0)
-                          ).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="bg-red-50 p-3 rounded-lg text-center">
-                        <div className="text-red-600 font-medium">Total Discount</div>
-                        <div className="text-lg font-bold text-red-800">
-                          ₹{(Number(watchedAdditionalDiscount) || 0).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="bg-blue-50 p-3 rounded-lg text-center">
-                        <div className="text-blue-600 font-medium">Net Additional</div>
-                        <div className="text-lg font-bold text-blue-800">
-                          ₹{(
-                            (Number(watchedSurcharge) || 0) + 
-                            (Number(watchedFreight) || 0) + 
-                            (Number(watchedPacking) || 0) + 
-                            (Number(watchedOther) || 0) - 
-                            (Number(watchedAdditionalDiscount) || 0)
-                          ).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="bg-purple-50 p-3 rounded-lg text-center">
-                        <div className="text-purple-600 font-medium">Impact on Cost</div>
-                        <div className="text-sm font-bold text-purple-800">
-                          Distributed across {form.watch("items")?.filter(item => item.productId > 0).length || 0} items
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Invoice Details Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Invoice Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                    <TableCell className="border-r border-gray-200 px-2 py-2">
                       <Input
-                        {...form.register("invoiceNumber")}
-                        placeholder="Enter invoice number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceDate">Invoice Date</Label>
-                      <Input
-                        type="date"
-                        {...form.register("invoiceDate")}
-                        placeholder="dd-mm-yyyy"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="invoiceAmount">Invoice Amount</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("invoiceAmount", { valueAsNumber: true })}
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="lrNumber">LR Number</Label>
-                      <Input
-                        {...form.register("lrNumber")}
-                        placeholder="Enter LR number"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shippingAddress">Shipping Address</Label>
-                      <Textarea
-                        {...form.register(`shippingAddress`)}
-                        placeholder="Enter shipping address..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="billingAddress">Billing Address</Label>
-                      <Textarea
-                        {...form.register("billingAddress")}
-                        placeholder="Enter billing address..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="remarks">Public Remarks</Label>
-                      <Textarea
-                        {...form.register("remarks")}
-                        placeholder="Remarks visible to supplier..."
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="internalNotes">Internal Notes</Label>
-                      <Textarea
-                        {...form.register("internalNotes")}
-                        placeholder="Internal notes (not visible to supplier)..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Line Items Tab */}
-            <TabsContent value="items" className="space-y-4">
-              {/* Barcode Scanner Section */}
-              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-semibold text-blue-800 flex items-center gap-2">
-                    <QrCodeIcon className="h-5 w-5" />
-                    Quick Barcode Entry
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 relative">
-                      <QrCodeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600" />
-                      <Input
-                        placeholder="Scan barcode or type product code to quickly add items..."
-                        value={barcodeInput}
-                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        {...form.register(`items.${index}.code`)}
+                        className="w-full text-sm"
+                        placeholder="Code/SKU (Press Enter to search)"
+                        onChange={(e) => {
+                          form.setValue(`items.${index}.code`, e.target.value);
+                          syncTableToModal(index);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleBarcodeSubmit();
+                            const searchCode = e.currentTarget.value.toLowerCase().trim();
+                            if (searchCode) {
+                              const matchedProduct = products.find(p => 
+                                p.sku?.toLowerCase() === searchCode ||
+                                p.sku?.toLowerCase().includes(searchCode)
+                              );
+                              if (matchedProduct) {
+                                handleProductSelection(index, matchedProduct.id);
+                                toast({
+                                  title: "Product Found by Code! 🎯",
+                                  description: `${matchedProduct.name} (${matchedProduct.sku}) selected.`,
+                                });
+                              } else {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Code Not Found",
+                                  description: `No product found with code: ${searchCode}`,
+                                });
+                              }
+                            }
                           }
                         }}
-                        className="pl-10 text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                       />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        Tax Method: {form.watch("taxCalculationMethod") === "inclusive" ? "Tax Inclusive" : 
-                                   form.watch("taxCalculationMethod") === "compound" ? "Compound Tax" : "Tax Exclusive"}
-                      </Badge>
-                      <Button
-                        onClick={handleBarcodeSubmit}
-                        disabled={!barcodeInput.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add to Purchase
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    💡 Tip: Use a barcode scanner or manually enter product barcodes for instant item addition
-                  </p>
-                </CardContent>
-              </Card>
+                    </TableCell>
 
-              <Card className="w-full">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold">Line Items</CardTitle>
-                    <div className="flex gap-2">
-                      <Button onClick={addItem} size="sm" variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Item
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="w-full overflow-x-auto border border-gray-200 rounded-lg">
-                    <div className="min-w-[3200px] bg-white shadow-sm">
-                      <Table className="text-sm border-collapse">
-                        <TableHeader>
-                          <TableRow className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-300">
-                            <TableHead className="w-20 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">No</TableHead>
-                            <TableHead className="w-40 font-bold border-r border-blue-200 px-4 py-4 text-sm">Code</TableHead>
-                            <TableHead className="min-w-[280px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Product Name</TableHead>
-                            <TableHead className="min-w-[200px] font-bold border-r border-blue-200 px-4 py-4 text-sm">Description</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Previous Stock</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Received Qty</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">
-                              <div className="flex items-center justify-center gap-1">
-                                <span>Free Qty</span>
-                                <div className="group relative">
-                                  <span className="cursor-help text-green-600">🎁</span>
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
-                                    Free quantities automatically add to stock
-                                  </div>
-                                </div>
-                              </div>
-                            </TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cost</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">HSN Code</TableHead>
-                            <TableHead className="w-28 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Tax %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Disc Amt</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Exp. Date</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Cost</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">ROI %</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Gross Profit %</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Selling Price</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Wholesale Price</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">MRP</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Amount</TableHead>
-                            <TableHead className="w-40 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Net Amount</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash %</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Cash Amt</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Batch No</TableHead>
-                            <TableHead className="w-36 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Location</TableHead>
-                            <TableHead className="w-32 text-center font-bold border-r border-blue-200 px-4 py-4 text-sm">Unit</TableHead>
-                            <TableHead className="w-28 text-center font-bold px-4 py-4 text-sm">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {fields.map((field, index) => {
-                            const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-
-                            // Calculate values
-                            const qty = form.watch(`items.${index}.receivedQty`) || 0;
-                            const freeQty = form.watch(`items.${index}.freeQty`) || 0;
-                            const cost = form.watch(`items.${index}.unitCost`) || 0;
-                            const discountAmount = form.watch(`items.${index}.discountAmount`) || 0;
-                            const taxPercent = form.watch(`items.${index}.taxPercentage`) || 0;
-                            const cashPercent = form.watch(`items.${index}.cashPercent`) || 0;
-                            const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-
-                            const amount = qty * cost;
-                            
-                            // Get additional charges for proportional distribution
-                            const surchargeAmount = Number(watchedSurcharge) || 0;
-                            const freightAmount = Number(watchedFreight) || 0;
-                            const packingCharges = Number(watchedPacking) || 0;
-                            const otherCharges = Number(watchedOther) || 0;
-                            const additionalDiscount = Number(watchedAdditionalDiscount) || 0;
-                            
-                            const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
-                            
-                            // Calculate total order value for proportional distribution
-                            const allItems = form.watch("items") || [];
-                            const totalOrderValue = allItems.reduce((sum, item) => {
-                              if (item.productId && item.productId > 0) {
-                                return sum + ((item.receivedQty || 0) * (item.unitCost || 0));
-                              }
-                              return sum;
-                            }, 0);
-                            
-                            // Calculate proportional additional charges for this item
-                            let itemAdditionalCharges = 0;
-                            let itemAdditionalDiscount = 0;
-                            
-                            if (totalOrderValue > 0) {
-                              const itemProportion = amount / totalOrderValue;
-                              itemAdditionalCharges = totalAdditionalCharges * itemProportion;
-                              itemAdditionalDiscount = additionalDiscount * itemProportion;
-                            }
-                            
-                            // Enhanced Net Cost and Net Amount calculation using proper tax method
-                            const taxCalculationMethod = form.watch("taxCalculationMethod") || "exclusive";
-                            let baseCostWithTax = cost;
-                            let netAmount = 0;
-                            let taxableAmount = amount - discountAmount;
-                            
-                            // Calculate based on tax method
-                            switch (taxCalculationMethod) {
-                              case "inclusive":
-                                // Tax is included in cost - extract base amount
-                                if (taxPercent > 0) {
-                                  baseCostWithTax = cost / (1 + (taxPercent / 100));
-                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
-                                } else {
-                                  baseCostWithTax = cost;
-                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
-                                }
-                                break;
-                              case "compound":
-                                // Compound tax calculation
-                                baseCostWithTax = cost;
-                                if (taxPercent > 0) {
-                                  const primaryTax = (taxableAmount * taxPercent) / 100;
-                                  const compoundTax = (primaryTax * taxPercent) / 100;
-                                  netAmount = taxableAmount + primaryTax + compoundTax + itemAdditionalCharges - itemAdditionalDiscount;
-                                } else {
-                                  netAmount = taxableAmount + itemAdditionalCharges - itemAdditionalDiscount;
-                                }
-                                break;
-                              case "exclusive":
-                              default:
-                                // Tax exclusive - tax added on top
-                                baseCostWithTax = cost;
-                                const tax = (taxableAmount * taxPercent) / 100;
-                                netAmount = taxableAmount + tax + itemAdditionalCharges - itemAdditionalDiscount;
-                                break;
-                            }
-                            
-                            const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
-                            const cashAmount = amount * cashPercent / 100;
-                            const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
-                            const grossProfitPercent = sellingPrice > 0 ? ((sellingPrice - netCost) / sellingPrice) * 100 : 0;
-
-                            return (
-                              <TableRow key={field.id} className="hover:bg-blue-50 border-b border-gray-200 transition-colors">
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="flex items-center justify-center h-8">
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
-                                      {index + 1}
-                                    </span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <Input
-                                    {...form.register(`items.${index}.code`)}
-                                    className="w-full text-sm"
-                                    placeholder="Code/SKU (Press Enter to search)"
-                                    onChange={(e) => {
-                                      form.setValue(`items.${index}.code`, e.target.value);
-                                      syncTableToModal(index);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        const searchCode = e.currentTarget.value.toLowerCase().trim();
-                                        if (searchCode) {
-                                          const matchedProduct = products.find(p => 
-                                            p.sku?.toLowerCase() === searchCode ||
-                                            p.sku?.toLowerCase().includes(searchCode)
-                                          );
-                                          if (matchedProduct) {
-                                            handleProductSelection(index, matchedProduct.id);
-                                            toast({
-                                              title: "Product Found by Code! 🎯",
-                                              description: `${matchedProduct.name} (${matchedProduct.sku}) selected.`,
-                                            });
-                                          } else {
-                                            toast({
-                                              variant: "destructive",
-                                              title: "Code Not Found",
-                                              description: `No product found with code: ${searchCode}`,
-                                            });
-                                          }
-                                        }
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2 relative">
-                                  <div className="space-y-2 relative">
-                                    {/* Enhanced Product search with auto-suggestion dropdown */}
-                                    <div className="relative">
-                                      <ProductSearchWithSuggestions 
-                                        products={products}
-                                        onProductSelect={(product) => handleProductSelection(index, product.id)}
-                                        placeholder="🔍 Search products..."
-                                      />
-                                    </div>
-
-                                    <Select 
-                                      onValueChange={(value) => handleProductSelection(index, parseInt(value))}
-                                      value={form.watch(`items.${index}.productId`)?.toString() || ""}
-                                    >
-                                      <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="📋 Select from List">
-                                          {selectedProduct ? (
-                                            <div className="flex flex-col text-left">
-                                              <span className="font-medium text-sm">{selectedProduct.name}</span>
-                                              <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
-                                            </div>
-                                          ) : "📋 Select from List"}
-                                        </SelectValue>
-                                      </SelectTrigger>
-                                      <SelectContent className="max-h-[300px] overflow-y-auto">
-                                        {products.length === 0 ? (
-                                          <div className="p-4 text-center text-gray-500">
-                                            <span>No products available</span>
-                                          </div>
-                                        ) : (
-                                          products.map((product) => (
-                                            <SelectItem key={product.id} value={product.id.toString()}>
-                                              <div className="flex flex-col w-full">
-                                                <div className="flex items-center justify-between w-full">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-medium text-sm">{product.name}</span>
-                                                    <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
-                                                  </div>
-                                                  <div className="flex flex-col items-end ml-2">
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                                      (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
-                                                        ? 'bg-red-100 text-red-700' 
-                                                        : (product.stockQuantity || 0) > 50
-                                                          ? 'bg-green-100 text-green-700'
-                                                          : 'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                      {product.stockQuantity || 0}
-                                                    </span>
-                                                    {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
-                                                      <span className="text-xs text-red-600 font-medium">Low Stock!</span>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </SelectItem>
-                                          ))
-                                        )}
-                                      </SelectContent>
-                                    </Select>
-
-                                    {/* Enhanced Stock indicator with more details */}
-                                    {selectedProduct && (
-                                      <div className="bg-gray-50 rounded p-2 border">
-                                        <div className="flex items-center justify-between text-xs">
-                                          <span className="text-gray-600">Current Stock:</span>
-                                          <span className={`font-bold ${
-                                            (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
-                                              ? 'text-red-600' 
-                                              : 'text-green-600'
-                                          }`}>
-                                            {selectedProduct.stockQuantity || 0} units
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs mt-1">
-                                          <span className="text-gray-600">Price:</span>
-                                          <span className="font-medium text-blue-600">₹{selectedProduct.price}</span>
-                                        </div>
-                                        {(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
-                                          <div className="text-xs text-red-600 font-medium mt-1 flex items-center">
-                                            <span>⚠️ Low Stock Alert!</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <Input
-                                    {...form.register(`items.${index}.description`)}
-                                    className="w-full text-sm"
-                                    placeholder="Description"
-                                    onChange={(e) => {
-                                      form.setValue(`items.${index}.description`, e.target.value);
-                                      syncTableToModal(index);
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg text-sm h-12">
-                                    {selectedProduct ? (
-                                      <span className={`font-medium ${
-                                        (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
-                                          ? 'text-red-600' 
-                                          : 'text-green-600'
-                                      }`}>
-                                        {selectedProduct.stockQuantity || 0}
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    {...form.register(`items.${index}.receivedQty`, { 
-                                      valueAsNumber: true,
-                                      onChange: (e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.receivedQty`, value);
-
-                                        // Recalculate net amount when quantity changes
-                                        const unitCost = form.getValues(`items.${index}.unitCost`) || 0;
-                                        const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                        const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
-
-                                        const subtotal = value * unitCost;
-                                        const taxableAmount = subtotal - discount;
-                                        const tax = (taxableAmount * taxPercentage) / 100;
-                                        const netAmount = taxableAmount + tax;
-
-                                        form.setValue(`items.${index}.netAmount`, netAmount);
-
-                                        // Trigger form validation
-                                        setTimeout(() => form.trigger(`items.${index}`), 50);
-                                      }
-                                    })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        // Move to cost field
-                                        const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
-                                        nextField?.focus();
-                                      }
-                                    }}
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      {...form.register(`items.${index}.freeQty`, { 
-                                        valueAsNumber: true
-                                      })}
-                                      className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400 focus:bg-green-100"
-                                      placeholder="0"
-                                      onFocus={(e) => e.target.select()}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
-                                          nextField?.focus();
-                                        }
-                                      }}
-                                    />
-                                    
-                                    {/* Free Qty Indicator */}
-                                    {(() => {
-                                      const freeQty = form.watch(`items.${index}.freeQty`) || 0;
-                                      if (freeQty > 0) {
-                                        return (
-                                          <div className="text-xs text-green-600 text-center font-medium">
-                                            🎁 +{freeQty} free
-                                          </div>
-                                        );
-                                      }
-                                      return (
-                                        <div className="text-xs text-gray-400 text-center">
-                                          Free bonus
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <div className="relative">
-                                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={form.watch(`items.${index}.unitCost`) || ""}
-                                        onChange={async (e) => {
-                                          const value = parseFloat(e.target.value) || 0;
-                                          form.setValue(`items.${index}.unitCost`, value);
-
-                                          // Auto-calculate net amount using proper tax method
-                                          setTimeout(() => {
-                                            recalculateItemNetAmount(index);
-                                          }, 50);
-
-                                          // Update product cost price in real-time if changed significantly
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          if (selectedProduct && value > 0) {
-                                            const originalCost = parseFloat(selectedProduct.cost || "0");
-                                            const costDifference = Math.abs(value - originalCost);
-                                            
-                                            // Update product cost if difference is more than 0.01
-                                            if (costDifference > 0.01) {
-                                              try {
-                                                await apiRequest('PATCH', `/api/products/${selectedProduct.id}`, { cost: value });
-                                                
-                                                // Update local products array to reflect the change
-                                                const updatedProducts = products.map(p => 
-                                                  p.id === selectedProduct.id ? { ...p, cost: value.toString() } : p
-                                                );
-                                                queryClient.setQueryData(['/api/products'], updatedProducts);
-                                                
-                                                // Show success notification
-                                                toast({
-                                                  title: "Product Cost Updated",
-                                                  description: `${selectedProduct.name} cost updated from ₹${originalCost} to ₹${value}`,
-                                                });
-                                                
-                                                console.log(`Updated product ${selectedProduct.name} cost from ${originalCost} to ${value}`);
-                                              } catch (error) {
-                                                console.error('Failed to update product cost:', error);
-                                                toast({
-                                                  title: "Update Failed",
-                                                  description: "Failed to update product cost. Please try again.",
-                                                  variant: "destructive",
-                                                });
-                                              }
-                                            }
-                                          }
-
-                                          // Trigger form validation
-                                          setTimeout(() => form.trigger(`items.${index}`), 50);
-                                        }}
-                                        className="w-full text-right text-xs pl-6 focus:bg-yellow-50 focus:border-blue-500"
-                                        placeholder="Enter cost price"
-                                        onFocus={(e) => e.target.select()}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            // Move to next field (tax percentage)
-                                            const nextField = document.querySelector(`input[name="items.${index}.taxPercentage"]`) as HTMLInputElement;
-                                            nextField?.focus();
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                    
-                                    {/* Cost Price Indicator */}
-                                    {(() => {
-                                      const currentCost = form.watch(`items.${index}.unitCost`) || 0;
-                                      const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                      
-                                      if (selectedProduct && currentCost > 0) {
-                                        const originalCost = parseFloat(selectedProduct.cost || "0");
-                                        const sellingPrice = parseFloat(selectedProduct.price || "0");
-                                        const costDifference = Math.abs(currentCost - originalCost);
-                                        
-                                        if (originalCost > 0 && costDifference < 0.01) {
-                                          return (
-                                            <div className="text-xs text-green-600 text-center">
-                                              Original cost
-                                            </div>
-                                          );
-                                        } else if (originalCost === 0 && sellingPrice > 0) {
-                                          return (
-                                            <div className="text-xs text-blue-600 text-center">
-                                              Estimated cost
-                                            </div>
-                                          );
-                                        } else if (originalCost > 0 && costDifference > 0.01) {
-                                          const difference = ((currentCost - originalCost) / originalCost) * 100;
-                                          return (
-                                            <div className={`text-xs text-center ${
-                                              difference > 0 ? 'text-orange-600' : 'text-green-600'
-                                            }`}>
-                                              {difference > 0 ? '+' : ''}{difference.toFixed(1)}% - Will update product
-                                            </div>
-                                          );
-                                        }
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r border-gray-200 px-2 py-2">
-                                  <div className="space-y-2">
-                                    <Input
-                                      {...form.register(`items.${index}.hsnCode`)}
-                                      className="w-full text-center text-xs"
-                                      placeholder="HSN Code"
-                                      onChange={(e) => {
-                                        const hsnValue = e.target.value;
-                                        form.setValue(`items.${index}.hsnCode`, hsnValue);
-
-                                        // Auto-suggest GST rate based on HSN code
-                                        if (hsnValue.length >= 4) {
-                                          let suggestedGst = 0;
-                                          if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
-                                            suggestedGst = 0; // Fresh produce
-                                          } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
-                                            suggestedGst = 5; // Food grains, oils, sugar
-                                          } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
-                                            suggestedGst = 12; // Textiles, phones, bicycles
-                                          } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
-                                            suggestedGst = 18; // Personal care, biscuits
-                                          } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
-                                            suggestedGst = 28; // Beverages, tobacco, cars
-                                          } else {
-                                            suggestedGst = 18; // Default rate
-                                          }
-
-                                          if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
-                                            form.setValue(`items.${index}.taxPercentage`, suggestedGst);
-                                            
-                                            // Recalculate net amount with new tax rate using proper tax method
-                                            setTimeout(() => {
-                                              recalculateItemNetAmount(index);
-                                            }, 50);
-
-                                            toast({
-                                              title: "Tax Rate Updated! 📊",
-                                              description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
-                                            });
-                                          }
-                                        }
-                                      }}
-                                    />
-                                    
-                                    {/* HSN Code Validation Indicator */}
-                                    {form.watch(`items.${index}.hsnCode`) && (
-                                      <div className={`text-xs px-2 py-1 rounded text-center ${
-                                        (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
-                                          ? 'bg-green-100 text-green-700 border border-green-300' 
-                                          : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                                      }`}>
-                                        {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
-                                      </div>
-                                    )}
-
-                                    {/* Barcode Display */}
-                                    {selectedProduct?.barcode && (
-                                      <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
-                                        <img
-                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
-                                          alt="Product Barcode"
-                                          className="w-12 h-12 mb-1"
-                                        />
-                                        <span className="text-xs font-mono text-gray-600">
-                                          {selectedProduct.barcode}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      step="0.01"
-                                      value={form.watch(`items.${index}.taxPercentage`) || 0}
-                                      onChange={(e) => {
-                                        const taxRate = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                        
-                                        // Recalculate net amount when tax changes using proper tax method
-                                        setTimeout(() => {
-                                          recalculateItemNetAmount(index);
-                                        }, 50);
-                                      }}
-                                      className="w-full text-center text-xs"
-                                      placeholder="0"
-                                    />
-                                    
-                                    {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
-                                    {(form.watch(`items.${index}.taxPercentage`) || 0) > 0 && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
-                                        {(() => {
-                                          const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
-                                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
-                                          // Use product tax breakdown if available
-                                          let cgstRate = 0;
-                                          let sgstRate = 0;
-                                          let igstRate = 0;
-                                          
-                                          if (selectedProduct) {
-                                            cgstRate = parseFloat(selectedProduct.cgstRate || "0");
-                                            sgstRate = parseFloat(selectedProduct.sgstRate || "0");
-                                            igstRate = parseFloat(selectedProduct.igstRate || "0");
-                                          }
-                                          
-                                          // If product doesn't have breakdown, use default
-                                          if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
-                                            cgstRate = totalTax / 2;
-                                            sgstRate = totalTax / 2;
-                                          }
-                                          
-                                          return (
-                                            <div className="text-center">
-                                              <div className="text-blue-700 font-medium text-xs mb-1">
-                                                Total GST: {totalTax}%
-                                              </div>
-                                              
-                                              {/* GST Breakdown */}
-                                              {totalTax > 0 && (
-                                                <div className="grid grid-cols-3 gap-1 text-xs">
-                                                  <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">CGST</div>
-                                                    <div>{cgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">SGST</div>
-                                                    <div>{sgstRate}%</div>
-                                                  </div>
-                                                  <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
-                                                    <div className="font-medium">IGST</div>
-                                                    <div>{igstRate}%</div>
-                                                  </div>
-                                                </div>
-                                              )}
-                                              
-                                              {/* Tax Type Indicator */}
-                                              <div className="text-xs text-gray-600 mt-1">
-                                                {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Quick Tax Rate Buttons */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {[0, 5, 12, 18, 28].map((rate) => (
-                                        <button
-                                          key={rate}
-                                          type="button"
-                                          onClick={() => {
-                                            form.setValue(`items.${index}.taxPercentage`, rate);
-                                            
-                                            // Recalculate net amount
-                                            const qty = form.getValues(`items.${index}.receivedQty`) || 0;
-                                            const cost = form.getValues(`items.${index}.unitCost`) || 0;
-                                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
-                                            const subtotal = qty * cost;
-                                            const taxableAmount = subtotal - discount;
-                                            const tax = (taxableAmount * rate) / 100;
-                                            const netAmount = taxableAmount + tax;
-                                            
-                                            form.setValue(`items.${index}.netAmount`, netAmount);
-                                            form.trigger(`items.${index}`);
-                                          }}
-                                          className={`px-1 py-0.5 text-xs rounded border ${
-                                            form.watch(`items.${index}.taxPercentage`) === rate
-                                              ? 'bg-blue-500 text-white border-blue-500'
-                                              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                                          }`}
-                                        >
-                                          {rate}%
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0"
-                                    />
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="date"
-                                    {...form.register(`items.${index}.expiryDate`)}
-                                    className="w-full text-xs"
-                                    placeholder="dd-mm-yyyy"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex flex-col items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <div className="flex items-center">
-                                      <span className="text-xs">₹</span>
-                                      <span className="ml-1 font-medium">{netCost.toFixed(2)}</span>
-                                      {totalAdditionalCharges > 0 && (
-                                        <span className="ml-1 text-green-600" title="Includes additional charges">📦</span>
-                                      )}
-                                    </div>
-                                    {totalAdditionalCharges > 0 && (
-                                      <div className="text-xs text-green-600 mt-1">
-                                        +₹{(itemAdditionalCharges / qty).toFixed(2)} charges
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    <span className="font-medium">{roiPercent.toFixed(2)}</span>
-                                    <span className="text-xs ml-1">%</span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                                                   <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
-                                    <span className="text-xs ml-1">%</span>
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.sellingPrice`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.sellingPrice`, value);
-                                        
-                                        // Auto-calculate MRP if not set (typical markup is 20-25%)
-                                        const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
-                                        if (currentMrp === 0 && value > 0) {
-                                          const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
-                                          form.setValue(`items.${index}.mrp`, suggestedMrp);
-                                        }
-                                        
-                                        form.trigger(`items.${index}`);
-                                      }}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
-                                    />
-                                  </div>
-                                  {/* Selling Price Indicator */}
-                                  {(() => {
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
-                                    const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
-                                    
-                                    if (sellingPrice > 0 && unitCost > 0) {
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                        }`}>
-                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.wholesalePrice`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.wholesalePrice`, value);
-                                        form.trigger(`items.${index}`);
-                                      }}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
-                                    />
-                                  </div>
-                                  {/* Wholesale Price Indicator */}
-                                  {(() => {
-                                    const wholesalePrice = form.watch(`items.${index}.wholesalePrice`) || 0;
-                                    const unitCost = form.watch(`items.${index}.unitCost`) || 0;
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    
-                                    if (wholesalePrice > 0 && unitCost > 0) {
-                                      const margin = ((wholesalePrice - unitCost) / unitCost) * 100;
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          margin > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-red-50 text-red-700'
-                                        }`}>
-                                          {margin > 0 ? '+' : ''}{margin.toFixed(1)}% bulk margin
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      {...form.register(`items.${index}.mrp`, { 
-                                        valueAsNumber: true,
-                                        setValueAs: (value) => value || 0
-                                      })}
-                                      onChange={(e) => {
-                                        const value = parseFloat(e.target.value) || 0;
-                                        form.setValue(`items.${index}.mrp`, value);
-                                        form.trigger(`items.${index}`);
-                                      }}
-                                      className="w-full text-right text-xs pl-6"
-                                      placeholder="0.00"
-                                      onFocus={(e) => e.target.select()}
-                                    />
-                                  </div>
-                                  {/* MRP vs Selling Price Indicator */}
-                                  {(() => {
-                                    const mrp = form.watch(`items.${index}.mrp`) || 0;
-                                    const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    
-                                    if (mrp > 0 && sellingPrice > 0) {
-                                      const discount = ((mrp - sellingPrice) / mrp) * 100;
-                                      return (
-                                        <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
-                                          discount > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
-                                        }`}>
-                                          {discount > 0 ? `${discount.toFixed(1)}% off MRP` : 'Above MRP'}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
-                                    {amount > 0 ? (
-                                      <>
-                                        <span className="text-xs font-medium text-blue-700">₹</span>
-                                        <span className="font-medium text-blue-700 ml-1">{amount.toFixed(0)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
-                                    {((form.watch(`items.${index}.netAmount`) as number) || 0) > 0 ? (
-                                      <>
-                                        <span className="text-xs font-medium text-green-700">₹</span>
-                                        <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`) || 0)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.01"
-                                    {...form.register(`items.${index}.cashPercent`, { valueAsNumber: true })}
-                                    className="w-full text-center text-xs"
-                                    placeholder="0"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                    {cashAmount > 0 ? (
-                                      <>
-                                        <span className="text-xs">₹</span>
-                                        <span className="font-medium ml-1">{cashAmount.toFixed(0)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-gray-400">-</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    {...form.register(`items.${index}.batchNumber`)}
-                                    className="w-full text-xs"
-                                    placeholder="Batch #"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Input
-                                    {...form.register(`items.${index}.location`)}
-                                    className="w-full text-xs"
-                                    placeholder="Location"
-                                  />
-                                </TableCell>
-
-                                <TableCell className="border-r px-3 py-3">
-                                  <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
-                                    <SelectTrigger className="w-full text-xs">
-                                      <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="PCS">PCS</SelectItem>
-                                      <SelectItem value="KG">KG</SelectItem>
-                                      <SelectItem value="LTR">LTR</SelectItem>
-                                      <SelectItem value="BOX">BOX</SelectItem>
-                                      <SelectItem value="PACK">PACK</SelectItem>
-                                      <SelectItem value="DOZEN">DOZEN</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-
-                                <TableCell className="px-3 py-3">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => openAddItemModal(index)}
-                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-8 w-8 rounded-full"
-                                      title="Edit item"
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    {fields.length > 1 ? (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => removeItem(index)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 rounded-full"
-                                        title="Delete item"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        disabled
-                                        className="text-gray-300 p-1 h-8 w-8 rounded-full cursor-not-allowed"
-                                        title="Cannot delete the last item"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Summary Tab */}
-            <TabsContent value="summary" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Purchase Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="grid grid-cols-2 gap-8">
-                      {/* Order Details */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Details</h3>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Order Number:</span>
-                            <span className="font-medium">{form.watch("orderNumber") || "PO-32232115"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Order Date:</span>
-                            <span className="font-medium">{form.watch("orderDate") || "2025-05-26"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Payment Terms:</span>
-                            <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Tax Calculation:</span>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                              {(() => {
-                                const method = form.watch("taxCalculationMethod") || "exclusive";
-                                switch (method) {
-                                  case "inclusive": return "Tax Inclusive";
-                                  case "compound": return "Compound Tax";
-                                  default: return "Tax Exclusive";
-                                }
-                              })()}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Status:</span>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                              {form.watch("status") || "Pending"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Financial Summary */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Total Items:</span>
-                            <span className="font-medium">{summary.totalItems}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Total Quantity:</span>
-                            <span className="font-medium">{summary.totalQuantity}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Subtotal:</span>
-                            <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
-                          </div>
-                          <div className="flex justify-between text-red-600">
-                            <span>Total Discount:</span>
-                            <span className="font-medium">{formatCurrency(summary.totalDiscount)}</span>
-                          </div>
-                          <div className="flex justify-between text-green-600">
-                            <span>Total Tax (GST):</span>
-                            <span className="font-medium">+{formatCurrency(summary.totalTax)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Freight Charges:</span>
-                            <span className="font-medium">+{formatCurrency(summary.freightCharges)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Surcharge:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("surchargeAmount")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Packing Charges:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("packingCharges")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Other Charges:</span>
-                            <span className="font-medium">+{formatCurrency(Number(form.watch("otherCharges")) || 0)}</span>
-                          </div>
-                          <div className="flex justify-between text-red-600">
-                            <span>Additional Discount:</span>
-                            <span className="font-medium">-{formatCurrency(Number(form.watch("additionalDiscount")) || 0)}</span>
-                          </div>
-
-                          <div className="border-t pt-3 mt-4">
-                            <div className="flex justify-between text-xl font-bold text-blue-600">
-                              <span>Grand Total:</span>
-                              <span>{formatCurrency(summary.grandTotal)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bill Payment Section */}
-                  <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
-                    <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100">
-                      <CardTitle className="flex items-center gap-2 text-green-800">
-                        <CreditCard className="w-5 h-5" />
-                        Bill Payment Management
-                      </CardTitle>
-                      <p className="text-sm text-green-600">Record and track payments for this purchase order</p>
-                    </CardHeader>
-                    <CardContent className="space-y-6 pt-6">
-                      {/* Payment Summary */}
-                      <div className="bg-white rounded-lg p-4 border border-green-200">
-                        <h4 className="font-semibold text-green-900 mb-3">Payment Overview</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
-                            <div className="text-blue-600 font-medium">Total Amount</div>
-                            <div className="text-lg font-bold text-blue-800">
-                              {formatCurrency(summary.grandTotal)}
-                            </div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                            <div className="text-green-600 font-medium">Amount Paid</div>
-                            <div className="text-lg font-bold text-green-800">
-                              {formatCurrency(paymentData.paymentAmount || 0)}
-                            </div>
-                          </div>
-                          <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
-                            <div className="text-orange-600 font-medium">Balance Due</div>
-                            <div className="text-lg font-bold text-orange-800">
-                              {formatCurrency(summary.grandTotal - (paymentData.paymentAmount || 0))}
-                            </div>
-                          </div>
-                          <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
-                            <div className="text-purple-600 font-medium">Payment Status</div>
-                            <div className="text-sm font-bold text-purple-800">
-                              {(paymentData.paymentAmount || 0) >= summary.grandTotal ? "Fully Paid" : 
-                               (paymentData.paymentAmount || 0) > 0 ? "Partially Paid" : "Unpaid"}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment Form */}
-                      <div className="bg-white rounded-lg p-4 border border-green-200">
-                        <h4 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" />
-                          Record New Payment
-                        </h4>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="summary-payment-amount">Payment Amount</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
-                              <Input
-                                id="summary-payment-amount"
-                                type="number"
-                                min="0"
-                                max={summary.grandTotal}
-                                step="0.01"
-                                value={paymentData.paymentAmount || ''}
-                                onChange={(e) => setPaymentData({
-                                  ...paymentData,
-                                  paymentAmount: parseFloat(e.target.value) || 0
-                                })}
-                                placeholder="0.00"
-                                className="pl-8 border-green-300 focus:border-green-500 focus:ring-green-500"
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor="summary-payment-method">Payment Method</Label>
-                            <Select 
-                              value={paymentData.paymentMethod} 
-                              onValueChange={(value) => setPaymentData({
-                                ...paymentData,
-                                paymentMethod: value
-                              })}
-                            >
-                              <SelectTrigger className="border-green-300 focus:border-green-500">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Cash">Cash</SelectItem>
-                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                <SelectItem value="UPI">UPI</SelectItem>
-                                <SelectItem value="Cheque">Cheque</SelectItem>
-                                <SelectItem value="Credit Card">Credit Card</SelectItem>
-                                <SelectItem value="Debit Card">Debit Card</SelectItem>
-                                <SelectItem value="Credit">Credit</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="summary-payment-date">Payment Date</Label>
-                            <Input
-                              id="summary-payment-date"
-                              type="date"
-                              value={paymentData.paymentDate}
-                              onChange={(e) => setPaymentData({
-                                ...paymentData,
-                                paymentDate: e.target.value
-                              })}
-                              className="border-green-300 focus:border-green-500 focus:ring-green-500"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor="summary-payment-reference">Reference/Transaction ID</Label>
-                            <Input
-                              id="summary-payment-reference"
-                              value={paymentData.paymentReference}
-                              onChange={(e) => setPaymentData({
-                                ...paymentData,
-                                paymentReference: e.target.value
-                              })}
-                              placeholder="Payment reference"
-                              className="border-green-300 focus:border-green-500 focus:ring-green-500"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mt-4 space-y-2">
-                          <Label htmlFor="summary-payment-notes">Payment Notes</Label>
-                          <Textarea
-                            id="summary-payment-notes"
-                            value={paymentData.paymentNotes}
-                            onChange={(e) => setPaymentData({
-                              ...paymentData,
-                              paymentNotes: e.target.value
-                            })}
-                            placeholder="Additional notes about this payment..."
-                            rows={2}
-                            className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                    <TableCell className="border-r border-gray-200 px-2 py-2 relative">
+                      <div className="space-y-2 relative">
+                        {/* Enhanced Product search with auto-suggestion dropdown */}
+                        <div className="relative">
+                          <ProductSearchWithSuggestions 
+                            products={products}
+                            onProductSelect={(product) => handleProductSelection(index, product.id)}
+                            placeholder="🔍 Search products..."
                           />
                         </div>
 
-                        {/* Quick Payment Options */}
-                        <div className="mt-4 space-y-3">
-                          <h5 className="font-medium text-green-700">Quick Payment Options</h5>
-                          <div className="flex gap-2 flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPaymentData({
-                                ...paymentData,
-                                paymentAmount: summary.grandTotal * 0.25
-                              })}
-                              className="text-blue-600 hover:bg-blue-50 border-blue-300"
-                            >
-                              25% ({formatCurrency(summary.grandTotal * 0.25)})
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPaymentData({
-                                ...paymentData,
-                                paymentAmount: summary.grandTotal * 0.5
-                              })}
-                              className="text-green-600 hover:bg-green-50 border-green-300"
-                            >
-                              50% ({formatCurrency(summary.grandTotal * 0.5)})
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPaymentData({
-                                ...paymentData,
-                                paymentAmount: summary.grandTotal
-                              })}
-                              className="text-purple-600 hover:bg-purple-50 border-purple-300"
-                            >
-                              Full Amount ({formatCurrency(summary.grandTotal)})
-                            </Button>
+                        <Select 
+                          onValueChange={(value) => handleProductSelection(index, parseInt(value))}
+                          value={form.watch(`items.${index}.productId`)?.toString() || ""}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="📋 Select from List">
+                              {selectedProduct ? (
+                                <div className="flex flex-col text-left">
+                                  <span className="font-medium text-sm">{selectedProduct.name}</span>
+                                  <span className="text-xs text-gray-500">{selectedProduct.sku}</span>
+                                </div>
+                              ) : "📋 Select from List"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent className="max-h-[300px] overflow-y-auto">
+                            {products.length === 0 ? (
+                              <div className="p-4 text-center text-gray-500">
+                                <span>No products available</span>
+                              </div>
+                            ) : (
+                              products.map((product) => (
+                                <SelectItem key={product.id} value={product.id.toString()}>
+                                  <div className="flex flex-col w-full">
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="flex flex-col">
+                                        <span className="font-medium text-sm">{product.name}</span>
+                                        <span className="text-xs text-gray-500">{product.sku} | ₹{product.price}</span>
+                                      </div>
+                                      <div className="flex flex-col items-end ml-2">
+                                        <span className={`text-xs px-2 py-1 rounded-full ${
+                                          (product.stockQuantity || 0) <= (product.alertThreshold || 5) 
+                                            ? 'bg-red-100 text-red-700' 
+                                            : (product.stockQuantity || 0) > 50
+                                              ? 'bg-green-100 text-green-700'
+                                              : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                          {product.stockQuantity || 0}
+                                        </span>
+                                        {(product.stockQuantity || 0) <= (product.alertThreshold || 5) && (
+                                          <span className="text-xs text-red-600 font-medium">Low!</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Enhanced Stock indicator with more details */}
+                        {selectedProduct && (
+                          <div className="bg-gray-50 rounded p-2 border">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-600">Current Stock:</span>
+                              <span className={`font-bold ${
+                                (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
+                                  ? 'text-red-600' 
+                                  : 'text-green-600'
+                              }`}>
+                                {selectedProduct.stockQuantity || 0} units
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs mt-1">
+                              <span className="text-gray-600">Price:</span>
+                              <span className="font-medium text-blue-600">₹{selectedProduct.price}</span>
+                            </div>
+                            {(selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) && (
+                              <div className="text-xs text-red-600 font-medium mt-1 flex items-center">
+                                <span>⚠️ Low Stock Alert!</span>
+                              </div>
+                            )}
                           </div>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r border-gray-200 px-2 py-2">
+                      <Input
+                        {...form.register(`items.${index}.description`)}
+                        className="w-full text-sm"
+                        placeholder="Description"
+                        onChange={(e) => {
+                          form.setValue(`items.${index}.description`, e.target.value);
+                          syncTableToModal(index);
+                        }}
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r border-gray-200 px-2 py-2">
+                      <div className="flex items-center justify-center p-3 bg-gray-50 rounded-lg text-sm h-12">
+                        {selectedProduct ? (
+                          <span className={`font-medium ${
+                            (selectedProduct.stockQuantity || 0) <= (selectedProduct.alertThreshold || 5) 
+                              ? 'text-red-600' 
+                              : 'text-green-600'
+                          }`}>
+                            {selectedProduct.stockQuantity || 0}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        {...form.register(`items.${index}.receivedQty`, { 
+                          valueAsNumber: true,
+                          onChange: (e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            form.setValue(`items.${index}.receivedQty`, value);
+
+                            // Recalculate net amount when quantity changes
+                            const unitCost = form.getValues(`items.${index}.unitCost`) || 0;
+                            const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                            const taxPercentage = form.getValues(`items.${index}.taxPercentage`) || 0;
+
+                            const subtotal = value * unitCost;
+                            const taxableAmount = subtotal - discount;
+                            const tax = (taxableAmount * taxPercentage) / 100;
+                            const netAmount = taxableAmount + tax;
+
+                            form.setValue(`items.${index}.netAmount`, netAmount);
+
+                            // Trigger form validation
+                            setTimeout(() => form.trigger(`items.${index}`), 50);
+                          }
+                        })}
+                        className="w-full text-center text-xs"
+                        placeholder="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            // Move to cost field
+                            const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
+                            nextField?.focus();
+                          }
+                        }}
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="space-y-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          {...form.register(`items.${index}.freeQty`, { 
+                            valueAsNumber: true
+                          })}
+                          className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400 focus:bg-green-100"
+                          placeholder="0"
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              // Move to next field (cost)
+                              const nextField = document.querySelector(`input[name="items.${index}.unitCost"]`) as HTMLInputElement;
+                              nextField?.focus();
+                            }
+                          }}
+                        />
+
+                        {/* Free Qty Indicator */}
+                        {(() => {
+                          const freeQty = form.watch(`items.${index}.freeQty`) || 0;
+                          if (freeQty > 0) {
+                            return (
+                              <div className="text-xs text-green-600 text-center font-medium">
+                                🎁 +{freeQty} free
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="text-xs text-gray-400 text-center">
+                              Free bonus
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={form.watch(`items.${index}.unitCost`) || ""}
+                            onChange={async (e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              form.setValue(`items.${index}.unitCost`, value);
+
+                              // Auto-calculate net amount using proper tax method
+                              setTimeout(() => {
+                                recalculateItemNetAmount(index);
+                              }, 50);
+
+                              // Update product cost price in real-time if changed significantly
+                              const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+                              if (selectedProduct && value > 0) {
+                                const originalCost = parseFloat(selectedProduct.cost || "0");
+                                const costDifference = Math.abs(value - originalCost);
+
+                                // Update product cost if difference is more than 0.01
+                                if (costDifference > 0.01) {
+                                  try {
+                                    await apiRequest('PATCH', `/api/products/${selectedProduct.id}`, { cost: value });
+
+                                    // Update local products array to reflect the change
+                                    const updatedProducts = products.map(p => 
+                                      p.id === selectedProduct.id ? { ...p, cost: value.toString() } : p
+                                    );
+                                    queryClient.setQueryData(['/api/products'], updatedProducts);
+
+                                    // Show success notification
+                                    toast({
+                                      title: "Product Cost Updated",
+                                      description: `${selectedProduct.name} cost updated from ₹${originalCost} to ₹${value}`,
+                                    });
+
+                                    console.log(`Updated product ${selectedProduct.name} cost from ${originalCost} to ${value}`);
+                                  } catch (error) {
+                                    console.error('Failed to update product cost:', error);
+                                    toast({
+                                      title: "Update Failed",
+                                      description: "Failed to update product cost. Please try again.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }
+                              }
+
+                              // Trigger form validation
+                              setTimeout(() => form.trigger(`items.${index}`), 50);
+                            }}
+                            className="w-full text-right text-xs pl-6 focus:bg-yellow-50 focus:border-blue-500"
+                            placeholder="Enter cost price"
+                            onFocus={(e) => e.target.select()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                // Move to next field (tax percentage)
+                                const nextField = document.querySelector(`input[name="items.${index}.taxPercentage"]`) as HTMLInputElement;
+                                nextField?.focus();
+                              }
+                            }}
+                          />
                         </div>
 
-                        {/* Record Payment Button */}
-                        <div className="mt-6 flex justify-end">
-                          <Button
-                            onClick={() => {
-                              // Validate payment amount
-                              if (paymentData.paymentAmount <= 0) {
-                                toast({
-                                  variant: "destructive",
-                                  title: "Invalid Amount",
-                                  description: "Please enter a valid payment amount greater than 0",
-                                });
-                                return;
+                        {/* Cost Price Indicator */}
+                        {(() => {
+                          const currentCost = form.watch(`items.${index}.unitCost`) || 0;
+                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+
+                          if (selectedProduct && currentCost > 0) {
+                            const originalCost = parseFloat(selectedProduct.cost || "0");
+                            const sellingPrice = parseFloat(selectedProduct.price || "0");
+                            const costDifference = Math.abs(currentCost - originalCost);
+
+                            if (originalCost > 0 && costDifference < 0.01) {
+                              return (
+                                <div className="text-xs text-green-600 text-center">
+                                  Original cost
+                                </div>
+                              );
+                            } else if (originalCost === 0 && sellingPrice > 0) {
+                              return (
+                                <div className="text-xs text-blue-600 text-center">
+                                  Estimated cost
+                                </div>
+                              );
+                            } else if (originalCost > 0 && costDifference > 0.01) {
+                              const difference = ((currentCost - originalCost) / originalCost) * 100;
+                              return (
+                                <div className={`text-xs text-center ${
+                                  difference > 0 ? 'text-orange-600' : 'text-green-600'
+                                }`}>
+                                  {difference > 0 ? '+' : ''}{difference.toFixed(1)}% - Will update product
+                                </div>
+                              );
+                            }
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r border-gray-200 px-2 py-2">
+                      <div className="space-y-2">
+                        <Input
+                          {...form.register(`items.${index}.hsnCode`)}
+                          className="w-full text-center text-xs"
+                          placeholder="HSN Code"
+                          onChange={(e) => {
+                            const hsnValue = e.target.value;
+                            form.setValue(`items.${index}.hsnCode`, hsnValue);
+
+                            // Auto-suggest GST rate based on HSN code
+                            if (hsnCode.length >= 4) {
+                              let suggestedGst = 0;
+                              if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
+                                suggestedGst = 0; // Fresh produce
+                              } else if (hsnValue.startsWith("10") || hsnValue.startsWith("15") || hsnValue.startsWith("17")) {
+                                suggestedGst = 5; // Food grains, oils, sugar
+                              } else if (hsnValue.startsWith("62") || hsnValue.startsWith("85171") || hsnValue.startsWith("87120")) {
+                                suggestedGst = 12; // Textiles, phones, bicycles
+                              } else if (hsnValue.startsWith("33") || hsnValue.startsWith("34") || hsnValue.startsWith("19")) {
+                                suggestedGst = 18; // Personal care, biscuits
+                              } else if (hsnValue.startsWith("22") || hsnValue.startsWith("24") || hsnValue.startsWith("87032")) {
+                                suggestedGst = 28; // Beverages, tobacco, cars
+                              } else {
+                                suggestedGst = 18; // Default rate
                               }
 
-                              if (paymentData.paymentAmount > summary.grandTotal) {
+                              if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
+                                form.setValue(`items.${index}.taxPercentage`, suggestedGst);
+
+                                // Recalculate net amount with new tax rate using proper tax method
+                                setTimeout(() => {
+                                  recalculateItemNetAmount(index);
+                                }, 50);
+
                                 toast({
-                                  variant: "destructive",
-                                  title: "Amount Too High",
-                                  description: "Payment amount cannot exceed the total purchase amount",
+                                  title: "Tax Rate Updated! 📊",
+                                  description: `GST rate auto-updated to ${suggestedGst}% based on HSN ${hsnValue}`,
                                 });
-                                return;
+                              }
+                            }
+                          }}
+                        />
+
+                        {/* HSN Code Validation Indicator */}
+                        {form.watch(`items.${index}.hsnCode`) && (
+                          <div className={`text-xs px-2 py-1 rounded text-center ${
+                            (form.watch(`items.${index}.hsnCode`) || "").length >= 6 
+                              ? 'bg-green-100 text-green-700 border border-green-300' 
+                              : 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                          }`}>
+                            {(form.watch(`items.${index}.hsnCode`) || "").length >= 6 ? '✓ Valid HSN' : '⚠ Incomplete'}
+                          </div>
+                        )}
+
+                        {/* Barcode Display */}
+                        {selectedProduct?.barcode && (
+                          <div className="flex flex-col items-center p-2 bg-gray-50 rounded border">
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${selectedProduct.barcode}`}
+                              alt="Product Barcode"
+                              className="w-12 h-12 mb-1"
+                            />
+                            <span className="text-xs font-mono text-gray-600">
+                              {selectedProduct.barcode}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="space-y-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={form.watch(`items.${index}.taxPercentage`) || 0}
+                          onChange={(e) => {
+                            const taxRate = parseFloat(e.target.value) || 0;
+                            form.setValue(`items.${index}.taxPercentage`, taxRate);
+
+                            // Recalculate net amount when tax changes using proper tax method
+                            setTimeout(() => {
+                              recalculateItemNetAmount(index);
+                            }, 50);
+                          }}
+                          className="w-full text-center text-xs"
+                          placeholder="0"
+                        />
+
+                        {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
+                        {(form.watch(`items.${index}.taxPercentage`) || 0) > 0 && (
+                          <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
+                            {(() => {
+                              const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
+                              const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+
+                              // Use product tax breakdown if available
+                              let cgstRate = 0;
+                              let sgstRate = 0;
+                              let igstRate = 0;
+
+                              if (selectedProduct) {
+                                cgstRate = parseFloat(selectedProduct.cgstRate || "0");
+                                sgstRate = parseFloat(selectedProduct.sgstRate || "0");
+                                igstRate = parseFloat(selectedProduct.igstRate || "0");
                               }
 
-                              // Update purchase payment information
-                              form.setValue("paymentMethod", paymentData.paymentMethod);
-                              
-                              // Calculate remaining balance
-                              const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
-                              const isFullyPaid = remainingBalance <= 0;
-                              
-                              toast({
-                                title: "✅ Payment Recorded Successfully",
-                                description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
-                              });
-                            }}
-                            disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
-                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
-                          >
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Record Payment
-                          </Button>
+                              // If product doesn't have breakdown, use default
+                              if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
+                                cgstRate = totalTax / 2;
+                                sgstRate = totalTax / 2;
+                              }
+
+                              return (
+                                <div className="text-center">
+                                  <div className="text-blue-700 font-medium text-xs mb-1">
+                                    Total GST: {totalTax}%
+                                  </div>
+
+                                  {/* GST Breakdown */}
+                                  {totalTax > 0 && (
+                                    <div className="grid grid-cols-3 gap-1 text-xs">
+                                      <div className="bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                                        <div className="font-medium">CGST</div>
+                                        <div>{cgstRate}%</div>
+                                      </div>
+                                      <div className="bg-orange-100 text-orange-700 px-1 py-0.5 rounded">
+                                        <div className="font-medium">SGST</div>
+                                        <div>{sgstRate}%</div>
+                                      </div>
+                                      <div className="bg-purple-100 text-purple-700 px-1 py-0.5 rounded">
+                                        <div className="font-medium">IGST</div>
+                                        <div>{igstRate}%</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Tax Type Indicator */}
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                        {/* Quick Tax Rate Buttons */}
+                        <div className="flex flex-wrap gap-1">
+                          {[0, 5, 12, 18, 28].map((rate) => (
+                            <button
+                              key={rate}
+                              type="button"
+                              onClick={() => {
+                                form.setValue(`items.${index}.taxPercentage`, rate);
+
+                                // Recalculate net amount
+                                const qty = form.getValues(`items.${index}.receivedQty`) || 0;
+                                const cost = form.getValues(`items.${index}.unitCost`) || 0;
+                                const discount = form.getValues(`items.${index}.discountAmount`) || 0;
+                                const subtotal = qty * cost;
+                                const taxableAmount = subtotal - discount;
+                                const tax = (taxableAmount * rate) / 100;
+                                const netAmount = taxableAmount + tax;
+
+                                form.setValue(`items.${index}.netAmount`, netAmount);
+                                form.trigger(`items.${index}`);
+                              }}
+                              className={`px-1 py-0.5 text-xs rounded border ${
+                                form.watch(`items.${index}.taxPercentage`) === rate
+                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {rate}%
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </TableCell>
 
-                  {form.watch("remarks") && (
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">Remarks</h3>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {form.watch("remarks")}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...form.register(`items.${index}.discountAmount`, { valueAsNumber: true })}
+                          className="w-full text-right text-xs pl-6"
+                          placeholder="0"
+                        />
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Input
+                        type="date"
+                        {...form.register(`items.${index}.expiryDate`)}
+                        className="w-full text-xs"
+                        placeholder="dd-mm-yyyy"
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                        <div className="flex items-center">
+                          <span className="text-xs">₹</span>
+                          <span className="ml-1 font-medium">{netCost.toFixed(2)}</span>
+                          {totalAdditionalCharges > 0 && (
+                            <span className="ml-1 text-green-600" title="Includes additional charges">📦</span>
+                          )}
+                        </div>
+                        {totalAdditionalCharges > 0 && (
+                          <div className="text-xs text-green-600 mt-1">
+                            +₹{(itemAdditionalCharges / qty).toFixed(2)} charges
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                        <span className="font-medium">{roiPercent.toFixed(2)}</span>
+                        <span className="text-xs ml-1">%</span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                        <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
+                        <span className="text-xs ml-1">%</span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...form.register(`items.${index}.sellingPrice`, { 
+                            valueAsNumber: true,
+                            setValueAs: (value) => value || 0
+                          })}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            form.setValue(`items.${index}.sellingPrice`, value);
+
+                            // Auto-calculate MRP if not set (typical markup is 20-25%)
+                            const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
+                            if (currentMrp === 0 && value > 0) {
+                              const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
+                              form.setValue(`items.${index}.mrp`, suggestedMrp);
+                            }
+
+                            form.trigger(`items.${index}`);
+                          }}
+                          className="w-full text-right text-xs pl-6"
+                          placeholder="0.00"
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </div>
+                      {/* Selling Price Indicator */}
+                      {(() => {
+                        const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+                        const unitCost = form.watch(`items.${index}.unitCost`) || 0;
+                        const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
+
+                        if (sellingPrice > 0 && unitCost > 0) {
+                          return (
+                            <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                              margin > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                            }`}>
+                              {margin > 0 ? '+' : ''}{margin.toFixed(1)}% margin
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...form.register(`items.${index}.wholesalePrice`, { 
+                            valueAsNumber: true,
+                            setValueAs: (value) => value || 0
+                          })}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            form.setValue(`items.${index}.wholesalePrice`, value);
+                            form.trigger(`items.${index}`);
+                          }}
+                          className="w-full text-right text-xs pl-6"
+                          placeholder="0.00"
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </div>
+                      {/* Wholesale Price Indicator */}
+                      {(() => {
+                        const wholesalePrice = form.watch(`items.${index}.wholesalePrice`) || 0;
+                        const unitCost = form.watch(`items.${index}.unitCost`) || 0;
+                        const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+
+                        if (wholesalePrice > 0 && unitCost > 0) {
+                          const margin = ((wholesalePrice - unitCost) / unitCost) * 100;
+                          return (
+                            <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                              margin > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-red-50 text-red-700'
+                            }`}>
+                              {margin > 0 ? '+' : ''}{margin.toFixed(1)}% bulk margin
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          {...form.register(`items.${index}.mrp`, { 
+                            valueAsNumber: true,
+                            setValueAs: (value) => value || 0
+                          })}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            form.setValue(`items.${index}.mrp`, value);
+                            form.trigger(`items.${index}`);
+                          }}
+                          className="w-full text-right text-xs pl-6"
+                          placeholder="0.00"
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </div>
+                      {/* MRP vs Selling Price Indicator */}
+                      {(() => {
+                        const mrp = form.watch(`items.${index}.mrp`) || 0;
+                        const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
+
+                        if (mrp > 0 && sellingPrice > 0) {
+                          const discount = ((mrp - sellingPrice) / mrp) * 100;
+                          return (
+                            <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
+                              discount > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
+                            }`}>
+                              {discount > 0 ? `${discount.toFixed(1)}% off MRP` : 'Above MRP'}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-blue-50 rounded text-xs">
+                        {amount > 0 ? (
+                          <>
+                            <span className="text-xs font-medium text-blue-700">₹</span>
+                            <span className="font-medium text-blue-700 ml-1">{amount.toFixed(0)}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-green-50 rounded text-xs">
+                        {((form.watch(`items.${index}.netAmount`) as number) || 0) > 0 ? (
+                          <>
+                            <span className="text-xs font-medium text-green-700">₹</span>
+                            <span className="font-medium text-green-700 ml-1">{Math.round(form.watch(`items.${index}.netAmount`) || 0)}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        {...form.register(`items.${index}.cashPercent`, { valueAsNumber: true })}
+                        className="w-full text-center text-xs"
+                        placeholder="0"
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
+                        {cashAmount > 0 ? (
+                          <>
+                            <span className="text-xs">₹</span>
+                            <span className="font-medium ml-1">{cashAmount.toFixed(0)}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Input
+                        {...form.register(`items.${index}.batchNumber`)}
+                        className="w-full text-xs"
+                        placeholder="Batch #"
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Input
+                        {...form.register(`items.${index}.location`)}
+                        className="w-full text-xs"
+                        placeholder="Location"
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-r px-3 py-3">
+                      <Select onValueChange={(value) => form.setValue(`items.${index}.unit`, value)} defaultValue="PCS">
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue placeholder="Unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PCS">PCS</SelectItem>
+                          <SelectItem value="KG">KG</SelectItem>
+                          <SelectItem value="LTR">LTR</SelectItem>
+                          <SelectItem value="BOX">BOX</SelectItem>
+                          <SelectItem value="PACK">PACK</SelectItem>
+                          <SelectItem value="DOZEN">DOZEN</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+
+                    <TableCell className="px-3 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openAddItemModal(index)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-8 w-8 rounded-full"
+                          title="Edit item"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        {fields.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(index)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 rounded-full"
+                            title="Delete item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled
+                            className="text-gray-300 p-1 h-8 w-8 rounded-full cursor-not-allowed"
+                            title="Cannot delete the last item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
+
+{/* Summary Tab */}
+<TabsContent value="summary" className="space-y-4">
+  <Card>
+    <CardHeader>
+      <CardTitle>Purchase Summary</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="grid grid-cols-2 gap-8">
+          {/* Order Details */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Details</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Order Number:</span>
+                <span className="font-medium">{form.watch("orderNumber") || "PO-32232115"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Order Date:</span>
+                <span className="font-medium">{form.watch("orderDate") || "2025-05-26"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment Terms:</span>
+                <span className="font-medium">{form.watch("paymentTerms") || "Net 30"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax Calculation:</span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                  {(() => {
+                    const method = form.watch("taxCalculationMethod") || "exclusive";
+                    switch (method) {
+                      case "inclusive": return "Tax Inclusive";
+                      case "compound": return "Compound Tax";
+                      default: return "Tax Exclusive";
+                    }
+                  })()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                  {form.watch("status") || "Pending"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Financial Summary */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Items:</span>
+                <span className="font-medium">{summary.totalItems}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Quantity:</span>
+                <span className="font-medium">{summary.totalQuantity}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-red-600">
+                <span>Total Discount:</span>
+                <span className="font-medium">{formatCurrency(summary.totalDiscount)}</span>
+              </div>
+              <div className="flex justify-between text-green-600">
+                <span>Total Tax (GST):</span>
+                <span className="font-medium">+{formatCurrency(summary.totalTax)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Freight Charges:</span>
+                <span className="font-medium">+{formatCurrency(summary.freightCharges)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Surcharge:</span>
+                <span className="font-medium">+{formatCurrency(Number(form.watch("surchargeAmount")) || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Packing Charges:</span>
+                <span className="font-medium">+{formatCurrency(Number(form.watch("packingCharges")) || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Other Charges:</span>
+                <span className="font-medium">+{formatCurrency(Number(form.watch("otherCharges")) || 0)}</span>
+              </div>
+              <div className="flex justify-between text-red-600">
+                <span>Additional Discount:</span>
+                <span className="font-medium">-{formatCurrency(Number(form.watch("additionalDiscount")) || 0)}</span>
+              </div>
+
+              <div className="border-t pt-3 mt-4">
+                <div className="flex justify-between text-xl font-bold text-blue-600">
+                  <span>Grand Total:</span>
+                  <span>{formatCurrency(summary.grandTotal)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bill Payment Section */}
+      <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100">
+          <CardTitle className="flex items-center gap-2 text-green-800">
+            <CreditCard className="w-5 h-5" />
+            Bill Payment Management
+          </CardTitle>
+          <p className="text-sm text-green-600">Record and track payments for this purchase order</p>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          {/* Payment Summary */}
+          <div className="bg-white rounded-lg p-4 border border-green-200">
+            <h4 className="font-semibold text-green-900 mb-3">Payment Overview</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
+                <div className="text-blue-600 font-medium">Total Amount</div>
+                <div className="text-lg font-bold text-blue-800">
+                  {formatCurrency(summary.grandTotal)}
+                </div>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
+                <div className="text-green-600 font-medium">Amount Paid</div>
+                <div className="text-lg font-bold text-green-800">
+                  {formatCurrency(paymentData.paymentAmount || 0)}
+                </div>
+              </div>
+              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
+                <div className="text-orange-600 font-medium">Balance Due</div>
+                <div className="text-lg font-bold text-orange-800">
+                  {formatCurrency(summary.grandTotal - (paymentData.paymentAmount || 0))}
+                </div>
+              </div>
+              <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
+                <div className="text-purple-600 font-medium">Payment Status</div>
+                <div className="text-sm font-bold text-purple-800">
+                  {(paymentData.paymentAmount || 0) >= summary.grandTotal ? "Fully Paid" : 
+                   (paymentData.paymentAmount || 0) > 0 ? "Partially Paid" : "Unpaid"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Form */}
+          <div className="bg-white rounded-lg p-4 border border-green-200">
+            <h4 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Record New Payment
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="summary-payment-amount">Payment Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                  <Input
+                    id="summary-payment-amount"
+                    type="number"
+                    min="0"
+                    max={summary.grandTotal}
+                    step="0.01"
+                    value={paymentData.paymentAmount || ''}
+                    onChange={(e) => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: parseFloat(e.target.value) || 0
+                    })}
+                    placeholder="0.00"
+                    className="pl-8 border-green-300 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  Outstanding: {formatCurrency(summary.grandTotal)}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="summary-payment-method">Payment Method</Label>
+                <Select 
+                  value={paymentData.paymentMethod} 
+                  onValueChange={(value) => setPaymentData({
+                    ...paymentData,
+                    paymentMethod: value
+                  })}
+                >
+                  <SelectTrigger className="border-green-300 focus:border-green-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Debit Card">Debit Card</SelectItem>
+                    <SelectItem value="Credit">Credit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="summary-payment-date">Payment Date</Label>
+                <Input
+                  id="summary-payment-date"
+                  type="date"
+                  value={paymentData.paymentDate}
+                  onChange={(e) => setPaymentData({
+                    ...paymentData,
+                    paymentDate: e.target.value
+                  })}
+                  className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="summary-payment-reference">Reference/Transaction ID</Label>
+                <Input
+                  id="summary-payment-reference"
+                  value={paymentData.paymentReference}
+                  onChange={(e) => setPaymentData({
+                    ...paymentData,
+                    paymentReference: e.target.value
+                  })}
+                  placeholder="Payment reference"
+                  className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="summary-payment-notes">Payment Notes</Label>
+              <Textarea
+                id="summary-payment-notes"
+                value={paymentData.paymentNotes}
+                onChange={(e) => setPaymentData({
+                  ...paymentData,
+                  paymentNotes: e.target.value
+                })}
+                placeholder="Additional notes about this payment..."
+                rows={2}
+                className="border-green-300 focus:border-green-500 focus:ring-green-500"
+              />
+            </div>
+
+            {/* Quick Payment Options */}
+            <div className="mt-4 space-y-3">
+              <h5 className="font-medium text-green-700">Quick Payment Options</h5>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaymentData({
+                    ...paymentData,
+                    paymentAmount: summary.grandTotal * 0.25
+                  })}
+                  className="text-blue-600 hover:bg-blue-50 border-blue-300"
+                >
+                  25% ({formatCurrency(summary.grandTotal * 0.25)})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaymentData({
+                    ...paymentData,
+                    paymentAmount: summary.grandTotal * 0.5
+                  })}
+                  className="text-green-600 hover:bg-green-50 border-green-300"
+                >
+                  50% ({formatCurrency(summary.grandTotal * 0.5)})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaymentData({
+                    ...paymentData,
+                    paymentAmount: summary.grandTotal
+                  })}
+                  className="text-purple-600 hover:bg-purple-50 border-purple-300"
+                >
+                  Full Amount ({formatCurrency(summary.grandTotal)})
+                </Button>
+              </div>
+            </div>
+
+            {/* Record Payment Button */}
+            <div className="mt-6 flex justify-end">
+              <Button
+                onClick={async () => {
+                  // Validate payment amount
+                  if (paymentData.paymentAmount <= 0) {
+                    toast({
+                      variant: "destructive",
+                      title: "Invalid Amount",
+                      description: "Please enter a valid payment amount greater than 0",
+                    });
+                    return;
+                  }
+
+                  if (paymentData.paymentAmount > summary.grandTotal) {
+                    toast({
+                      variant: "destructive",
+                      title: "Amount Too High",
+                      description: "Payment amount cannot exceed the total purchase amount",
+                    });
+                    return;
+                  }
+
+                  try {
+                    // First save the purchase order if it's new
+                    if (!isEditMode) {
+                      const purchaseData = form.getValues();
+
+                      // Validate required fields for saving
+                      if (!purchaseData.supplierId || purchaseData.supplierId === 0) {
+                        toast({
+                          variant: "destructive",
+                          title: "Missing Information",
+                          description: "Please select a supplier before recording payment.",
+                        });
+                        return;
+                      }
+
+                      const validItems = purchaseData.items.filter(item => 
+                        item.productId && item.productId > 0 && 
+                        ((item.receivedQty ?? 0) > 0 || (item.quantity ?? 0) > 0) &&
+                        item.unitCost >= 0
+                      );
+
+                      if (validItems.length === 0) {
+                        toast({
+                          variant: "destructive",
+                          title: "Missing Items",
+                          description: "Please add at least one item before recording payment.",
+                        });
+                        return;
+                      }
+
+                      // Save the purchase first
+                      await savePurchaseMutation.mutateAsync(purchaseData);
+                    }
+
+                    // Update purchase payment information
+                    form.setValue("paymentMethod", paymentData.paymentMethod);
+
+                    // Calculate payment status
+                    const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
+                    const isFullyPaid = remainingBalance <= 0;
+                    const paymentStatus = isFullyPaid ? 'paid' : 'partial';
+
+                    // Create payment record data
+                    const paymentRecord = {
+                      amount: paymentData.paymentAmount,
+                      method: paymentData.paymentMethod,
+                      date: paymentData.paymentDate,
+                      reference: paymentData.paymentReference || "",
+                      notes: paymentData.paymentNotes || "",
+                      status: paymentStatus,
+                      purchaseTotal: summary.grandTotal,
+                      balanceRemaining: Math.max(0, remainingBalance)
+                    };
+
+                    // Store payment data in form for when purchase is saved
+                    form.setValue("paymentType", paymentData.paymentMethod);
+                    form.setValue("payment_status", paymentStatus);
+                    form.setValue("paid_amount", paymentData.paymentAmount);
+                    form.setValue("payment_date", paymentData.paymentDate);
+
+                    console.log('Payment recorded:', paymentRecord);
+
+                    toast({
+                      title: "✅ Payment Recorded Successfully",
+                      description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
+                    });
+
+                    // Reset payment form
+                    setPaymentData({
+                      paymentAmount: 0,
+                      paymentMethod: "Cash",
+                      paymentDate: new Date().toISOString().split('T')[0],
+                      paymentReference: "",
+                      paymentNotes: "",
+                    });
+
+                  } catch (error) {
+                    console.error('Error recording payment:', error);
+                    toast({
+                      variant: "destructive",
+                      title: "Payment Recording Failed",
+                      description: "Failed to record payment. Please try again.",
+                    });
+                  }
+                }}
+                disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Record Payment
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {form.watch("remarks") && (
+        <div className="space-y-2">
+          <h3 className="font-semibold">Remarks</h3>
+          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+            {form.watch("remarks")}
+          </p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
           </Tabs>
         </div>
 
@@ -3981,7 +4090,7 @@ export default function PurchaseEntryProfessional() {
                       const costPrice = parseFloat(product.cost || product.price) || 0;
                       const sellingPrice = parseFloat(product.price) || 0;
                       const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                      
+
                       const newModalData = {
                         ...modalData,
                         productId: product.id,
@@ -4014,7 +4123,7 @@ export default function PurchaseEntryProfessional() {
                         const costPrice = parseFloat(product.cost || product.price) || 0;
                         const sellingPrice = parseFloat(product.price) || 0;
                         const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                        
+
                         const newModalData = {
                           ...modalData,
                           productId,
@@ -4240,7 +4349,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.sellingPrice`, value);
-                      
+
                       // Auto-calculate MRP if not set (typical markup is 20-25%)
                       if (!modalData.mrp || modalData.mrp === 0) {
                         const suggestedMrp = Math.round(value * 1.2 * 100) / 100;
@@ -4248,7 +4357,7 @@ export default function PurchaseEntryProfessional() {
                         setModalData(updatedModalData);
                         form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
                       }
-                      
+
                       form.trigger(`items.${editingItemIndex}`);
                     }
                   }}
@@ -4706,7 +4815,7 @@ export default function PurchaseEntryProfessional() {
                 Bill Payment Management
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-6">
               {/* Payment Summary */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
@@ -4745,7 +4854,7 @@ export default function PurchaseEntryProfessional() {
                   <DollarSign className="h-4 w-4" />
                   Record Payment
                 </h3>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="payment-amount">Payment Amount *</Label>
@@ -4770,7 +4879,7 @@ export default function PurchaseEntryProfessional() {
                       Outstanding: {formatCurrency(summary.grandTotal)}
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="payment-method">Payment Method</Label>
                     <Select 
@@ -4809,7 +4918,7 @@ export default function PurchaseEntryProfessional() {
                       })}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="payment-reference">Reference/Transaction ID</Label>
                     <Input
@@ -4905,7 +5014,7 @@ export default function PurchaseEntryProfessional() {
                     Cancel
                   </Button>
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       // Validate payment amount
                       if (paymentData.paymentAmount <= 0) {
                         toast({
@@ -4925,26 +5034,90 @@ export default function PurchaseEntryProfessional() {
                         return;
                       }
 
-                      // Update purchase payment information
-                      form.setValue("paymentMethod", paymentData.paymentMethod);
-                      
-                      // Calculate remaining balance
-                      const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
-                      const isFullyPaid = remainingBalance <= 0;
-                      
-                      toast({
-                        title: "✅ Payment Recorded Successfully",
-                        description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
-                      });
-                      
-                      setShowBillPayment(false);
-                      setPaymentData({
-                        paymentAmount: 0,
-                        paymentMethod: "Cash",
-                        paymentDate: new Date().toISOString().split('T')[0],
-                        paymentReference: "",
-                        paymentNotes: "",
-                      });
+                      try {
+                        // First save the purchase order if it's new
+                        if (!isEditMode) {
+                          const purchaseData = form.getValues();
+
+                          // Validate required fields for saving
+                          if (!purchaseData.supplierId || purchaseData.supplierId === 0) {
+                            toast({
+                              variant: "destructive",
+                              title: "Missing Information",
+                              description: "Please select a supplier before recording payment.",
+                            });
+                            return;
+                          }
+
+                          const validItems = purchaseData.items.filter(item => 
+                            item.productId && item.productId > 0 && 
+                            ((item.receivedQty ?? 0) > 0 || (item.quantity ?? 0) > 0) &&
+                            item.unitCost >= 0
+                          );
+
+                          if (validItems.length === 0) {
+                            toast({
+                              variant: "destructive",
+                              title: "Missing Items",
+                              description: "Please add at least one item before recording payment.",
+                            });
+                            return;
+                          }
+
+                          // Save the purchase first
+                          await savePurchaseMutation.mutateAsync(purchaseData);
+                        }
+
+                        // Update purchase payment information
+                        form.setValue("paymentMethod", paymentData.paymentMethod);
+
+                        // Calculate payment status
+                        const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
+                        const isFullyPaid = remainingBalance <= 0;
+                        const paymentStatus = isFullyPaid ? 'paid' : 'partial';
+
+                        // Create payment record data
+                        const paymentRecord = {
+                          amount: paymentData.paymentAmount,
+                          method: paymentData.paymentMethod,
+                          date: paymentData.paymentDate,
+                          reference: paymentData.paymentReference || "",
+                          notes: paymentData.paymentNotes || "",
+                          status: paymentStatus,
+                          purchaseTotal: summary.grandTotal,
+                          balanceRemaining: Math.max(0, remainingBalance)
+                        };
+
+                        // Store payment data in form for when purchase is saved
+                        form.setValue("paymentType", paymentData.paymentMethod);
+                        form.setValue("payment_status", paymentStatus);
+                        form.setValue("paid_amount", paymentData.paymentAmount);
+                        form.setValue("payment_date", paymentData.paymentDate);
+
+                        console.log('Payment recorded:', paymentRecord);
+
+                        toast({
+                          title: "✅ Payment Recorded Successfully",
+                          description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
+                        });
+
+                        // Reset payment form
+                        setPaymentData({
+                          paymentAmount: 0,
+                          paymentMethod: "Cash",
+                          paymentDate: new Date().toISOString().split('T')[0],
+                          paymentReference: "",
+                          paymentNotes: "",
+                        });
+
+                      } catch (error) {
+                        console.error('Error recording payment:', error);
+                        toast({
+                          variant: "destructive",
+                          title: "Payment Recording Failed",
+                          description: "Failed to record payment. Please try again.",
+                        });
+                      }
                     }}
                     disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
