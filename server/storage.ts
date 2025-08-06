@@ -1776,17 +1776,71 @@ export const storage = {
       const lowStockResult = lowStockQuery.get();
       const lowStockItems = lowStockResult.count || 0;
 
-      // Get total purchases today
+      // Get total purchases today with item-based calculations
       const todayPurchasesQuery = sqlite.prepare(`
-        SELECT 
-          COUNT(*) as count,
-          COALESCE(SUM(CAST(total AS REAL)), 0) as total
-        FROM purchases 
-        WHERE DATE(created_at) = DATE('now')
+        SELECT COUNT(DISTINCT p.id) as count
+        FROM purchases p
+        WHERE DATE(p.created_at) = DATE('now')
       `);
       const todayPurchasesResult = todayPurchasesQuery.get();
       const todaysPurchases = todayPurchasesResult.count || 0;
-      const todaysPurchaseAmount = todayPurchasesResult.total || 0;
+
+      // Calculate total purchase amount from items for today's purchases
+      let todaysPurchaseAmount = 0;
+      try {
+        const todayPurchaseAmountQuery = sqlite.prepare(`
+          SELECT 
+            p.id,
+            p.freight_cost,
+            p.other_charges,
+            COALESCE(pi.received_qty, pi.quantity, 0) as quantity,
+            COALESCE(pi.unit_cost, pi.cost, 0) as unit_cost,
+            COALESCE(pi.discount_amount, 0) as discount_amount,
+            COALESCE(pi.tax_percentage, 0) as tax_percentage
+          FROM purchases p
+          LEFT JOIN purchase_items pi ON p.id = pi.purchase_id
+          WHERE DATE(p.created_at) = DATE('now')
+        `);
+        
+        const purchaseItems = todayPurchaseAmountQuery.all();
+        const purchaseAmountsByPurchase = {};
+        
+        purchaseItems.forEach(item => {
+          if (!purchaseAmountsByPurchase[item.id]) {
+            purchaseAmountsByPurchase[item.id] = {
+              itemsTotal: 0,
+              freightCost: parseFloat(item.freight_cost || 0),
+              otherCharges: parseFloat(item.other_charges || 0)
+            };
+          }
+          
+          if (item.quantity && item.unit_cost) {
+            const qty = parseFloat(item.quantity);
+            const cost = parseFloat(item.unit_cost);
+            const itemTotal = qty * cost;
+            const discount = parseFloat(item.discount_amount || 0);
+            const taxPercent = parseFloat(item.tax_percentage || 0);
+            const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+            
+            purchaseAmountsByPurchase[item.id].itemsTotal += itemTotal - discount + taxAmount;
+          }
+        });
+        
+        // Sum up all purchase totals
+        Object.values(purchaseAmountsByPurchase).forEach((purchase: any) => {
+          todaysPurchaseAmount += purchase.itemsTotal + purchase.freightCost + purchase.otherCharges;
+        });
+        
+      } catch (itemsError) {
+        console.log('⚠️ Could not calculate item-based purchase totals, falling back to stored values');
+        const fallbackQuery = sqlite.prepare(`
+          SELECT COALESCE(SUM(CAST(total AS REAL)), 0) as total
+          FROM purchases 
+          WHERE DATE(created_at) = DATE('now')
+        `);
+        const fallbackResult = fallbackQuery.get();
+        todaysPurchaseAmount = fallbackResult.total || 0;
+      }
 
       // Get total expenses today
       const todayExpensesQuery = sqlite.prepare(`
