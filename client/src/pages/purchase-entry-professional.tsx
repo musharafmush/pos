@@ -3720,6 +3720,231 @@ export default function PurchaseEntryProfessional() {
                     </div>
                   </div>
 
+                  {/* Bill Payment Section */}
+                  <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                    <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100">
+                      <CardTitle className="flex items-center gap-2 text-green-800">
+                        <CreditCard className="w-5 h-5" />
+                        Bill Payment Management
+                      </CardTitle>
+                      <p className="text-sm text-green-600">Record and track payments for this purchase order</p>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                      {/* Payment Summary */}
+                      <div className="bg-white rounded-lg p-4 border border-green-200">
+                        <h4 className="font-semibold text-green-900 mb-3">Payment Overview</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
+                            <div className="text-blue-600 font-medium">Total Amount</div>
+                            <div className="text-lg font-bold text-blue-800">
+                              {formatCurrency(summary.grandTotal)}
+                            </div>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
+                            <div className="text-green-600 font-medium">Amount Paid</div>
+                            <div className="text-lg font-bold text-green-800">
+                              {formatCurrency(paymentData.paymentAmount || 0)}
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
+                            <div className="text-orange-600 font-medium">Balance Due</div>
+                            <div className="text-lg font-bold text-orange-800">
+                              {formatCurrency(summary.grandTotal - (paymentData.paymentAmount || 0))}
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
+                            <div className="text-purple-600 font-medium">Payment Status</div>
+                            <div className="text-sm font-bold text-purple-800">
+                              {(paymentData.paymentAmount || 0) >= summary.grandTotal ? "Fully Paid" : 
+                               (paymentData.paymentAmount || 0) > 0 ? "Partially Paid" : "Unpaid"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment Form */}
+                      <div className="bg-white rounded-lg p-4 border border-green-200">
+                        <h4 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Record New Payment
+                        </h4>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="summary-payment-amount">Payment Amount</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                              <Input
+                                id="summary-payment-amount"
+                                type="number"
+                                min="0"
+                                max={summary.grandTotal}
+                                step="0.01"
+                                value={paymentData.paymentAmount || ''}
+                                onChange={(e) => setPaymentData({
+                                  ...paymentData,
+                                  paymentAmount: parseFloat(e.target.value) || 0
+                                })}
+                                placeholder="0.00"
+                                className="pl-8 border-green-300 focus:border-green-500 focus:ring-green-500"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="summary-payment-method">Payment Method</Label>
+                            <Select 
+                              value={paymentData.paymentMethod} 
+                              onValueChange={(value) => setPaymentData({
+                                ...paymentData,
+                                paymentMethod: value
+                              })}
+                            >
+                              <SelectTrigger className="border-green-300 focus:border-green-500">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Cash">Cash</SelectItem>
+                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                <SelectItem value="UPI">UPI</SelectItem>
+                                <SelectItem value="Cheque">Cheque</SelectItem>
+                                <SelectItem value="Credit Card">Credit Card</SelectItem>
+                                <SelectItem value="Debit Card">Debit Card</SelectItem>
+                                <SelectItem value="Credit">Credit</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="summary-payment-date">Payment Date</Label>
+                            <Input
+                              id="summary-payment-date"
+                              type="date"
+                              value={paymentData.paymentDate}
+                              onChange={(e) => setPaymentData({
+                                ...paymentData,
+                                paymentDate: e.target.value
+                              })}
+                              className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="summary-payment-reference">Reference/Transaction ID</Label>
+                            <Input
+                              id="summary-payment-reference"
+                              value={paymentData.paymentReference}
+                              onChange={(e) => setPaymentData({
+                                ...paymentData,
+                                paymentReference: e.target.value
+                              })}
+                              placeholder="Payment reference"
+                              className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-2">
+                          <Label htmlFor="summary-payment-notes">Payment Notes</Label>
+                          <Textarea
+                            id="summary-payment-notes"
+                            value={paymentData.paymentNotes}
+                            onChange={(e) => setPaymentData({
+                              ...paymentData,
+                              paymentNotes: e.target.value
+                            })}
+                            placeholder="Additional notes about this payment..."
+                            rows={2}
+                            className="border-green-300 focus:border-green-500 focus:ring-green-500"
+                          />
+                        </div>
+
+                        {/* Quick Payment Options */}
+                        <div className="mt-4 space-y-3">
+                          <h5 className="font-medium text-green-700">Quick Payment Options</h5>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPaymentData({
+                                ...paymentData,
+                                paymentAmount: summary.grandTotal * 0.25
+                              })}
+                              className="text-blue-600 hover:bg-blue-50 border-blue-300"
+                            >
+                              25% ({formatCurrency(summary.grandTotal * 0.25)})
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPaymentData({
+                                ...paymentData,
+                                paymentAmount: summary.grandTotal * 0.5
+                              })}
+                              className="text-green-600 hover:bg-green-50 border-green-300"
+                            >
+                              50% ({formatCurrency(summary.grandTotal * 0.5)})
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPaymentData({
+                                ...paymentData,
+                                paymentAmount: summary.grandTotal
+                              })}
+                              className="text-purple-600 hover:bg-purple-50 border-purple-300"
+                            >
+                              Full Amount ({formatCurrency(summary.grandTotal)})
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Record Payment Button */}
+                        <div className="mt-6 flex justify-end">
+                          <Button
+                            onClick={() => {
+                              // Validate payment amount
+                              if (paymentData.paymentAmount <= 0) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Invalid Amount",
+                                  description: "Please enter a valid payment amount greater than 0",
+                                });
+                                return;
+                              }
+
+                              if (paymentData.paymentAmount > summary.grandTotal) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Amount Too High",
+                                  description: "Payment amount cannot exceed the total purchase amount",
+                                });
+                                return;
+                              }
+
+                              // Update purchase payment information
+                              form.setValue("paymentMethod", paymentData.paymentMethod);
+                              
+                              // Calculate remaining balance
+                              const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
+                              const isFullyPaid = remainingBalance <= 0;
+                              
+                              toast({
+                                title: "✅ Payment Recorded Successfully",
+                                description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
+                              });
+                            }}
+                            disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                          >
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Record Payment
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {form.watch("remarks") && (
                     <div className="space-y-2">
                       <h3 className="font-semibold">Remarks</h3>
