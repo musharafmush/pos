@@ -578,7 +578,7 @@ export default function PurchaseDashboard() {
     const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
     const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - currentPaidAmount);
-    
+
     const paymentData = {
       paymentStatus: 'paid',
       paymentAmount: remainingAmount, // Pay only the remaining amount
@@ -654,10 +654,10 @@ export default function PurchaseDashboard() {
       }
 
       const purchaseWithItems = await response.json();
-      
+
       // Create print content
       const printContent = generatePrintContent(purchaseWithItems);
-      
+
       // Open print window
       const printWindow = window.open('', '_blank');
       if (printWindow) {
@@ -665,7 +665,7 @@ export default function PurchaseDashboard() {
         printWindow.document.close();
         printWindow.focus();
         printWindow.print();
-        
+
         toast({
           title: "Print Ready",
           description: "Purchase order has been sent to printer",
@@ -691,7 +691,7 @@ export default function PurchaseDashboard() {
     const otherCharges = parseFloat(purchase.otherCharges || '0');
     const discount = parseFloat(purchase.discount || '0');
     const grandTotal = subtotal + freight + otherCharges - discount;
-    
+
     return `
       <!DOCTYPE html>
       <html>
@@ -919,7 +919,7 @@ export default function PurchaseDashboard() {
                   <td class="text-right">${parseFloat(item.total || item.subtotal || '0').toFixed(2)}</td>
                 </tr>
               `).join('')}
-              
+
               <!-- Empty rows for spacing -->
               ${Array(Math.max(0, 10 - items.length)).fill(0).map(() => `
                 <tr>
@@ -932,7 +932,7 @@ export default function PurchaseDashboard() {
                   <td class="text-right">&nbsp;</td>
                 </tr>
               `).join('')}
-              
+
               <tr style="border-top: 2px solid #000;">
                 <td colspan="6" class="text-right"><strong>Total</strong></td>
                 <td class="text-right"><strong>₹ ${grandTotal.toFixed(2)}</strong></td>
@@ -1006,37 +1006,37 @@ export default function PurchaseDashboard() {
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
     const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
+
     if (amount === 0) return 'Zero';
-    
+
     let integerPart = Math.floor(amount);
     const decimalPart = Math.round((amount - integerPart) * 100);
-    
+
     let result = '';
-    
+
     if (integerPart >= 10000000) {
       const crores = Math.floor(integerPart / 10000000);
       result += convertNumberToWords(crores) + ' Crore ';
       integerPart %= 10000000;
     }
-    
+
     if (integerPart >= 100000) {
       const lakhs = Math.floor(integerPart / 100000);
       result += convertNumberToWords(lakhs) + ' Lakh ';
       integerPart %= 100000;
     }
-    
+
     if (integerPart >= 1000) {
       const thousands = Math.floor(integerPart / 1000);
       result += convertNumberToWords(thousands) + ' Thousand ';
       integerPart %= 1000;
     }
-    
+
     if (integerPart >= 100) {
       result += ones[Math.floor(integerPart / 100)] + ' Hundred ';
       integerPart %= 100;
     }
-    
+
     if (integerPart >= 20) {
       result += tens[Math.floor(integerPart / 10)] + ' ';
       integerPart %= 10;
@@ -1044,15 +1044,15 @@ export default function PurchaseDashboard() {
       result += teens[integerPart - 10] + ' ';
       integerPart = 0;
     }
-    
+
     if (integerPart > 0) {
       result += ones[integerPart] + ' ';
     }
-    
+
     if (decimalPart > 0) {
       result += 'and ' + decimalPart + '/100 ';
     }
-    
+
     return result.trim();
   };
 
@@ -1078,7 +1078,7 @@ export default function PurchaseDashboard() {
     }
 
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
-    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0");
 
     // Check if payment amount is reasonable
     if (newPaymentAmount > (totalAmount * 2)) {
@@ -1187,6 +1187,75 @@ export default function PurchaseDashboard() {
       </DashboardLayout>
     );
   }
+
+  // Calculate totals and format data for display
+  const formattedPurchases = purchases.map((purchase) => {
+    // Calculate total from items if not available in purchase record
+    let calculatedTotal = 0;
+
+    // First try to get total from purchase record
+    if (purchase.total && parseFloat(purchase.total) > 0) {
+      calculatedTotal = parseFloat(purchase.total);
+    } else if (purchase.totalAmount && parseFloat(purchase.totalAmount) > 0) {
+      calculatedTotal = parseFloat(purchase.totalAmount);
+    } else if (purchase.invoiceAmount && parseFloat(purchase.invoiceAmount) > 0) {
+      calculatedTotal = parseFloat(purchase.invoiceAmount);
+    } else if (purchase.items && purchase.items.length > 0) {
+      // Calculate from items
+      calculatedTotal = purchase.items.reduce((sum, item) => {
+        const quantity = item.receivedQty || item.quantity || 0;
+        const cost = item.unitCost || item.cost || 0;
+        const itemTotal = quantity * cost;
+        const discount = item.discountAmount || 0;
+        const taxAmount = ((itemTotal - discount) * (item.taxPercentage || 0)) / 100;
+        return sum + (itemTotal - discount + taxAmount);
+      }, 0);
+
+      // Add additional charges if available
+      calculatedTotal += parseFloat(purchase.freightAmount || purchase.freight_amount || "0");
+      calculatedTotal += parseFloat(purchase.surchargeAmount || purchase.surcharge_amount || "0");
+      calculatedTotal += parseFloat(purchase.packingCharges || purchase.packing_charges || "0");
+      calculatedTotal += parseFloat(purchase.otherCharges || purchase.other_charges || "0");
+      calculatedTotal -= parseFloat(purchase.additionalDiscount || purchase.additional_discount || "0");
+    }
+
+    // Calculate payment status
+    const totalAmount = calculatedTotal;
+    const paidAmount = parseFloat(purchase.paidAmount || purchase.paid_amount || "0");
+    const remainingAmount = Math.max(0, totalAmount - paidAmount);
+
+    let paymentStatus = "unpaid";
+    let paymentStatusColor = "red";
+    let paymentStatusText = "Payment Due";
+
+    if (totalAmount <= 0) {
+      paymentStatus = "unknown";
+      paymentStatusColor = "gray";
+      paymentStatusText = "No Amount";
+    } else if (paidAmount >= totalAmount) {
+      paymentStatus = "paid";
+      paymentStatusColor = "green";
+      paymentStatusText = "Fully Paid";
+    } else if (paidAmount > 0) {
+      paymentStatus = "partial";
+      paymentStatusColor = "orange";
+      paymentStatusText = `Partial (₹${paidAmount.toFixed(2)})`;
+    } else {
+      paymentStatus = "unpaid";
+      paymentStatusColor = "red";
+      paymentStatusText = "Payment Due";
+    }
+
+    return {
+      ...purchase,
+      totalAmount: calculatedTotal,
+      paidAmount: paidAmount,
+      remainingAmount: remainingAmount,
+      paymentStatus: paymentStatus,
+      paymentStatusColor: paymentStatusColor,
+      paymentStatusText: paymentStatusText
+    };
+  });
 
   return (
     <DashboardLayout>
@@ -1372,7 +1441,7 @@ export default function PurchaseDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {purchases.slice(0, 5).map((purchase: Purchase) => (
+                        {formattedPurchases.slice(0, 5).map((purchase: Purchase) => (
                           <div key={purchase.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -1384,7 +1453,7 @@ export default function PurchaseDashboard() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">{formatCurrency(parseFloat(purchase.totalAmount?.toString() || "0"))}</p>
+                              <p className="font-medium">{formatCurrency(purchase.totalAmount || "0")}</p>
                               {getStatusBadge(purchase.status || "pending")}
                             </div>
                           </div>
@@ -1403,11 +1472,11 @@ export default function PurchaseDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {Array.from(new Set(purchases.map((p: Purchase) => p.supplier?.name)))
+                        {Array.from(new Set(formattedPurchases.map((p: Purchase) => p.supplier?.name)))
                           .filter(Boolean)
                           .slice(0, 5)
                           .map((supplierName, index) => {
-                            const supplierPurchases = purchases.filter((p: Purchase) => p.supplier?.name === supplierName);
+                            const supplierPurchases = formattedPurchases.filter((p: Purchase) => p.supplier?.name === supplierName);
                             const totalValue = supplierPurchases.reduce((sum, p) => 
                               sum + parseFloat(p.totalAmount?.toString() || "0"), 0
                             );
@@ -1621,7 +1690,7 @@ export default function PurchaseDashboard() {
                               <TableCell className="py-4">
                                 <div className="text-right">
                                   <p className="font-semibold text-lg text-gray-900">
-                                    {formatCurrency(parseFloat(purchase.totalAmount?.toString() || "0"))}
+                                    {formatCurrency(purchase.totalAmount || purchase.total || "0")}
                                   </p>
                                   {purchase.subTotal && (
                                     <p className="text-sm text-gray-500">
@@ -1908,7 +1977,7 @@ export default function PurchaseDashboard() {
                     <div>
                       <label className="text-sm font-medium text-gray-600">Total Amount</label>
                       <p className="text-xl font-bold text-green-600 mt-1">
-                        {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                        {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
                       </p>
                     </div>
                   </div>
@@ -1968,7 +2037,7 @@ export default function PurchaseDashboard() {
                         Business Information
                       </CardTitle>
                     </CardHeader>
-<CardContent className="pt-4">
+                    <CardContent className="pt-4">
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm font-medium text-gray-600">Business</label>
@@ -2208,7 +2277,7 @@ export default function PurchaseDashboard() {
                           const totalReceived = items.reduce((sum, item) => sum + Number(item.receivedQty || item.received_qty || item.quantity || 0), 0);
                           const totalFree = items.reduce((sum, item) => sum + Number(item.freeQty || item.free_qty || 0), 0);
                           const totalStock = totalReceived + totalFree;
-                          
+
                           return (
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div className="flex justify-between">
@@ -2231,7 +2300,7 @@ export default function PurchaseDashboard() {
                       <div className="flex justify-between py-2 border-b">
                         <span className="font-medium">Subtotal (Before Tax):</span>
                         <span className="font-semibold">
-                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                          {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
                         </span>
                       </div>
                       <div className="flex justify-between py-2 border-b">
@@ -2249,7 +2318,7 @@ export default function PurchaseDashboard() {
                       <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
                         <span className="text-lg font-bold">Grand Total:</span>
                         <span className="text-xl font-bold text-purple-700">
-                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
+                          {formatCurrency(selectedPurchase.totalAmount || selectedPurchase.total || "0")}
                         </span>
                       </div>
                     </div>
@@ -2321,16 +2390,16 @@ export default function PurchaseDashboard() {
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Total Amount:</span>
-                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0"))}</div>
+                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0"))}</div>
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Already Paid:</span>
-                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0"))}</div>
+                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0"))}</div>
                     </div>
                   </div>
                   {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
-                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
+                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
                       const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
 

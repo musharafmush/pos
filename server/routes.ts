@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/reset-password', async (req, res) => {
     try {
       const { username, newPassword } = req.body;
-      
+
       if (!username || !newPassword) {
         return res.status(400).json({ message: 'Username and new password are required' });
       }
@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the user with the new password (updateUser will hash it)
       await storage.updateUser(user.id, { password: newPassword });
-      
+
       res.json({ message: 'Password reset successfully' });
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -361,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products', async (req, res) => {
     try {
       console.log('📦 Products API endpoint called');
-      
+
       // Fallback to storage method
       const products = await storage.listProducts();
       console.log(`✅ Storage method returned ${products.length} products`);
@@ -684,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For updates, we allow partial data, so don't use strict schema validation
       const productData = req.body;
-      
+
       const product = await storage.updateProduct(id, productData);
 
       if (!product) {
@@ -698,13 +698,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error updating product:', error);
-      
+
       // Provide more specific error messages
       let errorMessage = 'Internal server error';
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       res.status(500).json({ 
         message: errorMessage,
         error: 'Failed to update product'
@@ -834,16 +834,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           suppliers: safeTableQuery('suppliers'),
           customers: safeTableQuery('customers'),
           products: safeTableQuery('products'),
-          
+
           // Transaction data
           sales: safeTableQuery('sales'),
           sale_items: safeTableQuery('sale_items'),
           purchases: safeTableQuery('purchases'),
           purchase_items: safeTableQuery('purchase_items'),
-          
+
           // System configuration
           settings: safeTableQuery('settings'),
-          
+
           // Additional tables if they exist
           returns: safeTableQuery('returns'),
           return_items: safeTableQuery('return_items'),
@@ -863,7 +863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate metadata
       let totalRecords = 0;
       let totalTables = 0;
-      
+
       Object.keys(backupData.data).forEach(table => {
         const records = backupData.data[table];
         if (Array.isArray(records) && records.length > 0) {
@@ -894,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('✅ Comprehensive backup created successfully');
       console.log(`📊 Backup summary: ${totalTables} tables, ${totalRecords} records`);
-      
+
       res.json({ 
         success: true, 
         message: 'Complete backup created successfully',
@@ -934,7 +934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(global.latestBackup);
 
       console.log(`✅ Backup downloaded successfully: ${filename}`);
-      
+
       // Clear the backup from memory after download
       global.latestBackup = null;
 
@@ -952,7 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔄 Starting backup restore process...');
 
       let backupData;
-      
+
       // Parse and validate backup data with enhanced error handling
       try {
         // Check if we have backup data
@@ -966,7 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle different input formats with size limits
         if (typeof req.body.backup === 'string') {
           console.log('📄 Processing string backup data...');
-          
+
           // Check size limit (reduce to 10MB to prevent memory issues)
           if (req.body.backup.length > 10 * 1024 * 1024) {
             return res.status(413).json({ 
@@ -974,7 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               message: 'Backup file exceeds 10MB limit. Please use a smaller backup file or compress the data.'
             });
           }
-          
+
           try {
             backupData = JSON.parse(req.body.backup);
           } catch (jsonError) {
@@ -1011,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log('📦 Backup validation passed, starting restore...');
         console.log('📊 Backup contains:', Object.keys(backupData.data || {}));
-        
+
       } catch (parseError) {
         console.error('❌ Error parsing backup data:', parseError);
         return res.status(400).json({ 
@@ -1049,10 +1049,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const restoreTransaction = sqlite.transaction(() => {
           console.log('🔄 Starting database restore transaction...');
-          
+
           // Disable foreign key constraints temporarily
           sqlite.prepare('PRAGMA foreign_keys = OFF').run();
-          
+
           try {
             // First, check existing table schemas
             const existingTables = sqlite.prepare(`
@@ -1067,9 +1067,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'purchase_items', 'sale_items', 'purchases', 'sales', 
               'products', 'customers', 'suppliers', 'categories'
             ].filter(table => existingTables.includes(table));
-            
+
             console.log('🗑️ Clearing tables:', tablesToClear);
-            
+
             tablesToClear.forEach(table => {
               try {
                 const result = sqlite.prepare(`DELETE FROM ${table}`).run();
@@ -1111,7 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             // Restore data in dependency order with enhanced error handling
-            
+
             // 1. Categories (no dependencies)
             if (data.categories?.length && existingTables.includes('categories')) {
               console.log(`📂 Restoring ${data.categories.length} categories...`);
@@ -1136,19 +1136,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // 2. Suppliers (no dependencies)
             if (data.suppliers?.length && existingTables.includes('suppliers')) {
               console.log(`🏢 Restoring ${data.suppliers.length} suppliers...`);
-              
+
               // Check supplier table structure
               const supplierColumns = sqlite.prepare("PRAGMA table_info(suppliers)").all().map(col => col.name);
               console.log('Supplier table columns:', supplierColumns);
-              
+
               // Build dynamic insert based on available columns
               const baseColumns = ['id', 'name'];
               const optionalColumns = ['email', 'phone', 'mobile_no', 'contact_person', 'address', 'city', 'state', 'country', 'pin_code', 'tax_id', 'supplier_type', 'status', 'created_at'];
               const availableColumns = baseColumns.concat(optionalColumns.filter(col => supplierColumns.includes(col)));
-              
+
               const placeholders = availableColumns.map(() => '?').join(', ');
               const insertSupplier = sqlite.prepare(`INSERT INTO suppliers (${availableColumns.join(', ')}) VALUES (${placeholders})`);
-              
+
               let suppliersRestored = 0;
               data.suppliers.forEach(sup => {
                 try {
@@ -1159,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (col === 'status') return sup.status || 'active';
                     return sup[col] || null;
                   });
-                  
+
                   insertSupplier.run(...values);
                   suppliersRestored++;
                 } catch (supError) {
@@ -1172,18 +1172,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // 3. Customers (no dependencies)
             if (data.customers?.length && existingTables.includes('customers')) {
               console.log(`👥 Restoring ${data.customers.length} customers...`);
-              
+
               // Check customer table structure
               const customerColumns = sqlite.prepare("PRAGMA table_info(customers)").all().map(col => col.name);
               console.log('Customer table columns:', customerColumns);
-              
+
               const baseColumns = ['id', 'name'];
               const optionalColumns = ['email', 'phone', 'address', 'tax_id', 'credit_limit', 'business_name', 'created_at'];
               const availableColumns = baseColumns.concat(optionalColumns.filter(col => customerColumns.includes(col)));
-              
+
               const placeholders = availableColumns.map(() => '?').join(', ');
               const insertCustomer = sqlite.prepare(`INSERT INTO customers (${availableColumns.join(', ')}) VALUES (${placeholders})`);
-              
+
               let customersRestored = 0;
               data.customers.forEach(cust => {
                 try {
@@ -1194,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (col === 'credit_limit') return cust.credit_limit || 0;
                     return cust[col] || null;
                   });
-                  
+
                   insertCustomer.run(...values);
                   customersRestored++;
                 } catch (custError) {
@@ -1207,18 +1207,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // 4. Products (depends on categories)
             if (data.products?.length && existingTables.includes('products')) {
               console.log(`📦 Restoring ${data.products.length} products...`);
-              
+
               // Check product table structure
               const productColumns = sqlite.prepare("PRAGMA table_info(products)").all().map(col => col.name);
               console.log('Product table columns:', productColumns);
-              
+
               const baseColumns = ['id', 'name', 'sku', 'price'];
               const optionalColumns = ['description', 'mrp', 'cost', 'weight', 'weight_unit', 'category_id', 'stock_quantity', 'alert_threshold', 'barcode', 'image', 'active', 'created_at', 'updated_at'];
               const availableColumns = baseColumns.concat(optionalColumns.filter(col => productColumns.includes(col)));
-              
+
               const placeholders = availableColumns.map(() => '?').join(', ');
               const insertProduct = sqlite.prepare(`INSERT INTO products (${availableColumns.join(', ')}) VALUES (${placeholders})`);
-              
+
               let productsRestored = 0;
               data.products.forEach(prod => {
                 try {
@@ -1238,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (col === 'updated_at') return prod.updated_at || new Date().toISOString();
                     return prod[col] || null;
                   });
-                  
+
                   insertProduct.run(...values);
                   productsRestored++;
                 } catch (prodError) {
@@ -1250,7 +1250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Continue with sales, purchases, etc. using similar dynamic column approach...
             console.log('✅ Core data restoration completed');
-            
+
           } catch (dataError) {
             console.error('❌ Error during data restoration:', dataError);
             throw dataError;
@@ -1276,10 +1276,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       } catch (transactionError) {
         console.error('❌ Transaction failed:', transactionError);
-        
+
         let errorMessage = 'Database transaction failed during restore';
         let userMessage = 'Failed to restore backup due to database error';
-        
+
         if (transactionError.message?.includes('SQLITE_CONSTRAINT')) {
           userMessage = 'Backup data conflicts with existing database constraints. The database may have been partially restored.';
         } else if (transactionError.message?.includes('no such table')) {
@@ -1287,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (transactionError.message?.includes('no such column')) {
           userMessage = 'Database schema mismatch. The backup may be from a different version.';
         }
-        
+
         res.status(500).json({ 
           error: errorMessage,
           message: userMessage,
@@ -1298,7 +1298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('❌ Critical error during backup restore:', error);
-      
+
       if (error.message?.includes('entity too large')) {
         return res.status(413).json({ 
           error: 'Backup file too large',
@@ -1306,7 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       res.status(500).json({ 
         error: 'Critical restore failure',
         message: error.message || 'An unexpected error occurred during restore',
@@ -1423,16 +1423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (pragmaError) {
           console.log('⚠️ Could not re-enable foreign keys:', pragmaError.message);
         }
-        
+
         throw transactionError;
       }
 
     } catch (error) {
       console.error('❌ Error clearing data:', error);
-      
+
       let errorMessage = 'Failed to clear data';
       let userMessage = 'An error occurred while clearing data. Please try again.';
-      
+
       if (error.message?.includes('SQLITE_BUSY')) {
         userMessage = 'Database is busy. Please wait a moment and try again.';
       } else if (error.message?.includes('SQLITE_LOCKED')) {
@@ -1440,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (error.message?.includes('no such table')) {
         userMessage = 'Database tables are missing. Please contact support.';
       }
-      
+
       res.status(500).json({ 
         error: errorMessage,
         message: userMessage,
@@ -1868,10 +1868,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dateThreshold.setDate(dateThreshold.getDate() - days);
             dateThreshold.setHours(0, 0, 0, 0);
           }
-          
+
           // Format date for SQLite comparison (YYYY-MM-DD HH:mm:ss)
           const sqliteDate = dateThreshold.toISOString().slice(0, 19).replace('T', ' ');
-          
+
           query += whereAdded ? ' AND' : ' WHERE';
           query += ' s.created_at >= ?';
           params.push(sqliteDate);
@@ -1891,7 +1891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get sale items for all sales
         const saleIds = sales.map(sale => sale.id);
         let allSaleItems = [];
-        
+
         if (saleIds.length > 0) {
           const saleItemsQuery = `
             SELECT 
@@ -1911,7 +1911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             WHERE si.sale_id IN (${saleIds.map(() => '?').join(',')})
             ORDER BY si.id
           `;
-          
+
           allSaleItems = sqlite.prepare(saleItemsQuery).all(...saleIds);
           console.log(`📦 Found ${allSaleItems.length} sale items for ${saleIds.length} sales`);
         }
@@ -2325,7 +2325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ 
           message: 'Invalid purchase ID',
-          error: 'Purchase ID must be a positive number'
+          error: 'Purchase ID must be a valid positive number'
         });
       }
 
@@ -2346,10 +2346,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if purchase exists
       const { sqlite } = await import('../db/index.js');
-      
+
       const existingPurchaseQuery = sqlite.prepare('SELECT * FROM purchases WHERE id = ?');
       const existingPurchase = existingPurchaseQuery.get(id);
-      
+
       if (!existingPurchase) {
         return res.status(404).json({ 
           message: 'Purchase not found',
@@ -2376,7 +2376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updateFields.push('order_number = ?');
             updateValues.push(updateData.orderNumber);
           }
-          
+
           if (columnNames.includes('supplier_id')) {
             updateFields.push('supplier_id = ?');
             updateValues.push(updateData.supplierId);
@@ -2441,7 +2441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               SELECT product_id, received_qty FROM purchase_items WHERE purchase_id = ?
             `);
             const existingItems = existingItemsQuery.all(id);
-            
+
             // Create map of existing quantities
             const existingQtyMap = new Map();
             existingItems.forEach(item => {
@@ -2461,7 +2461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Build dynamic insert query for items
             const itemFields = ['purchase_id', 'product_id'];
             const itemPlaceholders = ['?', '?'];
-            
+
             const optionalItemFields = [
               'quantity', 'received_qty', 'free_qty', 'unit_cost', 'cost',
               'selling_price', 'wholesale_price', 'mrp', 'hsn_code', 'tax_percentage', 
@@ -2482,7 +2482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               INSERT INTO purchase_items (${itemFields.join(', ')}) 
               VALUES (${itemPlaceholders.join(', ')})
             `;
-            
+
             const insertItem = sqlite.prepare(insertItemQuery);
             const updateStock = sqlite.prepare(`
               UPDATE products 
@@ -2491,7 +2491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `);
 
             let itemsProcessed = 0;
-            
+
             updateData.items.forEach((item: any, index: number) => {
               if (!item.productId || item.productId <= 0) {
                 console.log(`⚠️ Skipping item ${index + 1}: Invalid product ID`);
@@ -2591,16 +2591,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               try {
                 // Insert the item
                 insertItem.run(...itemValues);
-                
+
                 // Update stock - calculate difference from existing
                 const oldQty = existingQtyMap.get(item.productId) || 0;
                 const stockDifference = receivedQty - oldQty;
-                
+
                 if (stockDifference !== 0) {
                   const stockResult = updateStock.run(stockDifference, item.productId);
                   console.log(`📦 Stock adjustment for product ${item.productId}: ${stockDifference > 0 ? '+' : ''}${stockDifference} (changes: ${stockResult.changes})`);
                 }
-                
+
                 itemsProcessed++;
               } catch (itemError) {
                 console.error(`❌ Error inserting item ${index + 1}:`, itemError);
@@ -2653,7 +2653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('❌ Error updating purchase:', error);
-      
+
       // Provide specific error messages
       let errorMessage = 'Failed to update purchase order';
       let userMessage = error.message;
@@ -2822,7 +2822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SET free_qty = ? 
         WHERE id = ?
       `);
-      
+
       const result = updateQuery.run(freeQty || 0, id);
 
       if (result.changes === 0) {
@@ -2925,7 +2925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if purchase exists
       const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
-      
+
       if (!existingPurchase) {
         return res.status(404).json({ 
           error: 'Purchase not found',
@@ -2947,7 +2947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate payment status if not provided
       const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
       let calculatedPaymentStatus = paymentStatus;
-      
+
       if (!calculatedPaymentStatus) {
         if (purchaseTotal > 0) {
           if (finalPaidAmount >= purchaseTotal) {
@@ -2965,7 +2965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If payment status is explicitly provided, use it
       if (paymentStatus) {
         calculatedPaymentStatus = paymentStatus;
-        
+
         // Adjust paid amount based on status if needed
         if (paymentStatus === 'paid' && finalPaidAmount < purchaseTotal) {
           // If marking as paid but amount is less than total, set to full amount
@@ -3036,33 +3036,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Auto-update purchase status to completed if fully paid
       let finalStatus = updatedPurchase.status;
       let statusAutoUpdated = false;
-      
+
       if (calculatedPaymentStatus === 'paid' && 
           purchaseTotal > 0 && 
           finalPaidAmount >= purchaseTotal && 
           updatedPurchase.status !== 'completed') {
-        
+
         console.log('🔄 Auto-updating purchase status to completed (fully paid)');
-        
+
         try {
           // Check if received_date column exists
           const statusUpdateFields = ['status = ?'];
           const statusUpdateValues = ['completed'];
-          
+
           if (columnNames.includes('received_date')) {
             statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
           }
           if (columnNames.includes('updated_at')) {
             statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
           }
-          
+
           const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
           statusUpdateValues.push(id);
-          
+
           console.log('🔧 Auto-completing purchase - Status update query:', updateStatusQuery);
-          
+
           const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
-          
+
           if (statusResult.changes > 0) {
             finalStatus = 'completed';
             statusAutoUpdated = true;
@@ -3122,7 +3122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use direct SQLite update with column checking
       const { sqlite } = await import('../db/index.js');
-      
+
       // Check what columns exist in the purchases table
       const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
       const columnNames = tableInfo.map((col: any) => col.name);
@@ -3157,14 +3157,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatePurchase = sqlite.prepare(updateQuery);
       const result = updatePurchase.run(...updateValues);
-      
+
       if (result.changes === 0) {
         return res.status(404).json({ message: 'Purchase not found or no changes made' });
       }
-      
+
       // Get updated purchase
       const updatedPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
-      
+
       console.log('✅ Purchase status updated successfully');
       res.json({
         success: true,
@@ -3347,7 +3347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/barcode/scan', isAuthenticated, async (req, res) => {
     try {
       const { barcode, customerId } = req.body;
-      
+
       if (!barcode) {
         return res.status(400).json({ message: 'Barcode is required' });
       }
@@ -3356,14 +3356,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find product by barcode
       const product = await storage.getProductByBarcode(barcode);
-      
+
       if (!product) {
         return res.status(404).json({ message: 'Product not found for this barcode' });
       }
 
       // Get applicable offers for this product and customer
       const applicableOffers = await storage.getApplicableOffers(product.id, customerId);
-      
+
       // Filter offers that are triggered by barcode scan
       const barcodeTriggeredOffers = applicableOffers.filter(offer => 
         offer.triggerType === 'scan' || offer.triggerType === 'barcode_scan'
@@ -3604,7 +3604,7 @@ app.post("/api/customers", async (req, res) => {
       res.json({ message: 'Customer deleted successfully' });
     } catch (error) {
       console.error('Error deleting customer:', error);
-      
+
       if (error instanceof Error) {
         if (error.message.includes('FOREIGN KEY constraint failed')) {
           return res.status(400).json({ 
@@ -3613,11 +3613,10 @@ app.post("/api/customers", async (req, res) => {
         }
         if (error.message.includes('associated sales or loyalty records')) {
           return res.status(200).json({ 
-            message: 'Customer deactivated: Customer had related records and has been safely deactivated instead of deleted.' 
-          });
+            message: 'Customer deactivated: Customer had related records and has been safely deactivated instead of deleted.'           });
         }
       }
-      
+
       res.status(500).json({ message: 'Failed to delete customer. Please try again.' });
     }
   });
@@ -3748,16 +3747,16 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/health', async (req, res) => {
     try {
       const { sqlite } = await import('../db/index.js');
-      
+
       // Test database connectivity
       const result = sqlite.prepare('SELECT 1 as test').get();
-      
+
       // Test if products table exists
       const tablesCheck = sqlite.prepare(`
         SELECT COUNT(*) as count FROM sqlite_master 
         WHERE type='table' AND name IN ('products', 'sales', 'customers')
       `).get();
-      
+
       res.json({
         status: 'healthy',
         database: 'connected',
@@ -3820,7 +3819,7 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/label-templates', isAuthenticated, async (req, res) => {
     try {
       const templates = await storage.getLabelTemplates();
-      
+
       // Map database field names to frontend field names for all templates
       const mappedTemplates = templates.map(template => {
         const mappedTemplate = {
@@ -3847,7 +3846,7 @@ app.post("/api/customers", async (req, res) => {
           created_at: template.createdAt || template.created_at,
           updated_at: template.updatedAt || template.updated_at
         };
-        
+
         // Remove the original camelCase fields to avoid confusion
         delete mappedTemplate.fontSize;
         delete mappedTemplate.includeBarcode;
@@ -3869,10 +3868,10 @@ app.post("/api/customers", async (req, res) => {
         delete mappedTemplate.isActive;
         delete mappedTemplate.createdAt;
         delete mappedTemplate.updatedAt;
-        
+
         return mappedTemplate;
       });
-      
+
       res.json(mappedTemplates);
     } catch (error) {
       console.error('Error fetching label templates:', error);
@@ -3883,7 +3882,7 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/label-templates', isAuthenticated, async (req, res) => {
     try {
       const requestData = req.body;
-      
+
       // Validate required fields
       if (!requestData.name || !requestData.width || !requestData.height) {
         return res.status(400).json({ 
@@ -3922,7 +3921,7 @@ app.post("/api/customers", async (req, res) => {
       // Check for duplicate template names
       const existingTemplates = await storage.getLabelTemplates();
       const duplicateName = existingTemplates.find(t => t.name.toLowerCase() === templateData.name.toLowerCase());
-      
+
       if (duplicateName) {
         return res.status(400).json({ 
           message: `Template name "${templateData.name}" already exists. Please use a different name.` 
@@ -3933,14 +3932,14 @@ app.post("/api/customers", async (req, res) => {
       res.status(201).json(template);
     } catch (error) {
       console.error('Error creating label template:', error);
-      
+
       // Handle specific SQLite constraint errors
       if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return res.status(400).json({ 
           message: 'Template name already exists. Please choose a different name.' 
         });
       }
-      
+
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -3949,11 +3948,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const template = await storage.getLabelTemplateById(id);
-      
+
       if (!template) {
         return res.status(404).json({ message: 'Label template not found' });
       }
-      
+
       // Map database field names to frontend field names
       const responseTemplate = {
         ...template,
@@ -3979,7 +3978,7 @@ app.post("/api/customers", async (req, res) => {
         created_at: template.createdAt || template.created_at,
         updated_at: template.updatedAt || template.updated_at
       };
-      
+
       // Remove the original camelCase fields to avoid confusion
       delete responseTemplate.fontSize;
       delete responseTemplate.includeBarcode;
@@ -4001,7 +4000,7 @@ app.post("/api/customers", async (req, res) => {
       delete responseTemplate.isActive;
       delete responseTemplate.createdAt;
       delete responseTemplate.updatedAt;
-      
+
       res.json(responseTemplate);
     } catch (error) {
       console.error('Error fetching label template:', error);
@@ -4013,7 +4012,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const requestData = req.body;
-      
+
       console.log('🔧 PUT request received for template ID:', id);
       console.log('📦 Request body received:', requestData);
       console.log('🎯 Barcode dimensions in request:', { 
@@ -4022,14 +4021,14 @@ app.post("/api/customers", async (req, res) => {
         barcodeWidth: requestData.barcodeWidth,
         barcodeHeight: requestData.barcodeHeight
       });
-      
+
       console.log('📅 Manufacturing/Expiry date fields in request:', {
         include_manufacturing_date: requestData.include_manufacturing_date,
         include_expiry_date: requestData.include_expiry_date,
         includeManufacturingDate: requestData.includeManufacturingDate,
         includeExpiryDate: requestData.includeExpiryDate
       });
-      
+
       // Map frontend field names to storage field names
       const templateData = {
         name: requestData.name,
@@ -4059,13 +4058,13 @@ app.post("/api/customers", async (req, res) => {
         isActive: requestData.is_active,
         orientation: requestData.orientation
       };
-      
+
       const updatedTemplate = await storage.updateLabelTemplate(id, templateData);
-      
+
       if (!updatedTemplate) {
         return res.status(404).json({ message: 'Label template not found' });
       }
-      
+
       res.json(updatedTemplate);
     } catch (error) {
       console.error('Error updating label template:', error);
@@ -4077,11 +4076,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteLabelTemplate(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Label template not found' });
       }
-      
+
       res.json({ message: 'Label template deleted successfully' });
     } catch (error) {
       console.error('Error deleting label template:', error);
@@ -4096,7 +4095,7 @@ app.post("/api/customers", async (req, res) => {
         ...req.body,
         userId: (req.user as any).id
       };
-      
+
       // Validate required fields
       if (!jobData.templateId || !jobData.productIds || !Array.isArray(jobData.productIds) || jobData.productIds.length === 0) {
         return res.status(400).json({ 
@@ -4130,11 +4129,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const printJob = await storage.getPrintJobById(id);
-      
+
       if (!printJob) {
         return res.status(404).json({ message: 'Print job not found' });
       }
-      
+
       res.json(printJob);
     } catch (error) {
       console.error('Error fetching print job:', error);
@@ -4146,24 +4145,24 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { status } = req.body;
-      
+
       if (!status) {
         return res.status(400).json({ message: 'Status is required' });
       }
-      
+
       const validStatuses = ['pending', 'printing', 'completed', 'failed'];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ 
           message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
         });
       }
-      
+
       const updated = await storage.updatePrintJobStatus(id, status);
-      
+
       if (!updated) {
         return res.status(404).json({ message: 'Print job not found' });
       }
-      
+
       res.json({ message: 'Print job status updated successfully' });
     } catch (error) {
       console.error('Error updating print job status:', error);
@@ -5054,9 +5053,9 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/reports/sales', async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
-      
+
       console.log('📊 Sales reports endpoint accessed:', { startDate, endDate });
-      
+
       if (!startDate || !endDate) {
         return res.status(400).json({ 
           error: 'Missing required parameters',
@@ -5064,8 +5063,9 @@ app.post("/api/customers", async (req, res) => {
         });
       }
 
+      // Use direct SQLite queries for reliable data access
       const { sqlite } = await import('../db/index.js');
-      
+
       // Get sales data within date range
       const salesQuery = `
         SELECT 
@@ -5087,10 +5087,10 @@ app.post("/api/customers", async (req, res) => {
         WHERE DATE(s.created_at) >= DATE(?) AND DATE(s.created_at) <= DATE(?)
         ORDER BY s.created_at DESC
       `;
-      
+
       const sales = sqlite.prepare(salesQuery).all(startDate, endDate);
       console.log(`📈 Found ${sales.length} sales for report period`);
-      
+
       // Get sale items with product details
       let saleItems = [];
       if (sales.length > 0) {
@@ -5109,18 +5109,18 @@ app.post("/api/customers", async (req, res) => {
           LEFT JOIN categories c ON p.category_id = c.id
           WHERE si.sale_id IN (${sales.map(() => '?').join(',')})
         `;
-        
+
         saleItems = sqlite.prepare(saleItemsQuery).all(...sales.map(s => s.id));
       }
-      
+
       console.log(`📦 Found ${saleItems.length} sale items`);
-      
+
       // Calculate metrics
       const totalRevenue = sales.reduce((sum, sale) => sum + parseFloat(sale.total || '0'), 0);
       const totalSales = saleItems.reduce((sum, item) => sum + parseInt(item.quantity || '0'), 0);
       const totalTransactions = sales.length;
       const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-      
+
       // Group sale items by product
       const productSales = {};
       saleItems.forEach(item => {
@@ -5135,12 +5135,12 @@ app.post("/api/customers", async (req, res) => {
         productSales[productId].quantity += parseInt(item.quantity || '0');
         productSales[productId].revenue += parseFloat(item.subtotal || '0');
       });
-      
+
       // Get top products
       const topProducts = Object.values(productSales)
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10);
-      
+
       // Payment method breakdown
       const paymentMethods = {};
       sales.forEach(sale => {
@@ -5151,13 +5151,13 @@ app.post("/api/customers", async (req, res) => {
         paymentMethods[method].count++;
         paymentMethods[method].amount += parseFloat(sale.total || '0');
       });
-      
+
       const paymentMethodBreakdown = Object.entries(paymentMethods).map(([method, data]) => ({
         method,
         count: data.count,
         amount: data.amount
       }));
-      
+
       // Daily trends
       const dailyData = {};
       sales.forEach(sale => {
@@ -5173,7 +5173,7 @@ app.post("/api/customers", async (req, res) => {
         dailyData[date].revenue += parseFloat(sale.total || '0');
         dailyData[date].transactions++;
       });
-      
+
       // Add sales quantities to daily data
       saleItems.forEach(item => {
         const sale = sales.find(s => s.id === item.sale_id);
@@ -5184,9 +5184,9 @@ app.post("/api/customers", async (req, res) => {
           }
         }
       });
-      
+
       const dailyTrends = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));
-      
+
       // Sales by category
       const categorySales = {};
       saleItems.forEach(item => {
@@ -5201,10 +5201,10 @@ app.post("/api/customers", async (req, res) => {
         categorySales[category].sales += parseInt(item.quantity || '0');
         categorySales[category].revenue += parseFloat(item.subtotal || '0');
       });
-      
+
       const salesByCategory = Object.values(categorySales)
         .sort((a, b) => b.revenue - a.revenue);
-      
+
       // Customer insights
       const customerData = {};
       sales.forEach(sale => {
@@ -5222,11 +5222,11 @@ app.post("/api/customers", async (req, res) => {
           customerData[customerId].totalSpent += parseFloat(sale.total || '0');
         }
       });
-      
+
       const customerInsights = Object.values(customerData)
         .sort((a, b) => b.totalSpent - a.totalSpent)
         .slice(0, 10);
-      
+
       const reportData = {
         totalSales,
         totalRevenue,
@@ -5238,16 +5238,16 @@ app.post("/api/customers", async (req, res) => {
         salesByCategory,
         customerInsights
       };
-      
+
       console.log('📊 Sales report generated successfully:', {
         totalRevenue,
         totalTransactions,
         topProductsCount: topProducts.length,
         dailyTrendsCount: dailyTrends.length
       });
-      
+
       res.json(reportData);
-      
+
     } catch (error) {
       console.error('❌ Sales report generation failed:', error);
       res.status(500).json({ 
@@ -5260,10 +5260,9 @@ app.post("/api/customers", async (req, res) => {
   // Purchase Reports endpoint
   app.get('/api/reports/purchases', isAuthenticated, async (req, res) => {
     try {
-      console.log('📊 Purchase reports endpoint accessed:', req.query);
-      
+      console.log('📊 Purchase reports endpoint accessed');
       const { startDate, endDate } = req.query;
-      
+
       if (!startDate || !endDate) {
         return res.status(400).json({ error: 'Start date and end date are required' });
       }
@@ -5276,9 +5275,9 @@ app.post("/api/customers", async (req, res) => {
 
 
 
-      // Use direct database queries for purchase reports
+      // Use direct SQLite queries for purchase reports
       const { sqlite } = await import('../db/index.js');
-      
+
       // Get purchases within date range
       const purchaseQuery = `
         SELECT 
@@ -5289,9 +5288,9 @@ app.post("/api/customers", async (req, res) => {
         WHERE date(p.created_at) >= date(?) AND date(p.created_at) <= date(?)
         ORDER BY p.created_at DESC
       `;
-      
+
       const purchases = sqlite.prepare(purchaseQuery).all(startDate, endDate);
-      
+
       // Get purchase items with product details
       const purchaseItemsQuery = `
         SELECT 
@@ -5306,11 +5305,11 @@ app.post("/api/customers", async (req, res) => {
         LEFT JOIN purchases pur ON pi.purchase_id = pur.id
         WHERE date(pur.created_at) >= date(?) AND date(pur.created_at) <= date(?)
       `;
-      
+
       const purchaseItems = sqlite.prepare(purchaseItemsQuery).all(startDate, endDate);
-      
+
       console.log(`📦 Found ${purchases.length} purchases and ${purchaseItems.length} purchase items`);
-      
+
       // Calculate basic metrics
       const totalAmount = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
       const totalTransactions = purchases.length;
@@ -5443,21 +5442,21 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/reports/stock', isAuthenticated, async (req, res) => {
     try {
       console.log('📦 Stock reports endpoint accessed');
-      
+
       // Use direct database queries for stock reports
       const { sqlite } = await import('../db/index.js');
 
       // Current stock summary
       const stockSummaryQuery = `
         SELECT 
-          COUNT(*) as totalProducts,
-          SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) as productsInStock,
-          SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as outOfStock,
-          SUM(CASE WHEN stock_quantity <= alert_threshold THEN 1 ELSE 0 END) as lowStock,
-          ROUND(SUM(stock_quantity * cost), 2) as totalStockValue,
-          ROUND(SUM(stock_quantity * price), 2) as totalRetailValue
-        FROM products 
-        WHERE active = 1
+          COUNT(DISTINCT p.id) as totalProducts,
+          SUM(CASE WHEN p.stock_quantity > 0 THEN 1 ELSE 0 END) as productsInStock,
+          SUM(CASE WHEN p.stock_quantity <= 0 THEN 1 ELSE 0 END) as outOfStock,
+          SUM(CASE WHEN p.stock_quantity <= p.alert_threshold THEN 1 ELSE 0 END) as lowStock,
+          ROUND(SUM(p.stock_quantity * p.cost), 2) as totalStockValue,
+          ROUND(SUM(p.stock_quantity * p.price), 2) as totalRetailValue
+        FROM products p
+        WHERE p.active = 1
       `;
 
       const stockSummary = sqlite.prepare(stockSummaryQuery).get();
@@ -5537,9 +5536,9 @@ app.post("/api/customers", async (req, res) => {
         LEFT JOIN products p ON pi.product_id = p.id
         LEFT JOIN suppliers s ON pur.supplier_id = s.id
         WHERE date(pur.created_at) >= date('now', '-30 days')
-        
+
         UNION ALL
-        
+
         SELECT 
           'sale' as type,
           si.product_id,
@@ -5554,7 +5553,7 @@ app.post("/api/customers", async (req, res) => {
         LEFT JOIN products p ON si.product_id = p.id
         LEFT JOIN customers c ON sal.customer_id = c.id
         WHERE date(sal.created_at) >= date('now', '-30 days')
-        
+
         ORDER BY date DESC
         LIMIT 50
       `;
@@ -5610,14 +5609,10 @@ app.post("/api/customers", async (req, res) => {
   app.get('/api/reports/customers', isAuthenticated, async (req, res) => {
     try {
       console.log('👥 Customer reports endpoint accessed');
-      
+
       const { dateRange = '30days' } = req.query;
       console.log('📅 Date range:', dateRange);
-      
-      // Use direct database queries for customer reports
-      const { sqlite } = await import('../db/index.js');
 
-      // Calculate date range
       let daysBack = 30;
       switch (dateRange) {
         case '7days': daysBack = 7; break;
@@ -5770,7 +5765,6 @@ app.post("/api/customers", async (req, res) => {
 
       console.log('✅ Customer report generated successfully');
       res.json(reportData);
-
     } catch (error) {
       console.error('❌ Customer reports error:', error);
       res.status(500).json({ error: 'Failed to generate customer reports' });
@@ -5782,10 +5776,10 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('📊 Supplier reports endpoint accessed');
       const { sqlite } = await import('../db/index.js');
-      
+
       const dateRange = req.query.range as string || '30days';
       console.log('📅 Date range:', dateRange);
-      
+
       let daysBack = 30;
       if (dateRange === '90days') daysBack = 90;
       if (dateRange === '1year') daysBack = 365;
@@ -5947,10 +5941,10 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('📊 Tax reports endpoint accessed');
       const { sqlite } = await import('../db/index.js');
-      
+
       const dateRange = req.query.range as string || '30days';
       console.log('📅 Date range:', dateRange);
-      
+
       let daysBack = 30;
       if (dateRange === '90days') daysBack = 90;
       if (dateRange === '1year') daysBack = 365;
@@ -6056,7 +6050,7 @@ app.post("/api/customers", async (req, res) => {
 
       const taxBreakdown = sqlite.prepare(taxBreakdownQuery).all().map(row => ({
         ...row,
-        totalTaxAmount: (row.cgstAmount || 0) + (row.sgstAmount || 0) + (row.igstAmount || 0) + (row.cessAmount || 0)
+        totalTaxAmount: (row.cgstAmount || 0) + (row.sgstAmount || 0) + (row.igstAmount || 0)
       }));
 
       // HSN Summary
@@ -6161,7 +6155,7 @@ app.post("/api/customers", async (req, res) => {
 
       // Compliance alerts
       const complianceAlerts = [];
-      
+
       // Check for missing HSN codes
       const missingHsnQuery = `
         SELECT COUNT(*) as count
@@ -6169,7 +6163,7 @@ app.post("/api/customers", async (req, res) => {
         WHERE (p.hsn_code IS NULL OR p.hsn_code = '') AND p.active = 1
       `;
       const missingHsn = sqlite.prepare(missingHsnQuery).get();
-      
+
       if (missingHsn.count > 0) {
         complianceAlerts.push({
           type: 'warning',
@@ -6189,7 +6183,7 @@ app.post("/api/customers", async (req, res) => {
         AND p.active = 1
       `;
       const zeroTax = sqlite.prepare(zeroTaxQuery).get();
-      
+
       if (zeroTax.count > 0) {
         complianceAlerts.push({
           type: 'info',
@@ -6250,7 +6244,7 @@ app.post("/api/customers", async (req, res) => {
       res.status(201).json(category);
     } catch (error) {
       console.error('Error creating tax category:', error);
-      res.status(500).json({ error: 'Failed to create tax category' });
+      res.status(500).json{ error: 'Failed to create tax category' });
     }
   });
 
@@ -6415,10 +6409,10 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('🔍 Product search endpoint accessed');
       const { sqlite } = await import('../db/index.js');
-      
+
       const searchTerm = req.query.q as string || '';
       console.log('🔍 Search term:', searchTerm);
-      
+
       const searchQuery = `
         SELECT 
           p.id,
@@ -6461,11 +6455,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('📊 Product history endpoint accessed');
       const { sqlite } = await import('../db/index.js');
-      
+
       const productId = parseInt(req.params.id);
       const dateRange = req.query.range as string || '30days';
       console.log('📅 Product ID:', productId, 'Date range:', dateRange);
-      
+
       let daysBack = 30;
       if (dateRange === '7days') daysBack = 7;
       if (dateRange === '90days') daysBack = 90;
@@ -6851,7 +6845,7 @@ app.post("/api/customers", async (req, res) => {
       }
 
       const updateData: any = {};
-      
+
       if (type === 'sale') {
         if (paymentMethod === 'cash') {
           updateData.cashReceived = parseFloat(register.cashReceived) + parseFloat(amount);
@@ -6963,13 +6957,11 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
-  // Create HTTP server
-  const httpServer = createServer(app);
   // Inventory Adjustments API
   app.get('/api/inventory-adjustments', async (req, res) => {
     try {
       const { productId, userId, adjustmentType, limit = 20, offset = 0 } = req.query;
-      
+
       const options = {
         productId: productId ? parseInt(productId as string) : undefined,
         userId: userId ? parseInt(userId as string) : undefined,
@@ -7074,7 +7066,7 @@ app.post("/api/customers", async (req, res) => {
   app.delete('/api/inventory-adjustments/:id', isAdminOrManager, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ message: 'Invalid adjustment ID' });
       }
@@ -7137,16 +7129,16 @@ app.post("/api/customers", async (req, res) => {
       // Check if there's enough stock - if not, add more stock for demonstration
       if (bulkProduct.stockQuantity < bulkUnitsNeeded) {
         console.log(`📦 Insufficient stock detected. Adding more stock to bulk product ${bulkProduct.id}`);
-        
+
         // Add more stock to the bulk product (minimum 50 units)
         const newStockQuantity = Math.max(50, bulkUnitsNeeded + 10);
         await storage.updateProduct(bulkProduct.id, {
           stockQuantity: newStockQuantity
         });
-        
+
         // Update the bulkProduct object with new stock
         bulkProduct.stockQuantity = newStockQuantity;
-        
+
         console.log(`✅ Stock updated: ${bulkProduct.name} now has ${newStockQuantity} units`);
       }
 
@@ -7166,13 +7158,13 @@ app.post("/api/customers", async (req, res) => {
         categoryId: bulkProduct.categoryId || 1,
         active: true,
         alertThreshold: 5,
-        
+
         // Mark as repack product
         itemPreparationsStatus: 'Repackage',
         bulkItemName: bulkProduct.name,
         repackageUnits: repackQuantity.toString(),
         itemPerUnit: null, // Clear this field to prevent corrupted data
-        
+
         // Additional product fields with defaults
         hsnCode: bulkProduct.hsnCode || '',
         gstCode: bulkProduct.gstCode || 'GST 18%',
@@ -7187,7 +7179,7 @@ app.post("/api/customers", async (req, res) => {
 
       // Check if repack product already exists
       const existingRepack = await storage.getProductBySku(repackProductData.sku);
-      
+
       let repackProduct;
       if (existingRepack) {
         // Update existing repack stock quantity
@@ -7373,7 +7365,7 @@ app.post("/api/customers", async (req, res) => {
   });
 
   // Manufacturing API Routes
-  
+
   // Manufacturing Statistics
   app.get('/api/manufacturing/stats', isAuthenticated, async (req, res) => {
     try {
@@ -7689,7 +7681,7 @@ app.post("/api/customers", async (req, res) => {
       if (!startDate || !endDate) {
         return res.status(400).json({ message: 'Start date and end date are required' });
       }
-      
+
       const expenses = await storage.getExpensesByDateRange(
         new Date(startDate as string),
         new Date(endDate as string)
@@ -7732,7 +7724,7 @@ app.post("/api/customers", async (req, res) => {
         offerType: offerType as string,
         limit: limit ? parseInt(limit as string) : undefined
       };
-      
+
       const offers = await storage.listOffers(filters);
       res.json(offers);
     } catch (error) {
@@ -7755,11 +7747,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const offer = await storage.getOfferById(id);
-      
+
       if (!offer) {
         return res.status(404).json({ message: 'Offer not found' });
       }
-      
+
       res.json(offer);
     } catch (error) {
       console.error('Error fetching offer:', error);
@@ -7773,10 +7765,10 @@ app.post("/api/customers", async (req, res) => {
         ...req.body,
         createdBy: req.user.id
       };
-      
+
       const validatedData = schema.offerInsertSchema.parse(offerData);
       const offer = await storage.createOffer(validatedData);
-      
+
       res.status(201).json(offer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -7794,13 +7786,13 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const offerData = schema.offerInsertSchema.partial().parse(req.body);
-      
+
       const offer = await storage.updateOffer(id, offerData);
-      
+
       if (!offer) {
         return res.status(404).json({ message: 'Offer not found' });
       }
-      
+
       res.json(offer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -7818,11 +7810,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteOffer(id);
-      
+
       if (!deleted) {
         return res.status(404).json({ message: 'Offer not found' });
       }
-      
+
       res.json({ message: 'Offer deleted successfully' });
     } catch (error) {
       console.error('Error deleting offer:', error);
@@ -7856,12 +7848,12 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/offers/calculate', async (req, res) => {
     try {
       const { offerId, cartItems, cartTotal, customerId } = req.body;
-      
+
       const offer = await storage.getOfferById(offerId);
       if (!offer) {
         return res.status(404).json({ message: 'Offer not found' });
       }
-      
+
       const calculation = await storage.calculateOfferDiscount(offer, cartItems, cartTotal, customerId);
       res.json(calculation);
     } catch (error) {
@@ -7875,11 +7867,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
       let loyalty = await storage.getCustomerLoyalty(customerId);
-      
+
       if (!loyalty) {
         loyalty = await storage.createCustomerLoyalty(customerId);
       }
-      
+
       res.json(loyalty);
     } catch (error) {
       console.error('Error fetching customer loyalty:', error);
@@ -7891,11 +7883,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
       const { points } = req.body;
-      
+
       if (!points || points <= 0) {
         return res.status(400).json({ message: 'Valid points amount required' });
       }
-      
+
       const loyalty = await storage.redeemLoyaltyPoints(customerId, points);
       res.json(loyalty);
     } catch (error) {
@@ -7908,15 +7900,15 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/loyalty/redeem-points', async (req, res) => {
     try {
       const { customerId, points } = req.body;
-      
+
       console.log('Processing loyalty redemption:', { customerId, points });
-      
+
       if (!customerId || !points || points <= 0) {
         return res.status(400).json({ message: 'Customer ID and valid points amount required' });
       }
-      
+
       const loyalty = await storage.redeemLoyaltyPoints(customerId, points);
-      
+
       console.log('Loyalty points redeemed successfully:', loyalty);
       res.json({
         success: true,
@@ -7937,15 +7929,15 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/loyalty/add-points', async (req, res) => {
     try {
       const { customerId, points, reason } = req.body;
-      
+
       console.log('Adding loyalty points:', { customerId, points, reason });
-      
+
       if (!customerId || !points || points <= 0) {
         return res.status(400).json({ message: 'Customer ID and valid points amount required' });
       }
-      
+
       const loyalty = await storage.addLoyaltyPoints(customerId, points, reason || 'Points added');
-      
+
       console.log('Loyalty points added successfully:', loyalty);
       res.json({
         success: true,
@@ -7967,9 +7959,9 @@ app.post("/api/customers", async (req, res) => {
     try {
       const { customerId } = req.params;
       const { totalPoints, availablePoints, notes } = req.body;
-      
+
       console.log('Updating loyalty account:', { customerId, totalPoints, availablePoints, notes });
-      
+
       if (!customerId) {
         return res.status(400).json({ error: 'Customer ID is required' });
       }
@@ -7994,9 +7986,9 @@ app.post("/api/customers", async (req, res) => {
   app.delete('/api/loyalty/customer/:customerId', async (req, res) => {
     try {
       const { customerId } = req.params;
-      
+
       console.log('Deleting loyalty account for customer:', customerId);
-      
+
       if (!customerId) {
         return res.status(400).json({ error: 'Customer ID is required' });
       }
@@ -8016,9 +8008,9 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/loyalty/bulk-update', async (req, res) => {
     try {
       const { operation, points, reason, customerIds } = req.body;
-      
+
       console.log('Bulk updating loyalty points:', { operation, points, reason, customerIds });
-      
+
       if (!operation || !points || !reason || !customerIds || !Array.isArray(customerIds)) {
         return res.status(400).json({ error: 'Operation, points, reason, and customer IDs are required' });
       }
@@ -8068,7 +8060,7 @@ app.post("/api/customers", async (req, res) => {
 
       console.log(`🏦 Fetching bank account ${id}...`);
       const account = await storage.getBankAccountById(id);
-      
+
       if (!account) {
         return res.status(404).json({ message: 'Bank account not found' });
       }
@@ -8083,7 +8075,7 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/bank-accounts', isAuthenticated, async (req, res) => {
     try {
       console.log('🏦 Creating new bank account:', req.body);
-      
+
       // Validate required fields
       const { accountName, accountNumber, bankName, accountType } = req.body;
       if (!accountName || !accountNumber || !bankName || !accountType) {
@@ -8118,7 +8110,7 @@ app.post("/api/customers", async (req, res) => {
 
       console.log(`🏦 Updating bank account ${id}:`, req.body);
       const account = await storage.updateBankAccount(id, req.body);
-      
+
       if (!account) {
         return res.status(404).json({ message: 'Bank account not found' });
       }
@@ -8143,7 +8135,7 @@ app.post("/api/customers", async (req, res) => {
       }
 
       console.log(`🏦 Setting bank account ${id} as default...`);
-      
+
       // Check if account exists
       const account = await storage.getBankAccountById(id);
       if (!account) {
@@ -8152,7 +8144,7 @@ app.post("/api/customers", async (req, res) => {
 
       // Set this account as default
       const success = await storage.setDefaultBankAccount(id);
-      
+
       if (!success) {
         return res.status(500).json({ message: 'Failed to set default account' });
       }
@@ -8181,21 +8173,21 @@ app.post("/api/customers", async (req, res) => {
 
       console.log(`🏦 Deleting bank account ${id}...`);
       const success = await storage.deleteBankAccount(id);
-      
+
       console.log('✅ Bank account deleted successfully');
       res.json({ success: true, message: 'Bank account deleted successfully' });
     } catch (error) {
       console.error('❌ Error deleting bank account:', error);
-      
+
       // Handle specific error cases
       if (error.message === 'Bank account not found') {
         return res.status(404).json({ message: error.message });
       }
-      
+
       if (error.message.includes('Cannot delete account with') && error.message.includes('existing transactions')) {
         return res.status(400).json({ message: error.message });
       }
-      
+
       res.status(500).json({ 
         message: error.message || 'Failed to delete bank account'
       });
@@ -8207,7 +8199,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       const { accountId, limit } = req.query;
       console.log('💳 Fetching bank transactions...');
-      
+
       let transactions;
       if (accountId) {
         transactions = await storage.getBankTransactionsByAccountId(
@@ -8217,7 +8209,7 @@ app.post("/api/customers", async (req, res) => {
       } else {
         transactions = await storage.getAllBankTransactions();
       }
-      
+
       res.json(transactions);
     } catch (error) {
       console.error('❌ Error fetching bank transactions:', error);
@@ -8228,7 +8220,7 @@ app.post("/api/customers", async (req, res) => {
   app.post('/api/bank-transactions', isAuthenticated, async (req, res) => {
     try {
       console.log('💳 Creating new bank transaction:', req.body);
-      
+
       // Validate required fields
       const { accountId, transactionId, transactionType, transactionMode, amount, description, transactionDate } = req.body;
       if (!accountId || !transactionId || !transactionType || !transactionMode || !amount || !description || !transactionDate) {
@@ -8321,11 +8313,11 @@ app.post("/api/customers", async (req, res) => {
       const id = parseInt(req.params.id);
       const validatedData = schema.insertEmployeeSchema.partial().parse(req.body);
       const employee = await storage.updateEmployee(id, validatedData);
-      
+
       if (!employee) {
         return res.status(404).json({ message: 'Employee not found' });
       }
-      
+
       res.json(employee);
     } catch (error) {
       console.error('Error updating employee:', error);
@@ -8357,11 +8349,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const employeeId = parseInt(req.params.employeeId);
       const salaryStructure = await storage.getSalaryStructureByEmployeeId(employeeId);
-      
+
       if (!salaryStructure) {
         return res.status(404).json({ message: 'Salary structure not found' });
       }
-      
+
       res.json(salaryStructure);
     } catch (error) {
       console.error('Error fetching salary structure:', error);
@@ -8491,11 +8483,11 @@ app.post("/api/customers", async (req, res) => {
     try {
       const validatedData = schema.insertPayrollSettingsSchema.partial().parse(req.body);
       const settings = await storage.updatePayrollSettings(validatedData);
-      
+
       if (!settings) {
         return res.status(404).json({ message: 'Payroll settings not found' });
       }
-      
+
       res.json(settings);
     } catch (error) {
       console.error('Error updating payroll settings:', error);
