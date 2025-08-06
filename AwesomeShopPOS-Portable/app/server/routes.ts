@@ -2975,8 +2975,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate payment amount with more detailed checks
-      if (paymentAmount !== undefined) {
+      if (paymentAmount !== undefined && paymentAmount !== null && paymentAmount !== '') {
         const amount = parseFloat(paymentAmount);
+        console.log('💰 Payment amount validation:', { paymentAmount, amount, isValid: !isNaN(amount) && amount > 0 });
+        
         if (isNaN(amount)) {
           return res.status(400).json({ 
             error: 'Invalid payment amount format',

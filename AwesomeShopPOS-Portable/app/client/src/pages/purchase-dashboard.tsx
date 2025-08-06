@@ -679,14 +679,25 @@ export default function PurchaseDashboard() {
   };
 
   const handleRecordPayment = (purchase: Purchase) => {
+    console.log('🔄 Opening payment dialog for purchase:', purchase);
     setSelectedPurchaseForPayment(purchase);
-    // Pre-fill payment amount with remaining balance or 0 if fully paid
+    
+    // Calculate remaining balance properly
     const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
-    const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+    const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
     const remaining = Math.max(0, totalAmount - paidAmount);
-    setPaymentAmount(remaining > 0 ? remaining.toFixed(2) : "0.00");
+    
+    console.log('💰 Payment dialog setup:', {
+      totalAmount,
+      paidAmount,
+      remaining,
+      purchaseId: purchase.id
+    });
+
+    // Set initial values
+    setPaymentAmount(remaining > 0 ? remaining.toString() : "");
     setPaymentMethod(purchase.paymentMethod || "cash");
-    setPaymentNotes(purchase.notes || "");
+    setPaymentNotes("");
     setPaymentDialogOpen(true);
   };
 
@@ -708,10 +719,16 @@ export default function PurchaseDashboard() {
 
     // Validate payment amount with better error messages
     const newPaymentAmount = parseFloat(paymentAmount || "0");
-    if (isNaN(newPaymentAmount) || newPaymentAmount < 0) { // Allow 0 for status updates if needed, but for recording, usually > 0
+    console.log('🔍 Payment validation:', {
+      paymentAmount,
+      newPaymentAmount,
+      isValid: !isNaN(newPaymentAmount) && newPaymentAmount > 0
+    });
+
+    if (isNaN(newPaymentAmount) || newPaymentAmount <= 0) {
       toast({
         title: "Invalid Payment Amount",
-        description: "Please enter a valid payment amount.",
+        description: "Please enter a valid payment amount greater than 0.",
         variant: "destructive",
       });
       return;
@@ -720,8 +737,16 @@ export default function PurchaseDashboard() {
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
 
+    console.log('💰 Payment calculation:', {
+      totalAmount,
+      currentPaidAmount,
+      newPaymentAmount,
+      paymentMethod,
+      paymentNotes
+    });
+
     // Check if payment amount is reasonable
-    if (newPaymentAmount > (totalAmount * 2) && totalAmount > 0) { // Allow overpayment, but warn if excessive
+    if (newPaymentAmount > (totalAmount * 2) && totalAmount > 0) {
       toast({
         title: "Warning",
         description: "Payment amount seems unusually high. Please verify the amount.",
@@ -739,14 +764,14 @@ export default function PurchaseDashboard() {
     if (totalAmount > 0) {
       if (totalPaidAfterPayment >= totalAmount) {
         paymentStatus = 'paid';
-        shouldUpdatePurchaseStatus = true; // Mark as completed if fully paid
+        shouldUpdatePurchaseStatus = true;
       } else if (totalPaidAfterPayment > 0) {
         paymentStatus = 'partial';
       } else {
-        paymentStatus = 'due'; // If payment amount is 0, status remains due
+        paymentStatus = 'due';
       }
-    } else { // Handle case where totalAmount is 0
-      paymentStatus = 'paid'; // Consider it paid if total is 0
+    } else {
+      paymentStatus = 'paid';
       shouldUpdatePurchaseStatus = true;
     }
 
@@ -765,23 +790,13 @@ export default function PurchaseDashboard() {
       paymentAmount: newPaymentAmount,
       totalPaidAmount: totalPaidAfterPayment,
       paymentMethod: paymentMethod.trim(),
-      paymentDate: new Date().toISOString(), // Use current date/time for recording
+      paymentDate: new Date().toISOString(),
       notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
     };
 
     console.log('🔄 Confirming payment with validated data:', paymentData);
-    console.log('📊 Payment breakdown:', {
-      orderNumber: selectedPurchaseForPayment.orderNumber,
-      totalAmount: formatCurrency(totalAmount),
-      currentPaid: formatCurrency(currentPaidAmount),
-      newPayment: formatCurrency(newPaymentAmount),
-      totalAfterPayment: formatCurrency(totalPaidAfterPayment),
-      remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAfterPayment)),
-      paymentStatus: paymentStatus,
-      willAutoComplete: shouldUpdatePurchaseStatus
-    });
 
-    // Show loading state with completion info
+    // Show loading state
     toast({
       title: "Processing Payment",
       description: paymentStatus === 'paid' ? 
@@ -2017,8 +2032,13 @@ export default function PurchaseDashboard() {
                     <Input
                       type="number"
                       step="0.01"
+                      min="0"
                       value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        console.log('💰 Payment amount changed:', value);
+                        setPaymentAmount(value);
+                      }}
                       placeholder="Enter payment amount"
                       className="mt-1"
                     />
@@ -2062,7 +2082,11 @@ export default function PurchaseDashboard() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setPaymentAmount((remaining / 2).toFixed(2))}
+                            onClick={() => {
+                              const halfAmount = (remaining / 2).toString();
+                              console.log('🔄 Setting 50% payment:', halfAmount);
+                              setPaymentAmount(halfAmount);
+                            }}
                             className="text-xs"
                             disabled={remaining <= 0}
                           >
@@ -2072,7 +2096,11 @@ export default function PurchaseDashboard() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setPaymentAmount(remaining.toFixed(2))}
+                            onClick={() => {
+                              const fullAmount = remaining.toString();
+                              console.log('🔄 Setting full payment:', fullAmount);
+                              setPaymentAmount(fullAmount);
+                            }}
                             className="text-xs"
                             disabled={remaining <= 0}
                           >
@@ -2125,7 +2153,8 @@ export default function PurchaseDashboard() {
                 disabled={
                   updatePaymentStatus.isPending || 
                   !paymentAmount || 
-                  parseFloat(paymentAmount || "0") < 0 || // Allow 0 but not negative
+                  paymentAmount.trim() === '' ||
+                  parseFloat(paymentAmount || "0") <= 0 ||
                   !paymentMethod ||
                   !selectedPurchaseForPayment
                 }
@@ -2139,7 +2168,7 @@ export default function PurchaseDashboard() {
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Record Payment ({paymentAmount ? formatCurrency(parseFloat(paymentAmount)) : formatCurrency(0)})
+                    Record Payment {paymentAmount && parseFloat(paymentAmount) > 0 ? `(${formatCurrency(parseFloat(paymentAmount))})` : ''}
                   </>
                 )}
               </Button>
