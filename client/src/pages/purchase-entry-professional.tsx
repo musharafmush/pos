@@ -437,7 +437,7 @@ export default function PurchaseEntryProfessional() {
       paymentType: "Credit",
       payment_status: "unpaid",
       paid_amount: 0,
-      payment_date: null,
+      payment_date: undefined,
     },
   });
 
@@ -586,7 +586,7 @@ export default function PurchaseEntryProfessional() {
       paymentType: "Credit",
       payment_status: "unpaid",
       paid_amount: 0,
-      payment_date: null,
+      payment_date: undefined,
     });
 
     // Force form to refresh
@@ -1890,7 +1890,7 @@ export default function PurchaseEntryProfessional() {
           paymentType: "Credit",
           payment_status: "unpaid",
           paid_amount: 0,
-          payment_date: null,
+          payment_date: undefined,
         });
 
         // Force form to re-render with clean state
@@ -3162,7 +3162,7 @@ export default function PurchaseEntryProfessional() {
                             form.setValue(`items.${index}.hsnCode`, hsnValue);
 
                             // Auto-suggest GST rate based on HSN code
-                            if (hsnCode.length >= 4) {
+                            if (hsnValue.length >= 4) {
                               let suggestedGst = 0;
                               if (hsnValue.startsWith("04") || hsnValue.startsWith("07") || hsnValue.startsWith("08")) {
                                 suggestedGst = 0; // Fresh produce

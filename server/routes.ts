@@ -45,6 +45,9 @@ const isAdmin = hasRole(['admin']);
 const isAdminOrManager = hasRole(['admin', 'manager']);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create HTTP server
+  const httpServer = createServer(app);
+  
   // Configure session storage for desktop SQLite mode
   // Use memory store for desktop app - perfect for offline use
 
@@ -6244,7 +6247,7 @@ app.post("/api/customers", async (req, res) => {
       res.status(201).json(category);
     } catch (error) {
       console.error('Error creating tax category:', error);
-      res.status(500).json{ error: 'Failed to create tax category' });
+      res.status(500).json({ error: 'Failed to create tax category' });
     }
   });
 
