@@ -194,15 +194,8 @@ export default function PurchaseDashboard() {
   const [, setLocation] = useLocation();
 
   // Fetch purchases
-  const { data: purchases = [], isLoading, error } = useQuery({
+  const { data: purchases = [], isLoading, error } = useQuery<Purchase[]>({
     queryKey: ["/api/purchases"],
-    onSuccess: (data) => {
-      console.log('📊 Purchase data received:', {
-        count: data?.length || 0,
-        sample: data?.slice(0, 3) || [],
-        statuses: data?.map(p => p.status) || []
-      });
-    }
   });
 
   // Delete purchase mutation
@@ -364,7 +357,7 @@ export default function PurchaseDashboard() {
         } else {
           return { success: true, message: 'Payment status updated successfully' };
         }
-      } catch (networkError) {
+      } catch (networkError: any) {
         console.error('🌐 Network error during payment update:', networkError);
         if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
           throw new Error('Network connection error. Please check your internet connection and try again.');
@@ -380,7 +373,7 @@ export default function PurchaseDashboard() {
 
       // Calculate payment details for display
       const orderTotal = selectedPurchaseForPayment ? 
-        parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") : 0;
+        parseFloat(selectedPurchaseForPayment.total?.toString() || "0") : 0;
       const paymentRecorded = parseFloat(paymentAmount || "0");
       const totalPaid = data.totalPaid || 0;
       const remainingAmount = Math.max(0, orderTotal - totalPaid);
@@ -615,7 +608,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   };
 
   const handleQuickPaymentStatusChange = (purchase: Purchase, newStatus: string) => {
-    const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
+    const totalAmount = parseFloat(purchase.total?.toString() || "0");
     const currentPaidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
 
     let paymentData: any = {
@@ -647,7 +640,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   const handleRecordPayment = (purchase: Purchase) => {
     setSelectedPurchaseForPayment(purchase);
-    setPaymentAmount(purchase.totalAmount?.toString() || "0");
+    setPaymentAmount(purchase.total?.toString() || "0");
     setPaymentDialogOpen(true);
   };
 
@@ -1089,8 +1082,8 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       return;
     }
 
-    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
-    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0");
+    const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
 
     // Validate against remaining balance
     const remainingBalance = Math.max(0, totalAmount - currentPaidAmount);
@@ -1217,8 +1210,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     // First try to get total from purchase record
     if (purchase.total && parseFloat(purchase.total) > 0) {
       calculatedTotal = parseFloat(purchase.total);
-    } else if (purchase.totalAmount && parseFloat(purchase.totalAmount) > 0) {
-      calculatedTotal = parseFloat(purchase.totalAmount);
+    // totalAmount property doesn't exist - use only total from schema
     } else if (purchase.invoiceAmount && parseFloat(purchase.invoiceAmount) > 0) {
       calculatedTotal = parseFloat(purchase.invoiceAmount);
     } else if (purchase.items && purchase.items.length > 0) {
@@ -1242,7 +1234,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
     // Calculate payment status
     const totalAmount = calculatedTotal;
-    const paidAmount = parseFloat(purchase.paidAmount || purchase.paid_amount || "0");
+    const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
     let paymentStatus = "unpaid";
@@ -2411,16 +2403,16 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Total Amount:</span>
-                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0"))}</div>
+                      <div className="text-blue-700 font-semibold">{formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0"))}</div>
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Already Paid:</span>
-                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0"))}</div>
+                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0"))}</div>
                     </div>
                   </div>
                   {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
-                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0");
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
                       const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
 
@@ -2462,7 +2454,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       className="mt-1"
                     />
                     {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = totalAmount - paidAmount;
                       const currentPayment = parseFloat(paymentAmount || "0");
@@ -2480,7 +2472,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
                   <div className="grid grid-cols-2 gap-3">
                     {(() => {
-                      const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0");
+                      const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
                       const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
                       const remaining = Math.max(0, totalAmount - paidAmount);
 
