@@ -734,8 +734,18 @@ export default function PurchaseDashboard() {
       return;
     }
 
-    const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
-    const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+    // Get purchase totals properly
+    const totalAmount = parseFloat(
+      selectedPurchaseForPayment.totalAmount?.toString() || 
+      selectedPurchaseForPayment.total?.toString() || 
+      selectedPurchaseForPayment.total_amount?.toString() || 
+      "0"
+    );
+    const currentPaidAmount = parseFloat(
+      selectedPurchaseForPayment.paidAmount?.toString() || 
+      selectedPurchaseForPayment.paid_amount?.toString() || 
+      "0"
+    );
 
     console.log('💰 Payment calculation:', {
       totalAmount,
@@ -745,36 +755,6 @@ export default function PurchaseDashboard() {
       paymentNotes
     });
 
-    // Check if payment amount is reasonable
-    if (newPaymentAmount > (totalAmount * 2) && totalAmount > 0) {
-      toast({
-        title: "Warning",
-        description: "Payment amount seems unusually high. Please verify the amount.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const totalPaidAfterPayment = currentPaidAmount + newPaymentAmount;
-
-    // Determine payment status based on amount paid
-    let paymentStatus = 'due';
-    let shouldUpdatePurchaseStatus = false;
-
-    if (totalAmount > 0) {
-      if (totalPaidAfterPayment >= totalAmount) {
-        paymentStatus = 'paid';
-        shouldUpdatePurchaseStatus = true;
-      } else if (totalPaidAfterPayment > 0) {
-        paymentStatus = 'partial';
-      } else {
-        paymentStatus = 'due';
-      }
-    } else {
-      paymentStatus = 'paid';
-      shouldUpdatePurchaseStatus = true;
-    }
-
     // Validate payment method
     if (!paymentMethod || paymentMethod.trim() === '') {
       toast({
@@ -783,6 +763,24 @@ export default function PurchaseDashboard() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Calculate final paid amount
+    const totalPaidAfterPayment = currentPaidAmount + newPaymentAmount;
+
+    // Determine payment status based on amount paid
+    let paymentStatus = 'due';
+
+    if (totalAmount > 0) {
+      if (totalPaidAfterPayment >= totalAmount) {
+        paymentStatus = 'paid';
+      } else if (totalPaidAfterPayment > 0) {
+        paymentStatus = 'partial';
+      } else {
+        paymentStatus = 'due';
+      }
+    } else if (newPaymentAmount > 0) {
+      paymentStatus = 'paid';
     }
 
     const paymentData = {

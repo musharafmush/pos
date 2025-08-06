@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon, CreditCard } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -451,6 +451,15 @@ export default function PurchaseEntryProfessional() {
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
 
+  // Payment state for recording payment separately (if needed)
+  const [paymentData, setPaymentData] = useState({
+    paymentAmount: 0,
+    paymentMethod: "Cash",
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentReference: "",
+    paymentNotes: "",
+  });
+
   // Cleanup effect to prevent memory leaks and stuck states
   useEffect(() => {
     return () => {
@@ -503,7 +512,7 @@ export default function PurchaseEntryProfessional() {
 
     const updatedHeldPurchases = [...heldPurchases, heldPurchase];
     setHeldPurchases(updatedHeldPurchases);
-    
+
     // Persist to localStorage
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
@@ -630,13 +639,13 @@ export default function PurchaseEntryProfessional() {
       // Remove from held purchases and update localStorage
       const updatedHeldPurchases = heldPurchases.filter(p => p.id !== heldPurchase.id);
       setHeldPurchases(updatedHeldPurchases);
-      
+
       try {
         localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
       } catch (error) {
         console.error('Failed to update localStorage:', error);
       }
-      
+
       setShowHeldPurchases(false);
 
       // Switch to details tab
@@ -659,13 +668,13 @@ export default function PurchaseEntryProfessional() {
   const deleteHeldPurchase = (holdId: string) => {
     const updatedHeldPurchases = heldPurchases.filter(p => p.id !== holdId);
     setHeldPurchases(updatedHeldPurchases);
-    
+
     try {
       localStorage.setItem('purchase-held-orders', JSON.stringify(updatedHeldPurchases));
     } catch (error) {
       console.error('Failed to update localStorage:', error);
     }
-    
+
     toast({
       title: "Held Purchase Deleted",
       description: `Held purchase order has been deleted.`,
@@ -725,7 +734,7 @@ export default function PurchaseEntryProfessional() {
             // Calculate selling price and MRP if not available from database
             let sellingPrice = Number(item.sellingPrice || item.selling_price) || 0;
             let mrp = Number(item.mrp) || 0;
-            
+
             // If selling price is not set, try to get from product or calculate from cost
             if (sellingPrice === 0) {
               if (product?.price && parseFloat(product.price) > 0) {
@@ -738,7 +747,7 @@ export default function PurchaseEntryProfessional() {
                 }
               }
             }
-            
+
             // If MRP is not set, try to get from product or calculate from selling price
             if (mrp === 0) {
               if (product?.mrp && parseFloat(product.mrp) > 0) {
@@ -870,15 +879,16 @@ export default function PurchaseEntryProfessional() {
 
         let tax = 0;
         let taxableAmount = 0;
+        let baseAmountForItem = itemCost; // Store base amount for proportional distribution
 
         // Calculate tax based on selected method
         switch (taxCalculationMethod) {
           case "inclusive":
             // Tax is included in the unit cost
             taxableAmount = itemCost - discount;
-            const baseAmount = taxableAmount / (1 + (taxPercentage / 100));
-            tax = taxableAmount - baseAmount;
-            subtotal += baseAmount;
+            baseAmountForItem = taxableAmount / (1 + (taxPercentage / 100));
+            tax = taxableAmount - baseAmountForItem;
+            subtotal += baseAmountForItem;
             break;
 
           case "compound":
@@ -887,7 +897,7 @@ export default function PurchaseEntryProfessional() {
             const primaryTax = (taxableAmount * (taxPercentage / 100));
             const compoundTax = (primaryTax * (taxPercentage / 100));
             tax = primaryTax + compoundTax;
-            subtotal += itemCost;
+            subtotal += itemCost; // Use itemCost for subtotal in compound
             break;
 
           case "exclusive":
@@ -913,7 +923,7 @@ export default function PurchaseEntryProfessional() {
 
     const totalAdditionalCharges = surchargeAmount + packingCharges + otherCharges + freightCharges;
 
-    // Second pass: Distribute additional charges proportionally
+    // Second pass: Distribute additional charges proportionally and update form values for netAmount
     items.forEach((item, index) => {
       if (item.productId && item.productId > 0) {
         const receivedQty = Number(item.receivedQty) || 0;
@@ -923,23 +933,20 @@ export default function PurchaseEntryProfessional() {
 
         let tax = 0;
         let taxableAmount = 0;
-        let baseAmount = itemCost;
+        let baseAmount = itemCost; // Base amount for this item before tax/discount
 
-        // Calculate tax and amounts based on selected method
         switch (taxCalculationMethod) {
           case "inclusive":
             taxableAmount = itemCost - discount;
             baseAmount = taxableAmount / (1 + (taxPercentage / 100));
             tax = taxableAmount - baseAmount;
             break;
-
           case "compound":
             taxableAmount = itemCost - discount;
             const primaryTax = (taxableAmount * (taxPercentage / 100));
             const compoundTax = (primaryTax * (taxPercentage / 100));
             tax = primaryTax + compoundTax;
             break;
-
           case "exclusive":
           default:
             taxableAmount = itemCost - discount;
@@ -950,12 +957,22 @@ export default function PurchaseEntryProfessional() {
         // Calculate net amount with additional charges distributed proportionally
         let netAmount = taxableAmount + tax;
 
-        // Distribute additional charges proportionally if there are charges and subtotal
+        // Distribute additional charges proportionally if there are charges and subtotal > 0
         if (totalAdditionalCharges > 0 && subtotal > 0) {
           const itemProportion = baseAmount / subtotal;
           const itemAdditionalCharges = totalAdditionalCharges * itemProportion;
           netAmount += itemAdditionalCharges;
         }
+        
+        // Apply additional discount proportionally
+        if (additionalDiscount > 0 && subtotal > 0) {
+          const itemProportion = baseAmount / subtotal;
+          const itemAdditionalDiscount = additionalDiscount * itemProportion;
+          netAmount -= itemAdditionalDiscount;
+        }
+
+        // Ensure netAmount is not negative
+        netAmount = Math.max(0, netAmount);
 
         // Update the form value for this item's net amount
         form.setValue(`items.${index}.netAmount`, Math.round(netAmount * 100) / 100);
@@ -969,12 +986,12 @@ export default function PurchaseEntryProfessional() {
       totalItems,
       totalQuantity,
       subtotal,
-      totalDiscount: -totalDiscount,
+      totalDiscount: -totalDiscount, // Display as negative for total discount
       totalTax: totalTax,
       freightCharges,
       grandTotal
     });
-  }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form]);
+  }, [watchedItems, watchedSurcharge, watchedFreight, watchedPacking, watchedOther, watchedAdditionalDiscount, form, subtotal]); // Include subtotal in dependency array if it's used
 
   // Enhanced tax field syncing utility with detailed breakdown
   const syncTaxFieldsFromProduct = (product: Product, index: number) => {
@@ -983,7 +1000,7 @@ export default function PurchaseEntryProfessional() {
     const sgstRate = parseFloat(product.sgstRate || "0");
     const igstRate = parseFloat(product.igstRate || "0");
     const cessRate = 0; // Cess rate not implemented in current product schema
-    
+
     // Calculate total GST (CGST + SGST for intra-state, IGST for inter-state)
     let totalGst = 0;
     let gstBreakdown = {
@@ -1075,7 +1092,7 @@ export default function PurchaseEntryProfessional() {
       form.setValue(`items.${index}.productId`, productId);
       form.setValue(`items.${index}.code`, product.sku || "");
       form.setValue(`items.${index}.description`, product.description || product.name);
-      
+
       // Enhanced cost price calculation with multiple fallbacks
       let costPrice = 0;
       if (product.cost && parseFloat(product.cost) > 0) {
@@ -1087,9 +1104,9 @@ export default function PurchaseEntryProfessional() {
         // Default minimum cost
         costPrice = 10;
       }
-      
+
       const sellingPrice = parseFloat(product.price) || 0;
-      
+
       // Calculate MRP: use product MRP if available, otherwise calculate from selling price
       let mrpPrice = 0;
       if (product.mrp && parseFloat(product.mrp) > 0) {
@@ -1101,7 +1118,7 @@ export default function PurchaseEntryProfessional() {
         // If no selling price, calculate from cost with typical markup
         mrpPrice = Math.round(costPrice * 1.5 * 100) / 100;
       }
-      
+
       form.setValue(`items.${index}.unitCost`, costPrice);
       form.setValue(`items.${index}.sellingPrice`, sellingPrice);
       form.setValue(`items.${index}.mrp`, mrpPrice);
@@ -1126,10 +1143,10 @@ export default function PurchaseEntryProfessional() {
       const qty = form.getValues(`items.${index}.receivedQty`) || 1;
       const taxCalculationMethod = form.getValues("taxCalculationMethod") || "exclusive";
       const discountAmount = form.getValues(`items.${index}.discountAmount`) || 0;
-      
+
       let netAmount = 0;
       const subtotal = qty * costPrice;
-      
+
       switch (taxCalculationMethod) {
         case "inclusive":
           // Tax included in cost price
@@ -1152,7 +1169,7 @@ export default function PurchaseEntryProfessional() {
           netAmount = taxableAmountExclusive + tax;
           break;
       }
-      
+
       form.setValue(`items.${index}.netAmount`, netAmount);
 
       // Trigger form validation and update
@@ -1232,7 +1249,7 @@ export default function PurchaseEntryProfessional() {
         mrp: item.mrp || 0,
         netAmount: item.netAmount || 0,
         location: item.location || "",
-        unit: item.unit || "PCS",
+        unit: "PCS",
       });
     }
   };
@@ -1373,7 +1390,7 @@ export default function PurchaseEntryProfessional() {
         } else {
           // Add as new item if first occurrence
           const newBatchNumber = `BATCH-${Date.now().toString().slice(-6)}`;
-          
+
           // Use cost price from product if available, otherwise use selling price
           const costPrice = parseFloat(product.cost || product.price) || 0;
           const sellingPrice = parseFloat(product.price) || 0;
@@ -1463,7 +1480,7 @@ export default function PurchaseEntryProfessional() {
         location: "",
         unit: "PCS",
       });
-      
+
       toast({
         title: "Item Added",
         description: `New line item ${fields.length + 1} added successfully.`,
@@ -1509,7 +1526,7 @@ export default function PurchaseEntryProfessional() {
     mutationFn: async (data: PurchaseFormData) => {
       try {
         console.log('🔄 Starting purchase save/update process...');
-        
+
         const url = isEditMode ? `/api/purchases/${editId}` : "/api/purchases";
         const method = isEditMode ? "PUT" : "POST";
 
@@ -1563,20 +1580,20 @@ export default function PurchaseEntryProfessional() {
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let errorMessage = isEditMode ? "Failed to update purchase order" : "Failed to create purchase order";
-          
+
           if (contentType && contentType.includes('application/json')) {
             try {
               const errorData = await response.json();
               console.error('❌ Server error response:', errorData);
-              
+
               // Use the most specific error message available
               errorMessage = errorData.error || errorData.message || errorMessage;
-              
+
               // Add technical details if available
               if (errorData.technical && errorData.technical !== errorMessage) {
                 console.error('🔧 Technical details:', errorData.technical);
               }
-              
+
             } catch (jsonError) {
               console.error('❌ Failed to parse error JSON:', jsonError);
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -1586,7 +1603,7 @@ export default function PurchaseEntryProfessional() {
             try {
               const errorText = await response.text();
               console.error('❌ Server returned non-JSON response:', errorText.substring(0, 500));
-              
+
               if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
                 errorMessage = `Server error (${response.status}). The server returned an error page instead of data.`;
               } else {
@@ -1597,7 +1614,7 @@ export default function PurchaseEntryProfessional() {
               errorMessage = `Server error: ${response.status} ${response.statusText}`;
             }
           }
-          
+
           throw new Error(errorMessage);
         }
 
@@ -1618,15 +1635,15 @@ export default function PurchaseEntryProfessional() {
         }
 
         return result;
-        
+
       } catch (error) {
         console.error('💥 Purchase save/update error:', error);
-        
+
         // Re-throw with enhanced error context
         if (error instanceof TypeError && error.message.includes('fetch')) {
           throw new Error('Network error: Unable to connect to server. Please check your connection and try again.');
         }
-        
+
         throw error;
       }
     },
@@ -1701,7 +1718,16 @@ export default function PurchaseEntryProfessional() {
             }
           ],
         });
-        
+
+        // Clear payment data if it was being entered
+        setPaymentData({
+          paymentAmount: 0,
+          paymentMethod: "Cash",
+          paymentDate: new Date().toISOString().split('T')[0],
+          paymentReference: "",
+          paymentNotes: "",
+        });
+
         // Force form to re-render with clean state
         setTimeout(() => {
           setActiveTab("details");
@@ -1745,7 +1771,7 @@ export default function PurchaseEntryProfessional() {
         const hasProduct = item.productId && item.productId > 0;
         const hasValidQuantity = (Number(item.receivedQty) || Number(item.quantity) || 0) > 0;
         const hasCost = (Number(item.unitCost) || 0) >= 0;
-        
+
         // Check if item has meaningful data
         return hasProduct && hasValidQuantity && hasCost;
       });
@@ -1793,13 +1819,6 @@ export default function PurchaseEntryProfessional() {
         });
         return;
       }
-
-      // Calculate total purchase value
-      const totalValue = validItems.reduce((total, item) => {
-        const receivedQty = Number(item.receivedQty) || Number(item.quantity) || 0;
-        const cost = Number(item.unitCost) || 0;
-        return total + (receivedQty * cost);
-      }, 0);
 
       // Create purchase data with proper structure for backend compatibility
       const purchaseData = {
@@ -1878,6 +1897,93 @@ export default function PurchaseEntryProfessional() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Function to handle recording payment
+  const recordPayment = async () => {
+    try {
+      // Get the current purchase ID (if editing existing purchase)
+      const currentPurchaseId = form.getValues("id");
+
+      // Ensure we have valid payment data and it doesn't exceed the grand total
+      if (paymentData.paymentAmount <= 0) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Payment Amount",
+          description: "Payment amount must be greater than zero.",
+        });
+        return;
+      }
+      if (paymentData.paymentAmount > summary.grandTotal) {
+        toast({
+          variant: "destructive",
+          title: "Payment Exceeds Total",
+          description: `Payment amount (${formatCurrency(paymentData.paymentAmount)}) cannot exceed the grand total (${formatCurrency(summary.grandTotal)}).`,
+        });
+        return;
+      }
+      if (!paymentData.paymentDate) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Payment Date",
+          description: "Please select a valid payment date.",
+        });
+        return;
+      }
+
+      if (currentPurchaseId) {
+        // If editing existing purchase, record payment via API
+        const paymentUpdateData = {
+          paymentAmount: paymentData.paymentAmount,
+          paymentMethod: paymentData.paymentMethod,
+          paymentDate: paymentData.paymentDate,
+          paymentStatus: paymentData.paymentAmount >= summary.grandTotal ? 'paid' : 'partial',
+          notes: paymentData.paymentNotes
+        };
+
+        console.log('🔄 Recording payment for existing purchase:', currentPurchaseId, paymentUpdateData);
+
+        const paymentResponse = await fetch(`/api/purchases/${currentPurchaseId}/payment`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentUpdateData),
+        });
+
+        if (!paymentResponse.ok) {
+          const errorData = await paymentResponse.json();
+          throw new Error(errorData.message || 'Failed to record payment');
+        }
+
+        const paymentResult = await paymentResponse.json();
+        console.log('✅ Payment recorded successfully:', paymentResult);
+
+        toast({
+          title: "Payment Recorded Successfully! 💰",
+          description: `Payment of ${formatCurrency(paymentData.paymentAmount)} has been recorded.`,
+        });
+      } else {
+        // For new purchases, the payment will be handled during purchase creation
+        console.log('💡 Payment will be recorded with new purchase creation');
+      }
+
+      // Reset payment form
+      setPaymentData({
+        paymentAmount: 0,
+        paymentMethod: "Cash",
+        paymentDate: new Date().toISOString().split('T')[0],
+        paymentReference: "",
+        paymentNotes: "",
+      });
+    } catch (error) {
+      console.error('❌ Error recording payment:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Recording Failed",
+        description: error.message || "Failed to record payment. Please try again.",
+      });
     }
   };
 
@@ -2498,16 +2604,16 @@ export default function PurchaseEntryProfessional() {
                             const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
 
                             const amount = qty * cost;
-                            
+
                             // Get additional charges for proportional distribution
                             const surchargeAmount = Number(watchedSurcharge) || 0;
                             const freightAmount = Number(watchedFreight) || 0;
                             const packingCharges = Number(watchedPacking) || 0;
                             const otherCharges = Number(watchedOther) || 0;
                             const additionalDiscount = Number(watchedAdditionalDiscount) || 0;
-                            
+
                             const totalAdditionalCharges = surchargeAmount + freightAmount + packingCharges + otherCharges;
-                            
+
                             // Calculate total order value for proportional distribution
                             const allItems = form.watch("items") || [];
                             const totalOrderValue = allItems.reduce((sum, item) => {
@@ -2516,21 +2622,21 @@ export default function PurchaseEntryProfessional() {
                               }
                               return sum;
                             }, 0);
-                            
+
                             // Calculate proportional additional charges for this item
                             let itemAdditionalCharges = 0;
                             let itemAdditionalDiscount = 0;
-                            
+
                             if (totalOrderValue > 0) {
                               const itemProportion = amount / totalOrderValue;
                               itemAdditionalCharges = totalAdditionalCharges * itemProportion;
                               itemAdditionalDiscount = additionalDiscount * itemProportion;
                             }
-                            
+
                             // Enhanced Net Cost calculation including additional charges
                             const baseCostWithTax = cost + (cost * taxPercent / 100);
                             const netCost = baseCostWithTax + (itemAdditionalCharges / qty) - (discountAmount / qty) - (itemAdditionalDiscount / qty);
-                            
+
                             const netAmount = amount - discountAmount + (amount * taxPercent / 100) + itemAdditionalCharges - itemAdditionalDiscount;
                             const cashAmount = amount * cashPercent / 100;
                             const roiPercent = sellingPrice > 0 && netCost > 0 ? ((sellingPrice - netCost) / netCost) * 100 : 0;
@@ -2744,7 +2850,7 @@ export default function PurchaseEntryProfessional() {
                                       {...form.register(`items.${index}.freeQty`, { 
                                         valueAsNumber: true
                                       })}
-                                      className="w-full text-center text-xs bg-green-50 border-green-200 focus:border-green-400 focus:bg-green-100"
+                                      className="w-full text-center text-xs"
                                       placeholder="0"
                                       onFocus={(e) => e.target.select()}
                                       onKeyDown={(e) => {
@@ -2754,7 +2860,7 @@ export default function PurchaseEntryProfessional() {
                                         }
                                       }}
                                     />
-                                    
+
                                     {/* Free Qty Indicator */}
                                     {(() => {
                                       const freeQty = form.watch(`items.${index}.freeQty`) || 0;
@@ -2804,24 +2910,24 @@ export default function PurchaseEntryProfessional() {
                                           if (selectedProduct && value > 0) {
                                             const originalCost = parseFloat(selectedProduct.cost || "0");
                                             const costDifference = Math.abs(value - originalCost);
-                                            
+
                                             // Update product cost if difference is more than 0.01
                                             if (costDifference > 0.01) {
                                               try {
                                                 await apiRequest('PATCH', `/api/products/${selectedProduct.id}`, { cost: value });
-                                                
+
                                                 // Update local products array to reflect the change
                                                 const updatedProducts = products.map(p => 
                                                   p.id === selectedProduct.id ? { ...p, cost: value.toString() } : p
                                                 );
                                                 queryClient.setQueryData(['/api/products'], updatedProducts);
-                                                
+
                                                 // Show success notification
                                                 toast({
                                                   title: "Product Cost Updated",
                                                   description: `${selectedProduct.name} cost updated from ₹${originalCost} to ₹${value}`,
                                                 });
-                                                
+
                                                 console.log(`Updated product ${selectedProduct.name} cost from ${originalCost} to ${value}`);
                                               } catch (error) {
                                                 console.error('Failed to update product cost:', error);
@@ -2849,17 +2955,17 @@ export default function PurchaseEntryProfessional() {
                                         }}
                                       />
                                     </div>
-                                    
+
                                     {/* Cost Price Indicator */}
                                     {(() => {
                                       const currentCost = form.watch(`items.${index}.unitCost`) || 0;
                                       const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                      
+
                                       if (selectedProduct && currentCost > 0) {
                                         const originalCost = parseFloat(selectedProduct.cost || "0");
                                         const sellingPrice = parseFloat(selectedProduct.price || "0");
                                         const costDifference = Math.abs(currentCost - originalCost);
-                                        
+
                                         if (originalCost > 0 && costDifference < 0.01) {
                                           return (
                                             <div className="text-xs text-green-600 text-center">
@@ -2917,7 +3023,7 @@ export default function PurchaseEntryProfessional() {
 
                                           if (suggestedGst !== form.getValues(`items.${index}.taxPercentage`)) {
                                             form.setValue(`items.${index}.taxPercentage`, suggestedGst);
-                                            
+
                                             // Recalculate net amount with new tax rate
                                             const qty = form.getValues(`items.${index}.receivedQty`) || 0;
                                             const cost = form.getValues(`items.${index}.unitCost`) || 0;
@@ -2926,7 +3032,7 @@ export default function PurchaseEntryProfessional() {
                                             const taxableAmount = subtotal - discount;
                                             const tax = (taxableAmount * suggestedGst) / 100;
                                             const netAmount = taxableAmount + tax;
-                                            
+
                                             form.setValue(`items.${index}.netAmount`, netAmount);
                                             form.trigger(`items.${index}`);
 
@@ -2938,7 +3044,7 @@ export default function PurchaseEntryProfessional() {
                                         }
                                       }}
                                     />
-                                    
+
                                     {/* HSN Code Validation Indicator */}
                                     {form.watch(`items.${index}.hsnCode`) && (
                                       <div className={`text-xs px-2 py-1 rounded text-center ${
@@ -2977,7 +3083,7 @@ export default function PurchaseEntryProfessional() {
                                       onChange={(e) => {
                                         const taxRate = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.taxPercentage`, taxRate);
-                                        
+
                                         // Recalculate net amount when tax changes
                                         const qty = form.getValues(`items.${index}.receivedQty`) || 0;
                                         const cost = form.getValues(`items.${index}.unitCost`) || 0;
@@ -2986,44 +3092,44 @@ export default function PurchaseEntryProfessional() {
                                         const taxableAmount = subtotal - discount;
                                         const tax = (taxableAmount * taxRate) / 100;
                                         const netAmount = taxableAmount + tax;
-                                        
+
                                         form.setValue(`items.${index}.netAmount`, netAmount);
                                         form.trigger(`items.${index}`);
                                       }}
                                       className="w-full text-center text-xs"
                                       placeholder="0"
                                     />
-                                    
+
                                     {/* Enhanced Tax Breakdown Display like add-item-dashboard */}
                                     {(form.watch(`items.${index}.taxPercentage`) || 0) > 0 && (
                                       <div className="text-xs bg-blue-50 p-2 rounded border space-y-1">
                                         {(() => {
                                           const totalTax = form.watch(`items.${index}.taxPercentage`) || 0;
                                           const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-                                          
+
                                           // Use product tax breakdown if available
                                           let cgstRate = 0;
                                           let sgstRate = 0;
                                           let igstRate = 0;
-                                          
+
                                           if (selectedProduct) {
                                             cgstRate = parseFloat(selectedProduct.cgstRate || "0");
                                             sgstRate = parseFloat(selectedProduct.sgstRate || "0");
                                             igstRate = parseFloat(selectedProduct.igstRate || "0");
                                           }
-                                          
+
                                           // If product doesn't have breakdown, use default
                                           if (cgstRate === 0 && sgstRate === 0 && igstRate === 0 && totalTax > 0) {
                                             cgstRate = totalTax / 2;
                                             sgstRate = totalTax / 2;
                                           }
-                                          
+
                                           return (
                                             <div className="text-center">
                                               <div className="text-blue-700 font-medium text-xs mb-1">
                                                 Total GST: {totalTax}%
                                               </div>
-                                              
+
                                               {/* GST Breakdown */}
                                               {totalTax > 0 && (
                                                 <div className="grid grid-cols-3 gap-1 text-xs">
@@ -3041,7 +3147,7 @@ export default function PurchaseEntryProfessional() {
                                                   </div>
                                                 </div>
                                               )}
-                                              
+
                                               {/* Tax Type Indicator */}
                                               <div className="text-xs text-gray-600 mt-1">
                                                 {igstRate > 0 ? 'Inter-State' : 'Intra-State'}
@@ -3051,7 +3157,7 @@ export default function PurchaseEntryProfessional() {
                                         })()}
                                       </div>
                                     )}
-                                    
+
                                     {/* Quick Tax Rate Buttons */}
                                     <div className="flex flex-wrap gap-1">
                                       {[0, 5, 12, 18, 28].map((rate) => (
@@ -3060,7 +3166,7 @@ export default function PurchaseEntryProfessional() {
                                           type="button"
                                           onClick={() => {
                                             form.setValue(`items.${index}.taxPercentage`, rate);
-                                            
+
                                             // Recalculate net amount
                                             const qty = form.getValues(`items.${index}.receivedQty`) || 0;
                                             const cost = form.getValues(`items.${index}.unitCost`) || 0;
@@ -3069,7 +3175,7 @@ export default function PurchaseEntryProfessional() {
                                             const taxableAmount = subtotal - discount;
                                             const tax = (taxableAmount * rate) / 100;
                                             const netAmount = taxableAmount + tax;
-                                            
+
                                             form.setValue(`items.${index}.netAmount`, netAmount);
                                             form.trigger(`items.${index}`);
                                           }}
@@ -3135,7 +3241,7 @@ export default function PurchaseEntryProfessional() {
 
                                 <TableCell className="border-r px-3 py-3">
                                   <div className="flex items-center justify-center p-1 bg-gray-50 rounded text-xs">
-                                                                   <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
+                                    <span className="font-medium">{grossProfitPercent.toFixed(2)}</span>
                                     <span className="text-xs ml-1">%</span>
                                   </div>
                                 </TableCell>
@@ -3154,14 +3260,14 @@ export default function PurchaseEntryProfessional() {
                                       onChange={(e) => {
                                         const value = parseFloat(e.target.value) || 0;
                                         form.setValue(`items.${index}.sellingPrice`, value);
-                                        
+
                                         // Auto-calculate MRP if not set (typical markup is 20-25%)
                                         const currentMrp = form.getValues(`items.${index}.mrp`) || 0;
                                         if (currentMrp === 0 && value > 0) {
                                           const suggestedMrp = Math.round(value * 1.2 * 100) / 100; // 20% markup
                                           form.setValue(`items.${index}.mrp`, suggestedMrp);
                                         }
-                                        
+
                                         form.trigger(`items.${index}`);
                                       }}
                                       className="w-full text-right text-xs pl-6"
@@ -3174,7 +3280,7 @@ export default function PurchaseEntryProfessional() {
                                     const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
                                     const unitCost = form.watch(`items.${index}.unitCost`) || 0;
                                     const margin = unitCost > 0 ? ((sellingPrice - unitCost) / unitCost) * 100 : 0;
-                                    
+
                                     if (sellingPrice > 0 && unitCost > 0) {
                                       return (
                                         <div className={`text-xs text-center mt-1 px-1 py-0.5 rounded ${
@@ -3213,7 +3319,7 @@ export default function PurchaseEntryProfessional() {
                                   {(() => {
                                     const mrp = form.watch(`items.${index}.mrp`) || 0;
                                     const sellingPrice = form.watch(`items.${index}.sellingPrice`) || 0;
-                                    
+
                                     if (mrp > 0 && sellingPrice > 0) {
                                       const discount = ((mrp - sellingPrice) / mrp) * 100;
                                       return (
@@ -3499,7 +3605,7 @@ export default function PurchaseEntryProfessional() {
                       const costPrice = parseFloat(product.cost || product.price) || 0;
                       const sellingPrice = parseFloat(product.price) || 0;
                       const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                      
+
                       const newModalData = {
                         ...modalData,
                         productId: product.id,
@@ -3532,7 +3638,7 @@ export default function PurchaseEntryProfessional() {
                         const costPrice = parseFloat(product.cost || product.price) || 0;
                         const sellingPrice = parseFloat(product.price) || 0;
                         const mrpPrice = parseFloat(product.mrp || (sellingPrice * 1.2).toString()) || 0;
-                        
+
                         const newModalData = {
                           ...modalData,
                           productId,
@@ -3758,7 +3864,7 @@ export default function PurchaseEntryProfessional() {
                     setModalData(newModalData);
                     if (editingItemIndex !== null) {
                       form.setValue(`items.${editingItemIndex}.sellingPrice`, value);
-                      
+
                       // Auto-calculate MRP if not set (typical markup is 20-25%)
                       if (!modalData.mrp || modalData.mrp === 0) {
                         const suggestedMrp = Math.round(value * 1.2 * 100) / 100;
@@ -3766,7 +3872,7 @@ export default function PurchaseEntryProfessional() {
                         setModalData(updatedModalData);
                         form.setValue(`items.${editingItemIndex}.mrp`, suggestedMrp);
                       }
-                      
+
                       form.trigger(`items.${editingItemIndex}`);
                     }
                   }}

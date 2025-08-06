@@ -2999,188 +2999,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Validate payment method
-      if (paymentMethod && typeof paymentMethod !== 'string') {
-        return res.status(400).json({ 
-          error: 'Invalid payment method',
-          message: 'Payment method must be a text value'
-        });
-      }
-
-      // Validate payment status
-      const validStatuses = ['due', 'paid', 'partial', 'overdue'];
-      if (paymentStatus && !validStatuses.includes(paymentStatus)) {
-        return res.status(400).json({ 
-          error: 'Invalid payment status',
-          message: `Payment status must be one of: ${validStatuses.join(', ')}`
-        });
-      }
-
       // Use direct SQLite query
       const { sqlite } = await import('../db/index.js');
 
-      // Check if purchase exists
-      const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+      // Use transaction for atomic update
+      const result = sqlite.transaction(() => {
+        // Check if purchase exists
+        const existingPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
 
-      if (!existingPurchase) {
-        return res.status(404).json({ 
-          error: 'Purchase not found',
-          message: `No purchase order found with ID ${id}`
-        });
-      }
+        if (!existingPurchase) {
+          throw new Error(`No purchase order found with ID ${id}`);
+        }
 
-      // Get table structure
-      const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
-      const columnNames = tableInfo.map((col: any) => col.name);
+        // Get table structure
+        const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
+        const columnNames = tableInfo.map((col: any) => col.name);
 
-      // Calculate the new paid amount
-      const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
-      const newPaymentAmount = parseFloat(paymentAmount || '0');
-      const finalPaidAmount = totalPaidAmount !== undefined ? 
-        parseFloat(totalPaidAmount.toString()) : 
-        currentPaidAmount + newPaymentAmount;
+        // Calculate the new paid amount
+        const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
+        const newPaymentAmount = parseFloat(paymentAmount || '0');
+        const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.total_amount || '0');
 
-      // Calculate payment status if not provided
-      const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
-      let calculatedPaymentStatus = paymentStatus;
-
-      if (!calculatedPaymentStatus) {
-        if (purchaseTotal > 0) {
-          if (finalPaidAmount >= purchaseTotal) {
-            calculatedPaymentStatus = 'paid';
-          } else if (finalPaidAmount > 0) {
-            calculatedPaymentStatus = 'partial';
-          } else {
-            calculatedPaymentStatus = 'due';
-          }
+        let finalPaidAmount;
+        if (totalPaidAmount !== undefined) {
+          finalPaidAmount = parseFloat(totalPaidAmount.toString());
         } else {
-          calculatedPaymentStatus = 'due';
+          finalPaidAmount = currentPaidAmount + newPaymentAmount;
         }
-      }
 
-      // If payment status is explicitly provided, use it
-      if (paymentStatus) {
-        calculatedPaymentStatus = paymentStatus;
-
-        // Adjust paid amount based on status if needed
-        if (paymentStatus === 'paid' && finalPaidAmount < purchaseTotal) {
-          // If marking as paid but amount is less than total, set to full amount
-          const adjustedFinalAmount = purchaseTotal;
-          console.log(`📊 Adjusting paid amount from ${finalPaidAmount} to ${adjustedFinalAmount} for 'paid' status`);
-        } else if (paymentStatus === 'due' && finalPaidAmount > 0 && !paymentAmount) {
-          // If marking as due but there's paid amount, keep the paid amount
-          console.log(`📊 Keeping existing paid amount ${finalPaidAmount} for 'due' status`);
+        // Ensure we don't exceed the purchase total unless overpayment is allowed
+        if (finalPaidAmount > purchaseTotal && purchaseTotal > 0) {
+          console.log(`⚠️ Payment amount ${finalPaidAmount} exceeds total ${purchaseTotal}, capping at total`);
+          finalPaidAmount = purchaseTotal;
         }
-      }
 
-      // Build dynamic update query
-      const updateFields = [];
-      const updateValues = [];
+        // Calculate payment status if not provided
+        let calculatedPaymentStatus = paymentStatus;
 
-      if (columnNames.includes('payment_status')) {
-        updateFields.push('payment_status = ?');
-        updateValues.push(calculatedPaymentStatus);
-      }
-
-      if (columnNames.includes('paid_amount')) {
-        updateFields.push('paid_amount = ?');
-        updateValues.push(finalPaidAmount.toString());
-      }
-
-      if (columnNames.includes('payment_method') && paymentMethod) {
-        updateFields.push('payment_method = ?');
-        updateValues.push(paymentMethod);
-      }
-
-      if (columnNames.includes('payment_date') && paymentDate) {
-        updateFields.push('payment_date = ?');
-        updateValues.push(paymentDate);
-      }
-
-      if (columnNames.includes('updated_at')) {
-        updateFields.push('updated_at = CURRENT_TIMESTAMP');
-      }
-
-      if (updateFields.length === 0) {
-        return res.status(400).json({ 
-          error: 'No valid fields to update',
-          message: 'No payment fields provided for update'
-        });
-      }
-
-      updateValues.push(id); // For WHERE clause
-
-      const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
-      console.log('🔧 Update query:', updateQuery);
-      console.log('📊 Update values:', updateValues);
-
-      const updateResult = sqlite.prepare(updateQuery).run(...updateValues);
-
-      if (updateResult.changes === 0) {
-        return res.status(404).json({ 
-          error: 'Update failed',
-          message: 'No changes were made to the purchase record'
-        });
-      }
-
-      // Get final updated purchase
-      const finalPurchase = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
-
-      // Auto-update purchase status to completed if fully paid
-      let finalStatus = finalPurchase.status;
-      let statusAutoUpdated = false;
-
-      if (calculatedPaymentStatus === 'paid' && 
-          purchaseTotal > 0 && 
-          finalPaidAmount >= purchaseTotal && 
-          finalPurchase.status !== 'completed') {
-
-        console.log('🔄 Auto-updating purchase status to completed (fully paid)');
-
-        try {
-          // Check if received_date column exists
-          const statusUpdateFields = ['status = ?'];
-          const statusUpdateValues = ['completed'];
-
-          if (columnNames.includes('received_date')) {
-            statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
-          }
-          if (columnNames.includes('updated_at')) {
-            statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
-          }
-
-          const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
-          statusUpdateValues.push(id);
-
-          console.log('🔧 Auto-completing purchase - Status update query:', updateStatusQuery);
-
-          const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
-
-          if (statusResult.changes > 0) {
-            finalStatus = 'completed';
-            statusAutoUpdated = true;
-            console.log('✅ Successfully auto-updated purchase status to completed');
+        if (!calculatedPaymentStatus) {
+          if (purchaseTotal > 0) {
+            if (finalPaidAmount >= purchaseTotal) {
+              calculatedPaymentStatus = 'paid';
+            } else if (finalPaidAmount > 0) {
+              calculatedPaymentStatus = 'partial';
+            } else {
+              calculatedPaymentStatus = 'due';
+            }
           } else {
-            console.error('❌ Status update failed - no changes made');
+            calculatedPaymentStatus = 'paid'; // If no total amount, mark as paid
           }
-        } catch (statusUpdateError) {
-          console.error('❌ Error during status auto-update:', statusUpdateError);
         }
-      }
 
-      // Get final updated purchase
-      const finalPurchaseRecord = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+        // Build dynamic update query with proper column mapping
+        const updateFields = [];
+        const updateValues = [];
+
+        // Map column names properly
+        if (columnNames.includes('payment_status')) {
+          updateFields.push('payment_status = ?');
+          updateValues.push(calculatedPaymentStatus);
+        }
+
+        if (columnNames.includes('paid_amount')) {
+          updateFields.push('paid_amount = ?');
+          updateValues.push(finalPaidAmount.toString());
+        }
+
+        if (columnNames.includes('payment_method') && paymentMethod) {
+          updateFields.push('payment_method = ?');
+          updateValues.push(paymentMethod);
+        }
+
+        if (columnNames.includes('payment_date')) {
+          updateFields.push('payment_date = ?');
+          updateValues.push(paymentDate || new Date().toISOString());
+        }
+
+        if (columnNames.includes('updated_at')) {
+          updateFields.push('updated_at = CURRENT_TIMESTAMP');
+        }
+
+        if (updateFields.length === 0) {
+          throw new Error('No valid payment fields found in purchases table');
+        }
+
+        updateValues.push(id); // For WHERE clause
+
+        const updateQuery = `UPDATE purchases SET ${updateFields.join(', ')} WHERE id = ?`;
+        console.log('🔧 Update query:', updateQuery);
+        console.log('📊 Update values:', updateValues);
+
+        const updateResult = sqlite.prepare(updateQuery).run(...updateValues);
+
+        if (updateResult.changes === 0) {
+          throw new Error('No changes were made to the purchase record');
+        }
+
+        console.log('✅ Payment record updated successfully');
+
+        // Auto-update purchase status to completed if fully paid
+        let statusAutoUpdated = false;
+        if (calculatedPaymentStatus === 'paid' && 
+            purchaseTotal > 0 && 
+            finalPaidAmount >= purchaseTotal && 
+            existingPurchase.status !== 'completed') {
+
+          console.log('🔄 Auto-updating purchase status to completed (fully paid)');
+
+          try {
+            const statusUpdateFields = ['status = ?'];
+            const statusUpdateValues = ['completed'];
+
+            if (columnNames.includes('received_date')) {
+              statusUpdateFields.push('received_date = CURRENT_TIMESTAMP');
+            }
+            if (columnNames.includes('updated_at')) {
+              statusUpdateFields.push('updated_at = CURRENT_TIMESTAMP');
+            }
+
+            const updateStatusQuery = `UPDATE purchases SET ${statusUpdateFields.join(', ')} WHERE id = ?`;
+            statusUpdateValues.push(id);
+
+            const statusResult = sqlite.prepare(updateStatusQuery).run(...statusUpdateValues);
+            statusAutoUpdated = statusResult.changes > 0;
+            
+            if (statusAutoUpdated) {
+              console.log('✅ Successfully auto-updated purchase status to completed');
+            }
+          } catch (statusUpdateError) {
+            console.error('❌ Error during status auto-update:', statusUpdateError);
+          }
+        }
+
+        // Get final updated purchase
+        const finalPurchaseRecord = sqlite.prepare('SELECT * FROM purchases WHERE id = ?').get(id);
+
+        return {
+          purchase: finalPurchaseRecord,
+          paymentRecorded: newPaymentAmount,
+          totalPaid: finalPaidAmount,
+          paymentStatus: calculatedPaymentStatus,
+          statusAutoUpdated: statusAutoUpdated,
+          isCompleted: finalPurchaseRecord.status === 'completed'
+        };
+      })();
 
       console.log('✅ Payment status updated successfully');
       res.json({ 
         success: true,
-        purchase: finalPurchaseRecord,
-        message: statusAutoUpdated ? 'Payment recorded and purchase completed' : 'Payment status updated successfully',
-        paymentRecorded: newPaymentAmount,
-        totalPaid: finalPaidAmount,
-        paymentStatus: calculatedPaymentStatus,
-        statusAutoUpdated: statusAutoUpdated,
-        isCompleted: finalStatus === 'completed',
+        purchase: result.purchase,
+        message: result.statusAutoUpdated ? 'Payment recorded and purchase completed' : 'Payment status updated successfully',
+        paymentRecorded: result.paymentRecorded,
+        totalPaid: result.totalPaid,
+        paymentStatus: result.paymentStatus,
+        statusAutoUpdated: result.statusAutoUpdated,
+        isCompleted: result.isCompleted,
         timestamp: new Date().toISOString()
       });
 
