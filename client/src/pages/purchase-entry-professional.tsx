@@ -306,6 +306,8 @@ export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
+  
+  console.log('🚀 PurchaseEntryProfessional component loaded');
   const [barcodeInput, setBarcodeInput] = useState("");
   const [summary, setSummary] = useState({
     totalItems: 0,
@@ -371,6 +373,12 @@ export default function PurchaseEntryProfessional() {
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
   const isEditMode = !!editId && editId !== 'null' && editId !== 'undefined';
+  
+  console.log('🔍 Edit Mode Check:', {
+    editId,
+    isEditMode,
+    url: window.location.href
+  });
 
   // Validate edit ID format
   useEffect(() => {
@@ -452,15 +460,25 @@ export default function PurchaseEntryProfessional() {
   });
 
   // Fetch purchase data for editing
-  const { data: existingPurchase, isLoading: purchaseLoading } = useQuery({
+  const { data: existingPurchase, isLoading: purchaseLoading, error: purchaseError } = useQuery({
     queryKey: ['/api/purchases', editId],
     queryFn: async () => {
       if (!editId) return null;
+      console.log(`🔄 Fetching purchase data for ID: ${editId}`);
       const res = await fetch(`/api/purchases/${editId}`);
       if (!res.ok) throw new Error('Failed to fetch purchase');
-      return res.json();
+      const data = await res.json();
+      console.log('📦 Purchase data received:', data);
+      return data;
     },
     enabled: !!editId,
+  });
+  
+  console.log('📊 Purchase Query State:', {
+    existingPurchase: !!existingPurchase,
+    purchaseLoading,
+    purchaseError,
+    isEditMode
   });
 
   // Fetch products
@@ -843,6 +861,11 @@ export default function PurchaseEntryProfessional() {
             unit: "PCS",
           }];
 
+      console.log('📋 Mapping purchase data for form:');
+      console.log('- Purchase items found:', existingPurchase.items?.length || 0);
+      console.log('- Supplier ID:', existingPurchase.supplierId || existingPurchase.supplier_id);
+      console.log('- Order number:', existingPurchase.poNo || existingPurchase.orderNumber || existingPurchase.order_number);
+
       const formData = {
         supplierId: existingPurchase.supplierId || existingPurchase.supplier_id || 0,
         orderNumber: existingPurchase.poNo || existingPurchase.orderNumber || existingPurchase.order_number || "",
@@ -872,8 +895,8 @@ export default function PurchaseEntryProfessional() {
         paid_amount: Number(existingPurchase.paid_amount) || 0,
         payment_date: existingPurchase.payment_date ? existingPurchase.payment_date.split('T')[0] : null,
       };
-
-      console.log('Form data to populate:', formData);
+      
+      console.log('📋 Final form data:', formData);
 
       // Populate form with existing data
       form.reset(formData);
@@ -2078,6 +2101,48 @@ export default function PurchaseEntryProfessional() {
       setIsSaving(false);
     }
   };
+
+  // Show loading state when in edit mode and data is still loading
+  if (isEditMode && purchaseLoading) {
+    return (
+      <DashboardLayout>
+        <div className="container max-w-full pb-8 px-4">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Purchase Order</h3>
+              <p className="text-gray-600">Please wait while we load the purchase order details...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state if failed to load purchase in edit mode
+  if (isEditMode && purchaseError) {
+    return (
+      <DashboardLayout>
+        <div className="container max-w-full pb-8 px-4">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="text-red-500 mb-4">
+                <X className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Purchase Order</h3>
+              <p className="text-gray-600 mb-4">Unable to load purchase order details. Please check the ID and try again.</p>
+              <Link href="/purchase-dashboard">
+                <Button variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Purchases
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
