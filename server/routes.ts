@@ -2950,10 +2950,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parseFloat(totalPaidAmount.toString()) : 
         currentPaidAmount + newPaymentAmount;
 
-      // Ensure we don't exceed total amount unless it's an overpayment scenario
+      // Validate the payment amount doesn't create impossible scenarios
+      if (finalPaidAmount < 0) {
+        finalPaidAmount = 0;
+      }
+
+      // Allow overpayment but log it for tracking
       if (finalPaidAmount > purchaseTotal && purchaseTotal > 0) {
-        console.log(`⚠️ Payment amount ${finalPaidAmount} exceeds total ${purchaseTotal}, capping at total`);
-        finalPaidAmount = Math.min(finalPaidAmount, purchaseTotal * 1.1); // Allow 10% overpayment
+        const overpayment = finalPaidAmount - purchaseTotal;
+        console.log(`⚠️ Overpayment detected: ${overpayment.toFixed(2)} over total ${purchaseTotal}`);
+        // Don't cap overpayments, let them through for business flexibility
       }
 
       // Calculate payment status based on amounts
@@ -2963,15 +2969,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (purchaseTotal > 0) {
           const paymentPercentage = (finalPaidAmount / purchaseTotal) * 100;
           
-          if (paymentPercentage >= 100) {
+          if (finalPaidAmount >= purchaseTotal) {
             calculatedPaymentStatus = 'paid';
-          } else if (paymentPercentage >= 1) { // At least 1% paid
+          } else if (finalPaidAmount > 0) {
             calculatedPaymentStatus = 'partial';
           } else {
             calculatedPaymentStatus = 'due';
           }
         } else {
-          calculatedPaymentStatus = 'due';
+          calculatedPaymentStatus = finalPaidAmount > 0 ? 'paid' : 'due';
         }
       }
 
@@ -3097,6 +3103,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: calculatedPaymentStatus,
         statusAutoUpdated: statusAutoUpdated,
         isCompleted: finalStatus === 'completed',
+        purchaseTotal: purchaseTotal,
+        remainingBalance: Math.max(0, purchaseTotal - finalPaidAmount),
+        paymentPercentage: purchaseTotal > 0 ? Math.round((finalPaidAmount / purchaseTotal) * 100) : 100,
+        overpayment: finalPaidAmount > purchaseTotal ? finalPaidAmount - purchaseTotal : 0,
         timestamp: new Date().toISOString()
       });
 

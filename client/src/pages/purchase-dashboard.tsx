@@ -378,29 +378,37 @@ export default function PurchaseDashboard() {
       // Invalidate and refetch purchase data immediately
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
 
+      // Calculate payment details for display
+      const orderTotal = selectedPurchaseForPayment ? 
+        parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") : 0;
+      const paymentRecorded = parseFloat(paymentAmount || "0");
+      const totalPaid = data.totalPaid || 0;
+      const remainingAmount = Math.max(0, orderTotal - totalPaid);
+      const paymentPercentage = orderTotal > 0 ? Math.round((totalPaid / orderTotal) * 100) : 0;
+
       // Enhanced success message based on completion status
       let successTitle = "Payment Recorded Successfully ✅";
       let successDescription = data.message || 'Payment status updated successfully';
 
       if (data.statusAutoUpdated || data.isCompleted) {
         successTitle = "Purchase Order Completed! 🎉";
-        successDescription = `Payment recorded and purchase order automatically marked as completed. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
+        successDescription = `Payment of ${formatCurrency(paymentRecorded)} recorded successfully. Purchase order is now fully paid and completed.`;
       } else if (data.paymentStatus === 'paid') {
         successTitle = "Payment Completed ✅";
-        successDescription = `Full payment completed. Purchase order is now fully paid with total amount: ${formatCurrency(data.totalPaid || 0)}`;
+        successDescription = `Payment of ${formatCurrency(paymentRecorded)} recorded successfully. Purchase order is now fully paid (100%).`;
       } else if (data.paymentStatus === 'partial') {
         successTitle = "Partial Payment Recorded 📝";
-        const orderTotal = selectedPurchaseForPayment ? 
-          parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") : 0;
-        const remainingAmount = Math.max(0, orderTotal - (data.totalPaid || 0));
-        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. 
-          Total paid: ${formatCurrency(data.totalPaid || 0)} of ${formatCurrency(orderTotal)}. 
-          Remaining balance: ${formatCurrency(remainingAmount)}`;
+        successDescription = `Payment of ${formatCurrency(paymentRecorded)} recorded successfully. 
+Progress: ${formatCurrency(totalPaid)} paid of ${formatCurrency(orderTotal)} total (${paymentPercentage}%). 
+Remaining balance: ${formatCurrency(remainingAmount)}`;
+      } else {
+        successDescription = `Payment of ${formatCurrency(paymentRecorded)} recorded. Total paid: ${formatCurrency(totalPaid)} of ${formatCurrency(orderTotal)}.`;
       }
 
       toast({
         title: successTitle,
         description: successDescription,
+        duration: 5000, // Show longer for detailed payment info
       });
 
       // Reset form state
@@ -1083,16 +1091,20 @@ export default function PurchaseDashboard() {
     const totalAmount = parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || selectedPurchaseForPayment.total?.toString() || "0");
     const currentPaidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || selectedPurchaseForPayment.paid_amount?.toString() || "0");
 
-    // Check if payment amount is reasonable
-    if (newPaymentAmount > (totalAmount * 2)) {
-      toast({
-        title: "Warning",
-        description: "Payment amount seems unusually high. Please verify the amount.",
-        variant: "destructive",
-      });
-      return;
+    // Validate against remaining balance
+    const remainingBalance = Math.max(0, totalAmount - currentPaidAmount);
+    
+    if (newPaymentAmount > remainingBalance && remainingBalance > 0) {
+      const shouldProceed = window.confirm(
+        `Payment amount (${formatCurrency(newPaymentAmount)}) exceeds remaining balance (${formatCurrency(remainingBalance)}). This will result in an overpayment of ${formatCurrency(newPaymentAmount - remainingBalance)}. Do you want to proceed?`
+      );
+      
+      if (!shouldProceed) {
+        return;
+      }
     }
 
+    // Calculate total paid after this payment
     const totalPaidAfterPayment = currentPaidAmount + newPaymentAmount;
 
     // Determine payment status based on amount paid
@@ -1100,10 +1112,12 @@ export default function PurchaseDashboard() {
     let shouldUpdatePurchaseStatus = false;
 
     if (totalAmount > 0) {
-      if (totalPaidAfterPayment >= totalAmount) {
+      const paymentPercentage = (totalPaidAfterPayment / totalAmount) * 100;
+      
+      if (paymentPercentage >= 100) {
         paymentStatus = 'paid';
         shouldUpdatePurchaseStatus = true;
-      } else if (totalPaidAfterPayment > 0) {
+      } else if (paymentPercentage >= 1) { // At least 1% paid
         paymentStatus = 'partial';
       } else {
         paymentStatus = 'due';
@@ -1126,7 +1140,9 @@ export default function PurchaseDashboard() {
       totalPaidAmount: totalPaidAfterPayment,
       paymentMethod: paymentMethod.trim(),
       paymentDate: new Date().toISOString(),
-      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`
+      notes: paymentNotes?.trim() || `Payment of ${formatCurrency(newPaymentAmount)} recorded via dashboard using ${paymentMethod}`,
+      updatePurchaseStatus: shouldUpdatePurchaseStatus,
+      newPurchaseStatus: shouldUpdatePurchaseStatus ? 'completed' : undefined
     };
 
     console.log('🔄 Confirming payment with validated data:', paymentData);
@@ -1138,6 +1154,7 @@ export default function PurchaseDashboard() {
       totalAfterPayment: formatCurrency(totalPaidAfterPayment),
       remainingBalance: formatCurrency(Math.max(0, totalAmount - totalPaidAfterPayment)),
       paymentStatus: paymentStatus,
+      paymentPercentage: Math.round((totalPaidAfterPayment / totalAmount) * 100),
       willAutoComplete: shouldUpdatePurchaseStatus
     });
 
@@ -1146,7 +1163,7 @@ export default function PurchaseDashboard() {
       title: "Processing Payment",
       description: paymentStatus === 'paid' ? 
         "Recording payment and completing purchase order..." : 
-        "Recording payment details...",
+        `Recording partial payment... (${Math.round((totalPaidAfterPayment / totalAmount) * 100)}% paid)`,
     });
 
     updatePaymentStatus.mutate({ 
