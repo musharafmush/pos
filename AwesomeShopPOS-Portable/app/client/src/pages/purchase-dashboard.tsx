@@ -223,7 +223,7 @@ export default function PurchaseDashboard() {
             // Fetch items for each purchase individually to ensure data integrity
             const itemsResponse = await fetch(`/api/purchases/${purchase.id}/items`);
             let items = [];
-            
+
             if (itemsResponse.ok) {
               items = await itemsResponse.json();
             } else {
@@ -232,9 +232,10 @@ export default function PurchaseDashboard() {
             }
 
             // Calculate proper totals and payment status
-            const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
-            const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
-            
+            const totalAmount = parseFloat(purchase.total || purchase.total_amount || purchase.totalAmount || '0');
+            const paidAmount = parseFloat(purchase.paid_amount || purchase.paidAmount || '0');
+            const balanceDue = totalAmount - paidAmount;
+
             // Determine payment status based on amounts
             let paymentStatus = purchase.paymentStatus || purchase.payment_status;
             if (!paymentStatus) {
@@ -256,7 +257,8 @@ export default function PurchaseDashboard() {
               paymentStatus: paymentStatus,
               paymentDate: purchase.paymentDate || purchase.payment_date,
               paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash',
-              totalAmount: totalAmount
+              totalAmount: totalAmount.toString(),
+              balanceDue: balanceDue.toString(),
             };
           } catch (itemError) {
             console.error(`❌ Error fetching items for purchase ${purchase.id}:`, itemError);
@@ -268,7 +270,8 @@ export default function PurchaseDashboard() {
               paidAmount: parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0"),
               paymentStatus: purchase.paymentStatus || purchase.payment_status || 'due',
               paymentDate: purchase.paymentDate || purchase.payment_date,
-              paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash'
+              paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash',
+              totalAmount: parseFloat(purchase.total || purchase.total_amount || purchase.totalAmount || '0').toString(),
             };
           }
         }));
@@ -733,12 +736,12 @@ export default function PurchaseDashboard() {
   const handleRecordPayment = (purchase: Purchase) => {
     console.log('🔄 Opening payment dialog for purchase:', purchase);
     setSelectedPurchaseForPayment(purchase);
-    
+
     // Calculate remaining balance properly
-    const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+    const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || purchase.total_amount?.toString() || "0");
     const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
     const remaining = Math.max(0, totalAmount - paidAmount);
-    
+
     console.log('💰 Payment dialog setup:', {
       totalAmount,
       paidAmount,
@@ -1358,7 +1361,7 @@ export default function PurchaseDashboard() {
                                                          purchase.purchaseItems?.length || 
                                                          purchase.purchase_items?.length || 
                                                          0;
-                                        
+
                                         if (itemCount === 0) {
                                           return 'No items';
                                         } else if (itemCount === 1) {
@@ -1395,7 +1398,7 @@ export default function PurchaseDashboard() {
                                         (paymentStatus === 'due' && paidAmount > 0) ||
                                         (paymentStatus === 'paid' && paidAmount < totalAmount) ||
                                         (paymentStatus === 'partial' && (paidAmount === 0 || paidAmount >= totalAmount))) {
-                                      
+
                                       if (paidAmount >= totalAmount) {
                                         paymentStatus = 'paid';
                                       } else if (paidAmount > 0) {
