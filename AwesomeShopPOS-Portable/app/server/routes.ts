@@ -2318,6 +2318,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Purchase items endpoint for detailed item fetching
+  app.get('/api/purchases/:id/items', async (req, res) => {
+    try {
+      const purchaseId = parseInt(req.params.id);
+      console.log('🔍 Fetching items for purchase:', purchaseId);
+
+      if (isNaN(purchaseId) || purchaseId <= 0) {
+        return res.status(400).json({ 
+          error: 'Invalid purchase ID', 
+          message: 'Purchase ID must be a valid positive number' 
+        });
+      }
+
+      // Direct SQLite query for purchase items
+      const { sqlite } = await import('../db/index.js');
+
+      const itemsQuery = `
+        SELECT 
+          pi.*,
+          p.name as product_name,
+          p.sku as product_sku,
+          p.description as product_description,
+          p.price as product_price,
+          p.mrp as product_mrp
+        FROM purchase_items pi
+        LEFT JOIN products p ON pi.product_id = p.id
+        WHERE pi.purchase_id = ?
+        ORDER BY pi.id
+      `;
+
+      const items = sqlite.prepare(itemsQuery).all(purchaseId);
+
+      // Format items for consistent API response
+      const formattedItems = items.map((item: any) => ({
+        id: item.id,
+        purchaseId: item.purchase_id,
+        productId: item.product_id,
+        quantity: item.quantity || 0,
+        receivedQty: item.received_qty || item.receivedQty || item.quantity || 0,
+        freeQty: item.free_qty || item.freeQty || 0,
+        unitCost: parseFloat(item.unit_cost || item.unitCost || '0'),
+        cost: parseFloat(item.cost || item.unit_cost || item.unitCost || '0'),
+        amount: parseFloat(item.amount || item.subtotal || item.total || '0'),
+        netAmount: parseFloat(item.net_amount || item.netAmount || item.amount || '0'),
+        taxPercentage: parseFloat(item.tax_percentage || item.taxPercentage || '0'),
+        discountAmount: parseFloat(item.discount_amount || item.discountAmount || '0'),
+        hsnCode: item.hsn_code || item.hsnCode || '',
+        batchNumber: item.batch_number || item.batchNumber || '',
+        expiryDate: item.expiry_date || item.expiryDate || null,
+        sellingPrice: parseFloat(item.selling_price || item.sellingPrice || '0'),
+        mrp: parseFloat(item.mrp || '0'),
+        product: {
+          id: item.product_id,
+          name: item.product_name || `Product #${item.product_id}`,
+          sku: item.product_sku || '',
+          description: item.product_description || '',
+          price: item.product_price || '0',
+          mrp: item.product_mrp || '0'
+        }
+      }));
+
+      console.log(`✅ Found ${formattedItems.length} items for purchase ${purchaseId}`);
+      res.json(formattedItems);
+
+    } catch (error) {
+      console.error('❌ Error fetching purchase items:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch purchase items',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Purchases API
   app.post('/api/purchases', isAuthenticated, async (req, res) => {
     try {

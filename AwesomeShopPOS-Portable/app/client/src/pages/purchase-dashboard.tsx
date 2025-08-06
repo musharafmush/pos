@@ -198,17 +198,13 @@ export default function PurchaseDashboard() {
 
   // Fetch purchases with enhanced error handling and real-time updates
   const { data: purchases, isLoading: purchasesLoading, error: purchasesError, refetch: refetchPurchases } = useQuery({
-    queryKey: ['/api/purchases', searchTerm, activeTab], // Simplified query key for now
+    queryKey: ['/api/purchases', searchTerm, activeTab],
     queryFn: async () => {
       try {
         let url = '/api/purchases?limit=100&include=supplier,items,payments';
 
         const params = new URLSearchParams();
         if (searchTerm) params.append('search', searchTerm);
-        // Add other filters here if they are managed by state
-        // if (filterStatus !== 'all') params.append('status', filterStatus);
-        // if (selectedSupplier !== 'all') params.append('supplierId', selectedSupplier);
-        // if (selectedDateRange !== 'all') params.append('dateRange', selectedDateRange);
 
         if (params.toString()) {
           url += '&' + params.toString();
@@ -221,16 +217,64 @@ export default function PurchaseDashboard() {
         const data = await response.json();
         console.log('📊 Purchases data received:', data);
 
-        // Ensure payment data is properly loaded for each purchase
-        const purchasesWithPayments = data.map((purchase: Purchase) => ({
-          ...purchase,
-          paidAmount: purchase.paidAmount || purchase.paid_amount || '0',
-          paymentStatus: purchase.paymentStatus || purchase.payment_status || 'due',
-          paymentDate: purchase.paymentDate || purchase.payment_date,
-          paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash'
+        // Enhanced purchase data processing with proper items fetching
+        const purchasesWithEnhancedData = await Promise.all(data.map(async (purchase: Purchase) => {
+          try {
+            // Fetch items for each purchase individually to ensure data integrity
+            const itemsResponse = await fetch(`/api/purchases/${purchase.id}/items`);
+            let items = [];
+            
+            if (itemsResponse.ok) {
+              items = await itemsResponse.json();
+            } else {
+              // Fallback: try to get items from the main purchase object
+              items = purchase.purchaseItems || purchase.items || purchase.purchase_items || [];
+            }
+
+            // Calculate proper totals and payment status
+            const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+            const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
+            
+            // Determine payment status based on amounts
+            let paymentStatus = purchase.paymentStatus || purchase.payment_status;
+            if (!paymentStatus) {
+              if (paidAmount >= totalAmount && totalAmount > 0) {
+                paymentStatus = 'paid';
+              } else if (paidAmount > 0) {
+                paymentStatus = 'partial';
+              } else {
+                paymentStatus = 'due';
+              }
+            }
+
+            return {
+              ...purchase,
+              items: items,
+              purchaseItems: items,
+              itemsCount: items.length,
+              paidAmount: paidAmount,
+              paymentStatus: paymentStatus,
+              paymentDate: purchase.paymentDate || purchase.payment_date,
+              paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash',
+              totalAmount: totalAmount
+            };
+          } catch (itemError) {
+            console.error(`❌ Error fetching items for purchase ${purchase.id}:`, itemError);
+            // Return purchase with fallback data
+            return {
+              ...purchase,
+              items: purchase.purchaseItems || purchase.items || [],
+              itemsCount: (purchase.purchaseItems || purchase.items || []).length,
+              paidAmount: parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0"),
+              paymentStatus: purchase.paymentStatus || purchase.payment_status || 'due',
+              paymentDate: purchase.paymentDate || purchase.payment_date,
+              paymentMethod: purchase.paymentMethod || purchase.payment_method || 'Cash'
+            };
+          }
         }));
 
-        return Array.isArray(purchasesWithPayments) ? purchasesWithPayments : [];
+        console.log('✅ Enhanced purchases with items:', purchasesWithEnhancedData.length);
+        return Array.isArray(purchasesWithEnhancedData) ? purchasesWithEnhancedData : [];
       } catch (error) {
         console.error('❌ Error fetching purchases:', error);
         return [];
@@ -238,9 +282,9 @@ export default function PurchaseDashboard() {
     },
     retry: 2,
     retryDelay: 1000,
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time payment updates
+    refetchInterval: 10000, // Refresh every 10 seconds
     refetchOnWindowFocus: true,
-    staleTime: 2000 // Data considered fresh for 2 seconds to ensure payment updates are visible
+    staleTime: 5000 // Data considered fresh for 5 seconds
   });
 
   // Delete purchase mutation
@@ -413,8 +457,16 @@ export default function PurchaseDashboard() {
     onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
 
-      // Invalidate and refetch purchase data immediately
-      await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      // Invalidate and refetch purchase data immediately with force refresh
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/purchases"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/purchases"] })
+      ]);
+
+      // Force a manual refetch to ensure latest data
+      setTimeout(() => {
+        refetchPurchases();
+      }, 1000);
 
       // Enhanced success message based on completion status
       let successTitle = "Payment Recorded";
@@ -1297,57 +1349,68 @@ export default function PurchaseDashboard() {
                               <TableCell className="py-4">
                                 <div className="flex items-center gap-2">
                                   <Package className="w-4 h-4 text-gray-400" />
-                                  <span className="font-medium">
-                                    {(() => {
-                                      // First try to get from purchase object
-                                      let itemCount = purchase.purchaseItems?.length || 
-                                                     purchase.items?.length || 
-                                                     purchase.purchase_items?.length || 
-                                                     0;
-
-                                      // If no items found, try to get from itemCount property
-                                      if (itemCount === 0 && purchase.itemCount) {
-                                        itemCount = purchase.itemCount;
-                                      }
-
-                                      // If still no items, show placeholder
-                                      return itemCount || 'N/A';
-                                    })()} items
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {(() => {
+                                        // Get item count with multiple fallbacks
+                                        const itemCount = purchase.itemsCount || 
+                                                         purchase.items?.length || 
+                                                         purchase.purchaseItems?.length || 
+                                                         purchase.purchase_items?.length || 
+                                                         0;
+                                        
+                                        if (itemCount === 0) {
+                                          return 'No items';
+                                        } else if (itemCount === 1) {
+                                          return '1 item';
+                                        } else {
+                                          return `${itemCount} items`;
+                                        }
+                                      })()}
+                                    </span>
+                                    {purchase.items && purchase.items.length > 0 && (
+                                      <span className="text-xs text-gray-500">
+                                        Total qty: {purchase.items.reduce((sum: number, item: any) => 
+                                          sum + (Number(item.receivedQty) || Number(item.quantity) || 0), 0
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </TableCell>
                               <TableCell className="py-4">
                                 {(() => {
-                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
-                                  const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+                                  const totalAmount = parseFloat(purchase.totalAmount?.toString() || purchase.total?.toString() || "0");
+                                  const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
 
                                   // Determine payment status based on amounts
-                                  let paymentStatus = 'due';
+                                  let paymentStatus = purchase.paymentStatus || 'due';
                                   let paymentPercentage = 0;
 
                                   if (totalAmount > 0) {
-                                    paymentPercentage = (paidAmount / totalAmount) * 100;
+                                    paymentPercentage = Math.min((paidAmount / totalAmount) * 100, 100);
 
-                                    if (paidAmount >= totalAmount) {
-                                      paymentStatus = 'paid';
-                                    } else if (paidAmount > 0) {
-                                      paymentStatus = 'partial';
-                                    } else {
-                                      // Check if overdue based on expected date
-                                      const expectedDate = purchase.expectedDate ? new Date(purchase.expectedDate) : null;
-                                      const today = new Date();
-                                      if (expectedDate && expectedDate < today) {
-                                        paymentStatus = 'overdue';
+                                    // Recalculate status if not explicitly set or if amounts don't match status
+                                    if (!purchase.paymentStatus || 
+                                        (paymentStatus === 'due' && paidAmount > 0) ||
+                                        (paymentStatus === 'paid' && paidAmount < totalAmount) ||
+                                        (paymentStatus === 'partial' && (paidAmount === 0 || paidAmount >= totalAmount))) {
+                                      
+                                      if (paidAmount >= totalAmount) {
+                                        paymentStatus = 'paid';
+                                      } else if (paidAmount > 0) {
+                                        paymentStatus = 'partial';
                                       } else {
-                                        paymentStatus = 'due';
+                                        // Check if overdue based on expected date
+                                        const expectedDate = purchase.expectedDate ? new Date(purchase.expectedDate) : null;
+                                        const today = new Date();
+                                        if (expectedDate && expectedDate < today) {
+                                          paymentStatus = 'overdue';
+                                        } else {
+                                          paymentStatus = 'due';
+                                        }
                                       }
                                     }
-                                  }
-
-                                  // Override with stored payment status if it exists and is valid
-                                  const storedStatus = purchase.paymentStatus;
-                                  if (storedStatus && ['paid', 'partial', 'due', 'overdue'].includes(storedStatus)) {
-                                    paymentStatus = storedStatus;
                                   }
 
                                   const statusConfig = {
