@@ -3776,13 +3776,20 @@ export default function PurchaseEntryProfessional() {
               <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
                 <div className="text-green-600 font-medium">Amount Paid</div>
                 <div className="text-lg font-bold text-green-800">
-                  {formatCurrency(paymentData.paymentAmount || 0)}
+                  {formatCurrency(
+                    (paymentData.paymentAmount || 0) + 
+                    parseFloat(form.watch("paidAmount") || "0")
+                  )}
                 </div>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
                 <div className="text-orange-600 font-medium">Balance Due</div>
                 <div className="text-lg font-bold text-orange-800">
-                  {formatCurrency(summary.grandTotal - (paymentData.paymentAmount || 0))}
+                  {formatCurrency(
+                    summary.grandTotal - 
+                    (paymentData.paymentAmount || 0) - 
+                    parseFloat(form.watch("paidAmount") || "0")
+                  )}
                 </div>
               </div>
               <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
@@ -5068,46 +5075,55 @@ export default function PurchaseEntryProfessional() {
                           await savePurchaseMutation.mutateAsync(purchaseData);
                         }
 
-                        // Update purchase payment information
-                        form.setValue("paymentMethod", paymentData.paymentMethod);
+                        // Get the current purchase ID (if editing existing purchase)
+                        const currentPurchaseId = form.getValues("id");
+                        
+                        if (currentPurchaseId) {
+                          // If editing existing purchase, record payment via API
+                          const paymentUpdateData = {
+                            paymentAmount: paymentData.paymentAmount,
+                            paymentMethod: paymentData.paymentMethod,
+                            paymentStatus: paymentData.paymentAmount >= summary.grandTotal ? 'paid' : 'partial'
+                          };
 
-                        // Calculate payment status
+                          const response = await fetch(`/api/purchases/${currentPurchaseId}/payment`, {
+                            method: 'PUT',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(paymentUpdateData),
+                          });
+
+                          if (!response.ok) {
+                            throw new Error('Failed to record payment');
+                          }
+
+                          const result = await response.json();
+                          console.log('💰 Payment recorded via API:', result);
+                        } else {
+                          // If new purchase, store payment data in form for saving later
+                          const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
+                          const isFullyPaid = remainingBalance <= 0;
+                          const paymentStatus = isFullyPaid ? 'paid' : 'partial';
+
+                          form.setValue("paymentMethod", paymentData.paymentMethod);
+                          form.setValue("paymentType", paymentData.paymentMethod);
+                          form.setValue("paymentStatus", paymentStatus);
+                          form.setValue("paidAmount", paymentData.paymentAmount.toString());
+                          form.setValue("paymentDate", paymentData.paymentDate);
+                        }
+
+                        // Calculate final status for display
                         const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
                         const isFullyPaid = remainingBalance <= 0;
-                        const paymentStatus = isFullyPaid ? 'paid' : 'partial';
-
-                        // Create payment record data
-                        const paymentRecord = {
-                          amount: paymentData.paymentAmount,
-                          method: paymentData.paymentMethod,
-                          date: paymentData.paymentDate,
-                          reference: paymentData.paymentReference || "",
-                          notes: paymentData.paymentNotes || "",
-                          status: paymentStatus,
-                          purchaseTotal: summary.grandTotal,
-                          balanceRemaining: Math.max(0, remainingBalance)
-                        };
-
-                        // Store payment data in form for when purchase is saved
-                        form.setValue("paymentType", paymentData.paymentMethod);
-                        form.setValue("payment_status", paymentStatus);
-                        form.setValue("paid_amount", paymentData.paymentAmount);
-                        form.setValue("payment_date", paymentData.paymentDate);
-
-                        // Update local state to reflect payment
-                        setPaymentData(prev => ({
-                          ...prev,
-                          paymentAmount: 0,
-                          paymentNotes: "",
-                          paymentReference: ""
-                        }));
-
-                        console.log('Payment recorded:', paymentRecord);
 
                         toast({
-                          title: "✅ Payment Recorded Successfully",
+                          title: "Payment Recorded Successfully",
                           description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
                         });
+
+                        // Close the payment dialog
+                        setShowBillPayment(false);
 
                         // Reset payment form
                         setPaymentData({
