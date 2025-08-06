@@ -4524,18 +4524,23 @@ export default function PurchaseEntryProfessional() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="payment-amount">Payment Amount *</Label>
-                    <Input
-                      id="payment-amount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={paymentData.paymentAmount}
-                      onChange={(e) => setPaymentData({
-                        ...paymentData,
-                        paymentAmount: parseFloat(e.target.value) || 0
-                      })}
-                      placeholder="Enter amount"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                      <Input
+                        id="payment-amount"
+                        type="number"
+                        min="0"
+                        max={summary.grandTotal}
+                        step="0.01"
+                        value={paymentData.paymentAmount || ''}
+                        onChange={(e) => setPaymentData({
+                          ...paymentData,
+                          paymentAmount: parseFloat(e.target.value) || 0
+                        })}
+                        placeholder="0.00"
+                        className="pl-8"
+                      />
+                    </div>
                     <div className="text-xs text-gray-500">
                       Outstanding: {formatCurrency(summary.grandTotal)}
                     </div>
@@ -4622,7 +4627,7 @@ export default function PurchaseEntryProfessional() {
                     })}
                     className="text-blue-600 hover:bg-blue-50"
                   >
-                    25% (₹{(summary.grandTotal * 0.25).toFixed(2)})
+                    25% ({formatCurrency(summary.grandTotal * 0.25)})
                   </Button>
                   <Button
                     variant="outline"
@@ -4633,7 +4638,7 @@ export default function PurchaseEntryProfessional() {
                     })}
                     className="text-green-600 hover:bg-green-50"
                   >
-                    50% (₹{(summary.grandTotal * 0.5).toFixed(2)})
+                    50% ({formatCurrency(summary.grandTotal * 0.5)})
                   </Button>
                   <Button
                     variant="outline"
@@ -4644,7 +4649,7 @@ export default function PurchaseEntryProfessional() {
                     })}
                     className="text-purple-600 hover:bg-purple-50"
                   >
-                    Full Amount (₹{summary.grandTotal.toFixed(2)})
+                    Full Amount ({formatCurrency(summary.grandTotal)})
                   </Button>
                 </div>
               </div>
@@ -4676,12 +4681,35 @@ export default function PurchaseEntryProfessional() {
                   </Button>
                   <Button
                     onClick={() => {
+                      // Validate payment amount
+                      if (paymentData.paymentAmount <= 0) {
+                        toast({
+                          variant: "destructive",
+                          title: "Invalid Amount",
+                          description: "Please enter a valid payment amount greater than 0",
+                        });
+                        return;
+                      }
+
+                      if (paymentData.paymentAmount > summary.grandTotal) {
+                        toast({
+                          variant: "destructive",
+                          title: "Amount Too High",
+                          description: "Payment amount cannot exceed the total purchase amount",
+                        });
+                        return;
+                      }
+
                       // Update purchase payment information
                       form.setValue("paymentMethod", paymentData.paymentMethod);
                       
+                      // Calculate remaining balance
+                      const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
+                      const isFullyPaid = remainingBalance <= 0;
+                      
                       toast({
-                        title: "Payment Recorded",
-                        description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}`,
+                        title: "✅ Payment Recorded Successfully",
+                        description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
                       });
                       
                       setShowBillPayment(false);
@@ -4693,8 +4721,8 @@ export default function PurchaseEntryProfessional() {
                         paymentNotes: "",
                       });
                     }}
-                    disabled={paymentData.paymentAmount <= 0}
-                    className="bg-green-600 hover:bg-green-700"
+                    disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
                     Record Payment
