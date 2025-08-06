@@ -3841,33 +3841,42 @@ export default function PurchaseEntryProfessional() {
               <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
                 <div className="text-green-600 font-medium">Amount Paid</div>
                 <div className="text-lg font-bold text-green-800">
-                  {formatCurrency(
-                    // In edit mode, use existing purchase paid amount, otherwise use form data
-                    isEditMode ? 
-                      Number(existingPurchase?.paid_amount || 0) : 
-                      parseFloat(form.watch("paid_amount") || "0")
-                  )}
+                  {(() => {
+                    // Get current paid amount from the appropriate source
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    
+                    console.log('💰 Payment Display Debug:', {
+                      isEditMode,
+                      existingPaidAmount: existingPurchase?.paid_amount,
+                      formPaidAmount: form.getValues("paid_amount"),
+                      currentPaidAmount
+                    });
+                    
+                    return formatCurrency(currentPaidAmount);
+                  })()}
                 </div>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
                 <div className="text-orange-600 font-medium">Balance Due</div>
                 <div className="text-lg font-bold text-orange-800">
-                  {formatCurrency(
-                    summary.grandTotal - 
-                    (isEditMode ? 
-                      Number(existingPurchase?.paid_amount || 0) : 
-                      parseFloat(form.watch("paid_amount") || "0")
-                    )
-                  )}
+                  {(() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const balanceDue = summary.grandTotal - currentPaidAmount;
+                    return formatCurrency(Math.max(0, balanceDue));
+                  })()}
                 </div>
               </div>
               <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
                 <div className="text-purple-600 font-medium">Payment Status</div>
                 <div className="text-sm font-bold text-purple-800">
                   {(() => {
-                    const currentPaidAmount = isEditMode ? 
-                      Number(existingPurchase?.paid_amount || 0) : 
-                      parseFloat(form.watch("paid_amount") || "0");
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
                     
                     if (currentPaidAmount >= summary.grandTotal) return "Fully Paid";
                     if (currentPaidAmount > 0) return "Partially Paid";
@@ -4960,11 +4969,11 @@ export default function PurchaseEntryProfessional() {
                     </div>
                     <div className="text-xs text-gray-500">
                       Outstanding: {formatCurrency(
-                        summary.grandTotal - 
-                        (isEditMode ? 
-                          Number(existingPurchase?.paid_amount || 0) : 
-                          parseFloat(form.watch("paid_amount") || "0")
-                        )
+                        Math.max(0, summary.grandTotal - 
+                        (isEditMode && existingPurchase ? 
+                          Number(existingPurchase.paid_amount || 0) : 
+                          Number(form.getValues("paid_amount") || 0)
+                        ))
                       )}
                     </div>
                   </div>
@@ -5115,10 +5124,10 @@ export default function PurchaseEntryProfessional() {
                       }
 
                       // Calculate outstanding amount based on current context
-                      const currentPaidAmount = isEditMode ? 
-                        Number(existingPurchase?.paid_amount || 0) : 
-                        parseFloat(form.getValues("paid_amount") || "0");
-                      const outstandingAmount = summary.grandTotal - currentPaidAmount;
+                      const currentPaidAmount = isEditMode && existingPurchase ? 
+                        Number(existingPurchase.paid_amount || 0) : 
+                        Number(form.getValues("paid_amount") || 0);
+                      const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
 
                       if (paymentData.paymentAmount > outstandingAmount) {
                         toast({
@@ -5249,11 +5258,11 @@ export default function PurchaseEntryProfessional() {
                       }
                     }}
                     disabled={(() => {
-                      const currentPaidAmount = isEditMode ? 
-                        Number(existingPurchase?.paid_amount || 0) : 
-                        parseFloat(form.getValues("paid_amount") || "0");
-                      const outstandingAmount = summary.grandTotal - currentPaidAmount;
-                      return paymentData.paymentAmount <= 0 || paymentData.paymentAmount > outstandingAmount;
+                      const currentPaidAmount = isEditMode && existingPurchase ? 
+                        Number(existingPurchase.paid_amount || 0) : 
+                        Number(form.getValues("paid_amount") || 0);
+                      const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
+                      return paymentData.paymentAmount <= 0 || paymentData.paymentAmount > outstandingAmount || outstandingAmount <= 0;
                     })()}
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                   >
