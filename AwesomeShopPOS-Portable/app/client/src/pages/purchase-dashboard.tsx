@@ -1958,30 +1958,72 @@ export default function PurchaseDashboard() {
                         })()}
                       </div>
 
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Subtotal (Before Tax):</span>
-                        <span className="font-semibold">
-                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Total Discount:</span>
-                        <span className="font-semibold text-red-600">
-                          {formatCurrency(0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Total Tax (GST):</span>
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
-                        <span className="text-lg font-bold">Grand Total:</span>
-                        <span className="text-xl font-bold text-purple-700">
-                          {formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))}
-                        </span>
-                      </div>
+                      {(() => {
+                        const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                        const subtotal = items.reduce((sum, item) => {
+                          const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                          const unitCost = parseFloat(item.unitCost || item.unit_cost || item.cost || "0");
+                          return sum + (qty * unitCost);
+                        }, 0);
+                        
+                        const totalTax = items.reduce((sum, item) => {
+                          const amount = parseFloat(item.amount || item.subtotal || item.total || "0");
+                          const taxPercent = parseFloat(item.taxPercentage || item.tax_percentage || item.taxPercent || "0");
+                          return sum + (amount * (taxPercent / 100));
+                        }, 0);
+                        
+                        const netAmount = items.reduce((sum, item) => {
+                          return sum + parseFloat(item.netAmount || item.net_amount || item.amount || "0");
+                        }, 0);
+                        
+                        const grandTotal = Math.max(
+                          parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"),
+                          netAmount,
+                          subtotal + totalTax
+                        );
+
+                        return (
+                          <>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Items Subtotal:</span>
+                              <span className="font-semibold">
+                                {formatCurrency(subtotal)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Total Tax (GST):</span>
+                              <span className="font-semibold text-green-600">
+                                {formatCurrency(totalTax)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Net Amount (Items):</span>
+                              <span className="font-semibold text-blue-600">
+                                {formatCurrency(netAmount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Total Discount:</span>
+                              <span className="font-semibold text-red-600">
+                                {formatCurrency(0)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
+                              <span className="text-lg font-bold">Grand Total:</span>
+                              <span className="text-xl font-bold text-purple-700">
+                                {formatCurrency(grandTotal)}
+                              </span>
+                            </div>
+                            {grandTotal !== parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0") && (
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                <p className="text-sm text-yellow-800">
+                                  <strong>Note:</strong> Calculated total ({formatCurrency(grandTotal)}) differs from stored total ({formatCurrency(parseFloat(selectedPurchase.totalAmount?.toString() || selectedPurchase.total?.toString() || "0"))})
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
