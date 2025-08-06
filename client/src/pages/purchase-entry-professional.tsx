@@ -893,7 +893,7 @@ export default function PurchaseEntryProfessional() {
         paymentType: existingPurchase.paymentType || "Credit",
         payment_status: existingPurchase.payment_status || "unpaid",
         paid_amount: Number(existingPurchase.paid_amount) || 0,
-        payment_date: existingPurchase.payment_date ? existingPurchase.payment_date.split('T')[0] : null,
+        payment_date: existingPurchase.payment_date ? existingPurchase.payment_date.split('T')[0] : undefined,
       };
       
       console.log('📋 Final form data:', formData);
@@ -3842,8 +3842,10 @@ export default function PurchaseEntryProfessional() {
                 <div className="text-green-600 font-medium">Amount Paid</div>
                 <div className="text-lg font-bold text-green-800">
                   {formatCurrency(
-                    (paymentData.paymentAmount || 0) + 
-                    parseFloat(form.watch("paidAmount") || "0")
+                    // In edit mode, use existing purchase paid amount, otherwise use form data
+                    isEditMode ? 
+                      Number(existingPurchase?.paid_amount || 0) : 
+                      parseFloat(form.watch("paid_amount") || "0")
                   )}
                 </div>
               </div>
@@ -3852,16 +3854,25 @@ export default function PurchaseEntryProfessional() {
                 <div className="text-lg font-bold text-orange-800">
                   {formatCurrency(
                     summary.grandTotal - 
-                    (paymentData.paymentAmount || 0) - 
-                    parseFloat(form.watch("paidAmount") || "0")
+                    (isEditMode ? 
+                      Number(existingPurchase?.paid_amount || 0) : 
+                      parseFloat(form.watch("paid_amount") || "0")
+                    )
                   )}
                 </div>
               </div>
               <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
                 <div className="text-purple-600 font-medium">Payment Status</div>
                 <div className="text-sm font-bold text-purple-800">
-                  {(paymentData.paymentAmount || 0) >= summary.grandTotal ? "Fully Paid" : 
-                   (paymentData.paymentAmount || 0) > 0 ? "Partially Paid" : "Unpaid"}
+                  {(() => {
+                    const currentPaidAmount = isEditMode ? 
+                      Number(existingPurchase?.paid_amount || 0) : 
+                      parseFloat(form.watch("paid_amount") || "0");
+                    
+                    if (currentPaidAmount >= summary.grandTotal) return "Fully Paid";
+                    if (currentPaidAmount > 0) return "Partially Paid";
+                    return "Unpaid";
+                  })()}
                 </div>
               </div>
             </div>
@@ -4948,7 +4959,13 @@ export default function PurchaseEntryProfessional() {
                       />
                     </div>
                     <div className="text-xs text-gray-500">
-                      Outstanding: {formatCurrency(summary.grandTotal)}
+                      Outstanding: {formatCurrency(
+                        summary.grandTotal - 
+                        (isEditMode ? 
+                          Number(existingPurchase?.paid_amount || 0) : 
+                          parseFloat(form.watch("paid_amount") || "0")
+                        )
+                      )}
                     </div>
                   </div>
 
@@ -5097,11 +5114,17 @@ export default function PurchaseEntryProfessional() {
                         return;
                       }
 
-                      if (paymentData.paymentAmount > summary.grandTotal) {
+                      // Calculate outstanding amount based on current context
+                      const currentPaidAmount = isEditMode ? 
+                        Number(existingPurchase?.paid_amount || 0) : 
+                        parseFloat(form.getValues("paid_amount") || "0");
+                      const outstandingAmount = summary.grandTotal - currentPaidAmount;
+
+                      if (paymentData.paymentAmount > outstandingAmount) {
                         toast({
                           variant: "destructive",
                           title: "Amount Too High",
-                          description: "Payment amount cannot exceed the total purchase amount",
+                          description: `Payment amount cannot exceed the outstanding balance of ${formatCurrency(outstandingAmount)}`,
                         });
                         return;
                       }
@@ -5190,9 +5213,9 @@ export default function PurchaseEntryProfessional() {
 
                           form.setValue("paymentMethod", paymentData.paymentMethod);
                           form.setValue("paymentType", paymentData.paymentMethod);
-                          form.setValue("paymentStatus", paymentStatus);
-                          form.setValue("paidAmount", paymentData.paymentAmount.toString());
-                          form.setValue("paymentDate", paymentData.paymentDate);
+                          form.setValue("payment_status", paymentStatus);
+                          form.setValue("paid_amount", paymentData.paymentAmount);
+                          form.setValue("payment_date", paymentData.paymentDate);
                         }
 
                         // Calculate final status for display
@@ -5225,7 +5248,13 @@ export default function PurchaseEntryProfessional() {
                         });
                       }
                     }}
-                    disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                    disabled={(() => {
+                      const currentPaidAmount = isEditMode ? 
+                        Number(existingPurchase?.paid_amount || 0) : 
+                        parseFloat(form.getValues("paid_amount") || "0");
+                      const outstandingAmount = summary.grandTotal - currentPaidAmount;
+                      return paymentData.paymentAmount <= 0 || paymentData.paymentAmount > outstandingAmount;
+                    })()}
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
