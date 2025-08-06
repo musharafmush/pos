@@ -2369,47 +2369,103 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                         })()}
                       </div>
 
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Subtotal (Before Tax):</span>
-                        <span className="font-semibold">
-                          {formatCurrency(selectedPurchase.subTotal || selectedPurchase.sub_total || "0")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Total Discount:</span>
-                        <span className="font-semibold text-red-600">
-                          {formatCurrency(0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b">
-                        <span className="font-medium">Total Tax (GST):</span>
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(0)}
-                        </span>
-                      </div>
+                      {(() => {
+                        // Calculate financial summary from purchase items
+                        const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                        let subtotal = 0;
+                        let totalDiscount = 0;
+                        let totalTax = 0;
+                        
+                        // Calculate from items if available
+                        if (items.length > 0) {
+                          items.forEach(item => {
+                            const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                            const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                            const itemTotal = qty * cost;
+                            const discount = Number(item.discountAmount || item.discount_amount || 0);
+                            const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                            const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                            
+                            subtotal += itemTotal - discount;
+                            totalDiscount += discount;
+                            totalTax += taxAmount;
+                          });
+                        } else {
+                          // Fallback to stored values
+                          subtotal = parseFloat(selectedPurchase.subTotal?.toString() || selectedPurchase.sub_total?.toString() || "0");
+                          totalDiscount = parseFloat(selectedPurchase.discountAmount?.toString() || selectedPurchase.discount_amount?.toString() || "0");
+                          totalTax = parseFloat(selectedPurchase.taxAmount?.toString() || selectedPurchase.tax_amount?.toString() || "0");
+                        }
+                        
+                        return (
+                          <>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Subtotal (Before Tax):</span>
+                              <span className="font-semibold">
+                                {formatCurrency(subtotal)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Total Discount:</span>
+                              <span className="font-semibold text-red-600">
+                                {formatCurrency(totalDiscount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b">
+                              <span className="font-medium">Total Tax (GST):</span>
+                              <span className="font-semibold text-green-600">
+                                {formatCurrency(totalTax)}
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
                       <div className="flex justify-between py-3 border-t-2 border-purple-300 bg-purple-50 px-4 rounded">
                         <span className="text-lg font-bold">Grand Total:</span>
                         <span className="text-xl font-bold text-purple-700">
                           {(() => {
-                            // Use same calculation logic as in the table display
-                            const totalAmountField = parseFloat(selectedPurchase.totalAmount?.toString() || "0");
-                            const totalField = parseFloat(selectedPurchase.total?.toString() || "0");
-                            const subTotalField = parseFloat(selectedPurchase.subTotal?.toString() || selectedPurchase.sub_total?.toString() || "0");
-                            const freightCostField = parseFloat(selectedPurchase.freightCost?.toString() || selectedPurchase.freight_cost?.toString() || "0");
-                            const otherChargesField = parseFloat(selectedPurchase.otherCharges?.toString() || selectedPurchase.other_charges?.toString() || "0");
-                            const discountAmountField = parseFloat(selectedPurchase.discountAmount?.toString() || selectedPurchase.discount_amount?.toString() || "0");
+                            // Calculate grand total from items
+                            const items = selectedPurchase.purchaseItems || selectedPurchase.items || [];
+                            let grandTotal = 0;
                             
-                            if (totalAmountField > 0) {
-                              return formatCurrency(totalAmountField);
-                            } else if (totalField > 0 && subTotalField > 0) {
-                              return formatCurrency(Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField));
-                            } else if (totalField > 0) {
-                              return formatCurrency(totalField);
-                            } else if (subTotalField > 0) {
-                              return formatCurrency(subTotalField + freightCostField + otherChargesField - discountAmountField);
+                            if (items.length > 0) {
+                              // Calculate from items
+                              items.forEach(item => {
+                                const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                const itemTotal = qty * cost;
+                                const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                
+                                grandTotal += itemTotal - discount + taxAmount;
+                              });
+                              
+                              // Add freight and other charges if available
+                              const freightCost = parseFloat(selectedPurchase.freightCost?.toString() || selectedPurchase.freight_cost?.toString() || "0");
+                              const otherCharges = parseFloat(selectedPurchase.otherCharges?.toString() || selectedPurchase.other_charges?.toString() || "0");
+                              grandTotal += freightCost + otherCharges;
                             } else {
-                              return formatCurrency(0);
+                              // Fallback to stored calculation logic
+                              const totalAmountField = parseFloat(selectedPurchase.totalAmount?.toString() || "0");
+                              const totalField = parseFloat(selectedPurchase.total?.toString() || "0");
+                              const subTotalField = parseFloat(selectedPurchase.subTotal?.toString() || selectedPurchase.sub_total?.toString() || "0");
+                              const freightCostField = parseFloat(selectedPurchase.freightCost?.toString() || selectedPurchase.freight_cost?.toString() || "0");
+                              const otherChargesField = parseFloat(selectedPurchase.otherCharges?.toString() || selectedPurchase.other_charges?.toString() || "0");
+                              const discountAmountField = parseFloat(selectedPurchase.discountAmount?.toString() || selectedPurchase.discount_amount?.toString() || "0");
+                              
+                              if (totalAmountField > 0) {
+                                grandTotal = totalAmountField;
+                              } else if (totalField > 0 && subTotalField > 0) {
+                                grandTotal = Math.max(totalField, subTotalField + freightCostField + otherChargesField - discountAmountField);
+                              } else if (totalField > 0) {
+                                grandTotal = totalField;
+                              } else if (subTotalField > 0) {
+                                grandTotal = subTotalField + freightCostField + otherChargesField - discountAmountField;
+                              }
                             }
+                            
+                            return formatCurrency(grandTotal);
                           })()}
                         </span>
                       </div>
