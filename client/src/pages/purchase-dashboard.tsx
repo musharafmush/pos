@@ -379,7 +379,7 @@ export default function PurchaseDashboard() {
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
 
       // Enhanced success message based on completion status
-      let successTitle = "Payment Recorded";
+      let successTitle = "Payment Recorded Successfully ✅";
       let successDescription = data.message || 'Payment status updated successfully';
 
       if (data.statusAutoUpdated || data.isCompleted) {
@@ -387,12 +387,15 @@ export default function PurchaseDashboard() {
         successDescription = `Payment recorded and purchase order automatically marked as completed. Total paid: ${formatCurrency(data.totalPaid || 0)}`;
       } else if (data.paymentStatus === 'paid') {
         successTitle = "Payment Completed ✅";
-        successDescription = `Full payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. Purchase order status updated.`;
+        successDescription = `Full payment completed. Purchase order is now fully paid with total amount: ${formatCurrency(data.totalPaid || 0)}`;
       } else if (data.paymentStatus === 'partial') {
-        successTitle = "Partial Payment Recorded";
-        const remainingAmount = selectedPurchaseForPayment ? 
-          parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") - (data.totalPaid || 0) : 0;
-        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded. Remaining: ${formatCurrency(remainingAmount)}`;
+        successTitle = "Partial Payment Recorded 📝";
+        const orderTotal = selectedPurchaseForPayment ? 
+          parseFloat(selectedPurchaseForPayment.totalAmount?.toString() || "0") : 0;
+        const remainingAmount = Math.max(0, orderTotal - (data.totalPaid || 0));
+        successDescription = `Payment of ${formatCurrency(data.paymentRecorded || 0)} recorded successfully. 
+          Total paid: ${formatCurrency(data.totalPaid || 0)} of ${formatCurrency(orderTotal)}. 
+          Remaining balance: ${formatCurrency(remainingAmount)}`;
       }
 
       toast({
@@ -808,7 +811,7 @@ export default function PurchaseDashboard() {
             border: 2px solid #000;
             padding: 8px;
             margin-bottom: 5px;
-            font-size: 10px;
+            font-size: 9px;
           }
           .declaration-section {
             border: 2px solid #000;

@@ -2940,22 +2940,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tableInfo = sqlite.prepare("PRAGMA table_info(purchases)").all();
       const columnNames = tableInfo.map((col: any) => col.name);
 
-      // Calculate the new paid amount
+      // Calculate the new paid amount with validation
       const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
       const newPaymentAmount = parseFloat(paymentAmount || '0');
-      const finalPaidAmount = totalPaidAmount !== undefined ? 
+      const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
+      
+      // Use totalPaidAmount if provided, otherwise add newPaymentAmount to currentPaidAmount
+      let finalPaidAmount = totalPaidAmount !== undefined ? 
         parseFloat(totalPaidAmount.toString()) : 
         currentPaidAmount + newPaymentAmount;
 
-      // Calculate payment status if not provided
-      const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
+      // Ensure we don't exceed total amount unless it's an overpayment scenario
+      if (finalPaidAmount > purchaseTotal && purchaseTotal > 0) {
+        console.log(`⚠️ Payment amount ${finalPaidAmount} exceeds total ${purchaseTotal}, capping at total`);
+        finalPaidAmount = Math.min(finalPaidAmount, purchaseTotal * 1.1); // Allow 10% overpayment
+      }
+
+      // Calculate payment status based on amounts
       let calculatedPaymentStatus = paymentStatus;
 
-      if (!calculatedPaymentStatus) {
+      if (!calculatedPaymentStatus || calculatedPaymentStatus === 'auto') {
         if (purchaseTotal > 0) {
-          if (finalPaidAmount >= purchaseTotal) {
+          const paymentPercentage = (finalPaidAmount / purchaseTotal) * 100;
+          
+          if (paymentPercentage >= 100) {
             calculatedPaymentStatus = 'paid';
-          } else if (finalPaidAmount > 0) {
+          } else if (paymentPercentage >= 1) { // At least 1% paid
             calculatedPaymentStatus = 'partial';
           } else {
             calculatedPaymentStatus = 'due';
@@ -2965,20 +2975,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // If payment status is explicitly provided, use it
-      if (paymentStatus) {
-        calculatedPaymentStatus = paymentStatus;
-
-        // Adjust paid amount based on status if needed
-        if (paymentStatus === 'paid' && finalPaidAmount < purchaseTotal) {
-          // If marking as paid but amount is less than total, set to full amount
-          const adjustedFinalAmount = purchaseTotal;
-          console.log(`📊 Adjusting paid amount from ${finalPaidAmount} to ${adjustedFinalAmount} for 'paid' status`);
-        } else if (paymentStatus === 'due' && finalPaidAmount > 0 && !paymentAmount) {
-          // If marking as due but there's paid amount, keep the paid amount
-          console.log(`📊 Keeping existing paid amount ${finalPaidAmount} for 'due' status`);
-        }
-      }
+      // Log payment calculation details
+      console.log('💰 Payment calculation details:', {
+        purchaseId: id,
+        purchaseTotal,
+        currentPaidAmount,
+        newPaymentAmount,
+        finalPaidAmount,
+        calculatedPaymentStatus,
+        paymentPercentage: purchaseTotal > 0 ? Math.round((finalPaidAmount / purchaseTotal) * 100) : 0
+      });
 
       // Build dynamic update query - always update these core payment fields
       const updateFields = [];
