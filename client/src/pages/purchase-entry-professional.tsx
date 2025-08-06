@@ -5140,18 +5140,29 @@ export default function PurchaseEntryProfessional() {
                           await savePurchaseMutation.mutateAsync(purchaseData);
                         }
 
-                        // Get the current purchase ID (if editing existing purchase)
-                        const currentPurchaseId = form.getValues("id");
-                        
-                        if (currentPurchaseId) {
+                        if (isEditMode && editId) {
                           // If editing existing purchase, record payment via API
+                          console.log('💰 Recording payment for existing purchase ID:', editId);
+                          
+                          // Get current payment info from existing purchase
+                          const currentPaidAmount = Number(existingPurchase?.paid_amount || 0);
+                          const totalPaidAmount = currentPaidAmount + paymentData.paymentAmount;
+                          
                           const paymentUpdateData = {
-                            paymentAmount: paymentData.paymentAmount,
+                            paymentAmount: paymentData.paymentAmount, // New payment amount to add
+                            totalPaidAmount: totalPaidAmount, // Total amount paid after this payment
                             paymentMethod: paymentData.paymentMethod,
-                            paymentStatus: paymentData.paymentAmount >= summary.grandTotal ? 'paid' : 'partial'
+                            paymentStatus: totalPaidAmount >= summary.grandTotal ? 'paid' : 'partial',
+                            paymentDate: paymentData.paymentDate
                           };
 
-                          const response = await fetch(`/api/purchases/${currentPurchaseId}/payment`, {
+                          console.log('💰 Payment data being sent:', {
+                            ...paymentUpdateData,
+                            currentPaidAmount,
+                            grandTotal: summary.grandTotal
+                          });
+
+                          const response = await fetch(`/api/purchases/${editId}/payment`, {
                             method: 'PUT',
                             headers: {
                               'Content-Type': 'application/json',
@@ -5160,11 +5171,17 @@ export default function PurchaseEntryProfessional() {
                           });
 
                           if (!response.ok) {
-                            throw new Error('Failed to record payment');
+                            const errorText = await response.text();
+                            console.error('💥 Payment API error:', response.status, errorText);
+                            throw new Error(`Failed to record payment: ${response.status} ${errorText}`);
                           }
 
                           const result = await response.json();
                           console.log('💰 Payment recorded via API:', result);
+                          
+                          // Invalidate the purchases query to refresh data
+                          queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
                         } else {
                           // If new purchase, store payment data in form for saving later
                           const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
