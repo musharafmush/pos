@@ -5205,8 +5205,11 @@ export default function PurchaseEntryProfessional() {
                           console.log('💰 Payment data being sent:', {
                             ...paymentUpdateData,
                             currentPaidAmount,
-                            grandTotal: summary.grandTotal
+                            grandTotal: summary.grandTotal,
+                            purchaseId: editId
                           });
+
+                          console.log('🚀 Making payment API call to:', `/api/purchases/${editId}/payment`);
 
                           const response = await fetch(`/api/purchases/${editId}/payment`, {
                             method: 'PUT',
@@ -5215,6 +5218,8 @@ export default function PurchaseEntryProfessional() {
                             },
                             body: JSON.stringify(paymentUpdateData),
                           });
+
+                          console.log('📡 Payment API response status:', response.status, response.statusText);
 
                           if (!response.ok) {
                             const errorText = await response.text();
@@ -5226,8 +5231,10 @@ export default function PurchaseEntryProfessional() {
                           console.log('💰 Payment recorded via API:', result);
                           
                           // Invalidate the purchases query to refresh data
-                          queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId] });
-                          queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
+                          console.log('🔄 Invalidating queries for purchase ID:', editId);
+                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId] });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
+                          console.log('✅ Query invalidation complete');
                         } else {
                           // If new purchase, store payment data in form for saving later
                           const remainingBalance = summary.grandTotal - paymentData.paymentAmount;
