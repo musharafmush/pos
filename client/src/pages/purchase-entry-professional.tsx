@@ -2032,7 +2032,7 @@ export default function PurchaseEntryProfessional() {
         paymentType: data.paymentType || data.paymentMethod || "Credit",
         payment_status: data.payment_status || "unpaid",
         paid_amount: Number(data.paid_amount) || 0,
-        payment_date: data.payment_date || null,
+        payment_date: data.payment_date || undefined,
 
         // Invoice details
         invoiceNumber: data.invoiceNumber || "",
@@ -4016,10 +4016,13 @@ export default function PurchaseEntryProfessional() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPaymentData({
-                    ...paymentData,
-                    paymentAmount: summary.grandTotal
-                  })}
+                  onClick={() => {
+                    console.log('Setting full amount:', summary.grandTotal);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: summary.grandTotal
+                    });
+                  }}
                   className="text-purple-600 hover:bg-purple-50 border-purple-300"
                 >
                   Full Amount ({formatCurrency(summary.grandTotal)})
@@ -4027,10 +4030,18 @@ export default function PurchaseEntryProfessional() {
               </div>
             </div>
 
+            {/* Debug payment state */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 p-2 bg-gray-100 text-xs text-gray-600 rounded">
+                Debug: Payment Amount = {paymentData.paymentAmount}, Grand Total = {summary.grandTotal}
+              </div>
+            )}
+
             {/* Record Payment Button */}
             <div className="mt-6 flex justify-end">
               <Button
                 onClick={async () => {
+                  console.log('Record Payment clicked:', paymentData);
                   // Validate payment amount
                   if (paymentData.paymentAmount <= 0) {
                     toast({
@@ -4135,7 +4146,7 @@ export default function PurchaseEntryProfessional() {
                     });
                   }
                 }}
-                disabled={paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
               >
                 <CreditCard className="mr-2 h-4 w-4" />
@@ -5075,10 +5086,13 @@ export default function PurchaseEntryProfessional() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPaymentData({
-                      ...paymentData,
-                      paymentAmount: summary.grandTotal
-                    })}
+                    onClick={() => {
+                      console.log('Setting full amount in modal:', summary.grandTotal);
+                      setPaymentData({
+                        ...paymentData,
+                        paymentAmount: summary.grandTotal
+                      });
+                    }}
                     className="text-purple-600 hover:bg-purple-50"
                   >
                     Full Amount ({formatCurrency(summary.grandTotal)})
@@ -5262,7 +5276,7 @@ export default function PurchaseEntryProfessional() {
                         Number(existingPurchase.paid_amount || 0) : 
                         Number(form.getValues("paid_amount") || 0);
                       const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
-                      return paymentData.paymentAmount <= 0 || paymentData.paymentAmount > outstandingAmount || outstandingAmount <= 0;
+                      return !paymentData.paymentAmount || paymentData.paymentAmount <= 0 || paymentData.paymentAmount > outstandingAmount || outstandingAmount <= 0;
                     })()}
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
                   >
