@@ -193,9 +193,13 @@ export default function PurchaseDashboard() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  // Fetch purchases
-  const { data: purchases = [], isLoading, error } = useQuery<Purchase[]>({
+  // Fetch purchases with more aggressive cache settings
+  const { data: purchases = [], isLoading, error, refetch } = useQuery<Purchase[]>({
     queryKey: ["/api/purchases"],
+    staleTime: 0, // Consider data stale immediately
+    gcTime: 0, // Don't cache in memory
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch on mount
   });
 
   // Delete purchase mutation
@@ -681,9 +685,25 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     });
   };
 
-  const handleRecordPayment = (purchase: Purchase) => {
-    setSelectedPurchaseForPayment(purchase);
-    setPaymentAmount(purchase.total?.toString() || "0");
+  const handleRecordPayment = async (purchase: Purchase) => {
+    console.log('💳 Opening payment modal for purchase:', purchase.id);
+    
+    // Force refresh the purchases data to get the latest payment information
+    await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+    await refetch();
+    
+    // Get the updated purchase data
+    const updatedPurchases = purchases || [];
+    const updatedPurchase = updatedPurchases.find(p => p.id === purchase.id) || purchase;
+    
+    console.log('💰 Updated purchase payment data:', {
+      purchaseId: updatedPurchase.id,
+      paidAmount: updatedPurchase.paidAmount || updatedPurchase.paid_amount,
+      paymentStatus: updatedPurchase.paymentStatus || updatedPurchase.payment_status
+    });
+    
+    setSelectedPurchaseForPayment(updatedPurchase);
+    setPaymentAmount(updatedPurchase.total?.toString() || "0");
     setPaymentDialogOpen(true);
   };
 
@@ -1334,10 +1354,11 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                   variant="outline" 
                   size="sm" 
                   className="flex items-center gap-2"
-                  onClick={() => {
+                  onClick={async () => {
                     console.log('🔄 Manual refresh triggered');
-                    queryClient.invalidateQueries({ queryKey: ["/api/purchases"], exact: false });
-                    queryClient.refetchQueries({ queryKey: ["/api/purchases"], type: 'active' });
+                    await queryClient.invalidateQueries({ queryKey: ["/api/purchases"], exact: false });
+                    await refetch();
+                    console.log('✅ Manual refresh completed');
                   }}
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -1935,6 +1956,17 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                                   }
 
                                   const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
+                                  
+                                  // Debug logging for payment status calculations
+                                  if (purchase.orderNumber?.includes('PO-1754534650193')) {
+                                    console.log('🔍 Payment debug for', purchase.orderNumber, {
+                                      totalAmount,
+                                      paidAmount,
+                                      storedPaidAmount: purchase.paidAmount,
+                                      storedPaymentStatus: purchase.paymentStatus,
+                                      calculatedStatus: paidAmount >= totalAmount ? 'paid' : paidAmount > 0 ? 'partial' : 'due'
+                                    });
+                                  }
 
                                   // Determine payment status based on amounts
                                   let paymentStatus = 'due';
@@ -2738,7 +2770,24 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                     </div>
                     <div>
                       <span className="font-medium text-blue-800">Already Paid:</span>
-                      <div className="text-blue-700">{formatCurrency(parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0"))}</div>
+                      <div className="text-blue-700">{(() => {
+                        // Get the most up-to-date paid amount from the purchases array
+                        const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                        const paidAmount = parseFloat(
+                          currentPurchase?.paidAmount?.toString() || 
+                          currentPurchase?.paid_amount?.toString() || 
+                          selectedPurchaseForPayment?.paidAmount?.toString() || 
+                          selectedPurchaseForPayment?.paid_amount?.toString() || 
+                          "0"
+                        );
+                        console.log('💰 Modal payment debug:', {
+                          purchaseId: selectedPurchaseForPayment?.id,
+                          currentPurchasePaidAmount: currentPurchase?.paidAmount,
+                          selectedPurchasePaidAmount: selectedPurchaseForPayment?.paidAmount,
+                          finalPaidAmount: paidAmount
+                        });
+                        return formatCurrency(paidAmount);
+                      })()}</div>
                     </div>
                   </div>
                   {(() => {
@@ -2769,7 +2818,15 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       }
                       
                       const totalAmount = calculatedTotal;
-                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      // Get the most up-to-date paid amount from the purchases array
+                      const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                      const paidAmount = parseFloat(
+                        currentPurchase?.paidAmount?.toString() || 
+                        currentPurchase?.paid_amount?.toString() || 
+                        selectedPurchaseForPayment?.paidAmount?.toString() || 
+                        selectedPurchaseForPayment?.paid_amount?.toString() || 
+                        "0"
+                      );
                       const remaining = Math.max(0, totalAmount - paidAmount);
                       const isFullyPaid = paidAmount >= totalAmount && totalAmount > 0;
 
@@ -2882,7 +2939,15 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       }
                       
                       const totalAmount = calculatedTotal;
-                      const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
+                      // Get the most up-to-date paid amount from the purchases array  
+                      const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                      const paidAmount = parseFloat(
+                        currentPurchase?.paidAmount?.toString() || 
+                        currentPurchase?.paid_amount?.toString() || 
+                        selectedPurchaseForPayment?.paidAmount?.toString() || 
+                        selectedPurchaseForPayment?.paid_amount?.toString() || 
+                        "0"
+                      );
                       const remaining = Math.max(0, totalAmount - paidAmount);
 
                       if (remaining <= 0) {
