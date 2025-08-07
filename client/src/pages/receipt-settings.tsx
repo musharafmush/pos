@@ -59,29 +59,67 @@ export default function ReceiptSettings() {
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('receiptSettings');
-    if (savedSettings) {
+    const loadSettings = async () => {
       try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(prev => ({ ...prev, ...parsed }));
+        // Load from database first
+        const response = await fetch('/api/settings/receipt');
+        if (response.ok) {
+          const dbSettings = await response.json();
+          setSettings(prev => ({ ...prev, ...dbSettings }));
+          console.log('✅ Loaded receipt settings from database:', Object.keys(dbSettings));
+        } else {
+          // Fallback to localStorage
+          const savedSettings = localStorage.getItem('receiptSettings');
+          if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          }
+        }
       } catch (error) {
         console.error('Error loading receipt settings:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('receiptSettings');
+        if (savedSettings) {
+          try {
+            const parsed = JSON.parse(savedSettings);
+            setSettings(prev => ({ ...prev, ...parsed }));
+          } catch (parseError) {
+            console.error('Error parsing localStorage settings:', parseError);
+          }
+        }
       }
-    }
+    };
+    
+    loadSettings();
   }, []);
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
     try {
+      // Save to database first
+      const response = await fetch('/api/settings/receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings to database');
+      }
+
+      // Also save to localStorage as backup
       localStorage.setItem('receiptSettings', JSON.stringify(settings));
+      
       toast({
         title: "✅ Settings Saved",
-        description: "Receipt customization settings have been saved successfully",
+        description: "Receipt customization settings have been saved successfully to database",
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
         title: "❌ Error",
-        description: "Failed to save settings",
+        description: "Failed to save settings: " + (error as Error).message,
         variant: "destructive",
       });
     }
@@ -321,6 +359,39 @@ export default function ReceiptSettings() {
                         />
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Logo Settings Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Logo Configuration</CardTitle>
+                    <CardDescription>Configure your business logo display on receipts</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showLogo">Show Logo</Label>
+                      <Switch 
+                        id="showLogo" 
+                        checked={settings.showLogo}
+                        onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showLogo: checked }))}
+                      />
+                    </div>
+
+                    {settings.showLogo && (
+                      <div>
+                        <Label htmlFor="logoUrl">Logo URL</Label>
+                        <Input 
+                          id="logoUrl" 
+                          value={settings.logoUrl || ''}
+                          onChange={(e) => setSettings(prev => ({ ...prev, logoUrl: e.target.value }))}
+                          placeholder="https://example.com/logo.png or data:image/png;base64,..."
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Supports URL links or base64 encoded images. Leave empty for stylized text logo.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
