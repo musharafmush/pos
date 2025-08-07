@@ -385,6 +385,36 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         letter-spacing: 0.5px !important;
         margin-bottom: 1mm !important;
         line-height: 1.1 !important;
+        width: 100% !important;
+        display: block !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-sizing: border-box !important;
+      }
+      
+      /* Business name specific centering */
+      .business-name-header {
+        font-weight: bold !important;
+        text-align: center !important;
+        font-size: ${paperWidth === 'thermal58' ? '18px' : paperWidth === 'thermal77' ? '20px' : '22px'} !important;
+        letter-spacing: 1px !important;
+        margin-bottom: 2mm !important;
+        line-height: 1.2 !important;
+        width: 100% !important;
+        display: block !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        outline: 0 !important;
+        box-sizing: border-box !important;
+        transform: translateX(0) !important;
+        position: relative !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
       }
 
       .thermal-line {
@@ -638,15 +668,13 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         </div>
       ` : ''}
       ${settings.showLogo && (!settings.logoUrl || settings.logoUrl.trim() === '') ? `
-        <div style="text-align: center; margin-bottom: 2mm; width: 100%; display: flex; justify-content: center;">
-          <div style="font-weight: bold; color: #d4af37; font-size: ${settings.paperWidth === 'thermal58' ? '22px' : '26px'}; margin-bottom: 1mm; letter-spacing: 3px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); text-align: center; font-family: 'Impact', 'Arial Black', sans-serif;">
-            🏆 ${settings.businessName || 'M MART'} 🏆
-          </div>
+        <div class="business-name-header" style="color: #d4af37; font-family: 'Impact', 'Arial Black', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+          🏆 ${settings.businessName || 'M MART'} 🏆
         </div>
       ` : ''}
 
       ${!settings.showLogo ? `
-        <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '18px' : '20px'}; font-weight: bold; margin-bottom: 2mm;">
+        <div class="business-name-header">
           ${settings.businessName || 'M MART'}
         </div>
       ` : ''}
