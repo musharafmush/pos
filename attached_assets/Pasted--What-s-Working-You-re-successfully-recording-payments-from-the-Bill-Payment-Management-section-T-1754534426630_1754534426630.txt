@@ -1,0 +1,77 @@
+ What's Working:
+You're successfully recording payments from the Bill Payment Management section.
+
+The payment of ₹100 is recorded, and the confirmation popup shows:
+"Payment of ₹100 recorded via Cash. Remaining balance: ₹76."
+
+❌ Issue:
+Despite successful payment recording:
+
+The Payment Status in the Purchase Dashboard still shows:
+
+Payment Due ₹176 (instead of updating to ₹76 due).
+
+The Record Payment button still appears as if no payment was made.
+
+🔍 Likely Causes:
+This is most likely a frontend not refreshing / syncing issue, or backend not reflecting partial payments correctly. Some possible technical reasons:
+
+Payment recorded in database but not reflected in UI:
+
+Dashboard data might be cached or not reloaded after payment.
+
+Payment logic in dashboard only checks for "fully paid":
+
+If Amount Paid < Grand Total, status might still show as "Payment Due" instead of "Partially Paid".
+
+No trigger to refresh dashboard state after payment entry:
+
+After recording, the dashboard doesn’t fetch the updated payment info automatically.
+
+✅ What You Should Check / Fix in Code:
+1. Ensure Payment Status Logic Covers Partial Payments
+In your code, wherever you calculate payment status, confirm it includes:
+
+js
+Copy
+Edit
+if (amount_paid === total_amount) {
+  status = "Fully Paid";
+} else if (amount_paid > 0) {
+  status = "Partially Paid";
+} else {
+  status = "Payment Due";
+}
+Your current logic might only be checking for amount_paid == total_amount.
+
+2. Force Dashboard to Refresh After Payment
+After payment is recorded, trigger a refresh of the dashboard or refetch of payment data.
+
+js
+Copy
+Edit
+await refreshPurchaseOrders(); // or similar method
+3. Check the Database for Payment Updates
+Ensure the payment record is properly inserted and associated with the correct purchase_order_id.
+
+Also verify that the amount_paid is being updated in the purchase order record.
+
+4. Add a Status Update Function
+On payment entry, update the purchase order status:
+
+js
+Copy
+Edit
+updatePurchaseOrderStatus(orderId, newStatus);
+✅ Suggestion for UI Improvement:
+Add a "Partially Paid" label (with orange or yellow color) for clarity in the dashboard.
+
+✅ Verification Step:
+You can confirm the backend is working fine by:
+
+Opening the individual purchase order page after recording payment.
+
+See if "Amount Paid" reflects ₹100 and "Balance Due" ₹76.
+
+If yes, then the backend is correct — it's a frontend update/display issue.
+

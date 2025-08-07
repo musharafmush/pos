@@ -5230,11 +5230,14 @@ export default function PurchaseEntryProfessional() {
                           const result = await response.json();
                           console.log('💰 Payment recorded via API:', result);
                           
-                          // Invalidate the purchases query to refresh data
+                          // Invalidate the purchases query to refresh data with force refresh
                           console.log('🔄 Invalidating queries for purchase ID:', editId);
-                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId] });
-                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
-                          console.log('✅ Query invalidation complete');
+                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId], exact: false });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases'], exact: false });
+                          
+                          // Force refetch of all purchase-related queries
+                          await queryClient.refetchQueries({ queryKey: ['/api/purchases'], type: 'active' });
+                          console.log('✅ Query invalidation and refetch complete');
                         } else {
                           // If new purchase, store payment data in form for saving later
                           const remainingBalance = summary.grandTotal - paymentData.paymentAmount;

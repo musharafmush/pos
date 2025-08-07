@@ -1330,6 +1330,19 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    console.log('🔄 Manual refresh triggered');
+                    queryClient.invalidateQueries({ queryKey: ["/api/purchases"], exact: false });
+                    queryClient.refetchQueries({ queryKey: ["/api/purchases"], type: 'active' });
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </Button>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <Download className="w-4 h-4" />
                   Export
