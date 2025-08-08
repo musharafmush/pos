@@ -1295,31 +1295,56 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       calculatedTotal -= parseFloat(purchase.additionalDiscount || purchase.additional_discount || "0");
     }
 
-    // Calculate payment status
+    // Calculate payment status with enhanced precision and validation
     const totalAmount = calculatedTotal;
-    const paidAmount = parseFloat(purchase.paidAmount?.toString() || "0");
+    const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
-    let paymentStatus = "unpaid";
+    // Debug logging for payment calculation
+    if (purchase.id && (purchase.id === 4 || purchase.id === 3)) {
+      console.log(`🔍 Payment Debug for Purchase ${purchase.id}:`, {
+        totalAmount,
+        paidAmount,
+        remainingAmount,
+        backendPaymentStatus: purchase.paymentStatus || purchase.payment_status,
+        rawPaidAmount: purchase.paidAmount,
+        rawTotal: purchase.total
+      });
+    }
+
+    // Use the backend payment status first, then calculate if not available
+    let paymentStatus = purchase.paymentStatus || purchase.payment_status;
     let paymentStatusColor = "red";
     let paymentStatusText = "Payment Due";
 
+    // If no backend status, calculate based on amounts with better precision
+    if (!paymentStatus || paymentStatus === 'undefined') {
+      if (totalAmount <= 0) {
+        paymentStatus = "unknown";
+      } else if (Math.abs(paidAmount - totalAmount) < 0.01) { // Account for floating point precision
+        paymentStatus = "paid";
+      } else if (paidAmount >= totalAmount) {
+        paymentStatus = "paid"; // Overpayment is still considered fully paid
+      } else if (paidAmount > 0) {
+        paymentStatus = "partial";
+      } else {
+        paymentStatus = "due"; // Use 'due' to match backend terminology
+      }
+    }
+
+    // Set display properties based on calculated/received status
     if (totalAmount <= 0) {
-      paymentStatus = "unknown";
       paymentStatusColor = "gray";
       paymentStatusText = "No Amount";
-    } else if (paidAmount >= totalAmount) {
-      paymentStatus = "paid";
+    } else if (paymentStatus === "paid") {
       paymentStatusColor = "green";
       paymentStatusText = "Fully Paid";
-    } else if (paidAmount > 0) {
-      paymentStatus = "partial";
+    } else if (paymentStatus === "partial") {
       paymentStatusColor = "orange";
       paymentStatusText = `Partial (₹${paidAmount.toFixed(2)})`;
-    } else {
-      paymentStatus = "unpaid";
+    } else { // due, unpaid, or other statuses
       paymentStatusColor = "red";
-      paymentStatusText = "Payment Due";
+      paymentStatusText = remainingAmount > 0 ? `Due: ₹${remainingAmount.toFixed(2)}` : "Payment Due";
     }
 
     return {
