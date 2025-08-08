@@ -3219,23 +3219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/suppliers/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const supplier = await storage.getSupplierById(id);
-
-      if (!supplier) {
-        return res.status(404).json({ message: 'Supplier not found' });
-      }
-
-      res.json(supplier);
-    } catch (error) {
-      console.error('Error fetching supplier:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Supplier order summary endpoint
+  // Supplier order summary endpoint (must be before :id route)
   app.get('/api/suppliers/order-summary', async (req, res) => {
     try {
       console.log('📊 Fetching supplier order summary...');
@@ -3282,6 +3266,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(supplierSummary);
     } catch (error) {
       console.error('Error fetching supplier order summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/suppliers/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const supplier = await storage.getSupplierById(id);
+
+      if (!supplier) {
+        return res.status(404).json({ message: 'Supplier not found' });
+      }
+
+      res.json(supplier);
+    } catch (error) {
+      console.error('Error fetching supplier:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
