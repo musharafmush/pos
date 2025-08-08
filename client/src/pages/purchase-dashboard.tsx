@@ -1300,25 +1300,27 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
-    // Debug logging for payment calculation
-    if (purchase.id && (purchase.id === 4 || purchase.id === 3)) {
+    // Debug logging for payment calculation - especially for partial payments
+    if (purchase.id && ((purchase.paymentStatus || purchase.payment_status) === 'partial' || remainingAmount > 0)) {
       console.log(`🔍 Payment Debug for Purchase ${purchase.id}:`, {
+        orderNumber: purchase.orderNumber,
         totalAmount,
         paidAmount,
         remainingAmount,
         backendPaymentStatus: purchase.paymentStatus || purchase.payment_status,
         rawPaidAmount: purchase.paidAmount,
-        rawTotal: purchase.total
+        rawTotal: purchase.total,
+        calculatedStatus: paymentStatus
       });
     }
 
-    // Use the backend payment status first, then calculate if not available
+    // ALWAYS use the backend payment status as the primary source of truth
     let paymentStatus = purchase.paymentStatus || purchase.payment_status;
     let paymentStatusColor = "red";
     let paymentStatusText = "Payment Due";
 
-    // If no backend status, calculate based on amounts with better precision
-    if (!paymentStatus || paymentStatus === 'undefined') {
+    // Only calculate if backend status is completely missing (not just undefined)
+    if (!paymentStatus) {
       if (totalAmount <= 0) {
         paymentStatus = "unknown";
       } else if (Math.abs(paidAmount - totalAmount) < 0.01) { // Account for floating point precision
@@ -1330,6 +1332,11 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       } else {
         paymentStatus = "due"; // Use 'due' to match backend terminology
       }
+    }
+
+    // Log when we have a status mismatch for debugging
+    if (paymentStatus === 'partial' && paidAmount >= totalAmount) {
+      console.warn(`⚠️ Status Mismatch for Purchase ${purchase.id}: Backend says '${paymentStatus}' but paid (${paidAmount}) >= total (${totalAmount})`);
     }
 
     // Set display properties based on calculated/received status
