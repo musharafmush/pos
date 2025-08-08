@@ -189,6 +189,8 @@ export default function PurchaseDashboard() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedPurchaseForStatus, setSelectedPurchaseForStatus] = useState<Purchase | null>(null);
   const [newStatus, setNewStatus] = useState("");
+  const [viewMode, setViewMode] = useState<"orders" | "suppliers">("orders");
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -200,6 +202,18 @@ export default function PurchaseDashboard() {
     gcTime: 0, // Don't cache in memory
     refetchOnWindowFocus: true, // Refetch when window gains focus
     refetchOnMount: true, // Always refetch on mount
+  });
+
+  // Fetch supplier-wise order summary
+  const { data: supplierData = [], isLoading: suppliersLoading } = useQuery({
+    queryKey: ["/api/suppliers/order-summary"],
+    queryFn: async () => {
+      const response = await fetch('/api/suppliers/order-summary');
+      if (!response.ok) throw new Error('Failed to fetch supplier data');
+      return response.json();
+    },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   // Delete purchase mutation
@@ -2157,20 +2171,231 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
               <TabsContent value="suppliers" className="mt-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Supplier Management</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        Supplier-wise Orders & Due Amount
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Link href="/suppliers">
+                          <Button variant="outline" size="sm">
+                            <Building2 className="w-4 h-4 mr-2" />
+                            Manage Suppliers
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={async () => {
+                            await queryClient.invalidateQueries({ queryKey: ["/api/suppliers/order-summary"] });
+                          }}
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Refresh
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8">
-                      <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Supplier Management</h3>
-                      <p className="text-gray-600 mb-4">Manage your suppliers and their information</p>
-                      <Link href="/suppliers">
-                        <Button>
-                          <Building2 className="w-4 h-4 mr-2" />
-                          Manage Suppliers
-                        </Button>
-                      </Link>
-                    </div>
+                    {suppliersLoading ? (
+                      <div className="text-center py-8">
+                        <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                        <p className="text-gray-600">Loading supplier data...</p>
+                      </div>
+                    ) : supplierData.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Supplier Orders</h3>
+                        <p className="text-gray-600 mb-4">No purchase orders found for any suppliers</p>
+                        <Link href="/purchase-entry-professional">
+                          <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create First Purchase Order
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Supplier Summary Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <Card className="bg-blue-50 border-blue-200">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-blue-700">Active Suppliers</p>
+                                  <p className="text-2xl font-bold text-blue-900">{supplierData.length}</p>
+                                </div>
+                                <Building2 className="w-8 h-8 text-blue-600" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="bg-green-50 border-green-200">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-green-700">Total Orders</p>
+                                  <p className="text-2xl font-bold text-green-900">
+                                    {supplierData.reduce((sum, s) => sum + s.totalOrders, 0)}
+                                  </p>
+                                </div>
+                                <ShoppingCart className="w-8 h-8 text-green-600" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="bg-purple-50 border-purple-200">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-purple-700">Total Value</p>
+                                  <p className="text-xl font-bold text-purple-900">
+                                    {formatCurrency(supplierData.reduce((sum, s) => sum + s.totalAmount, 0))}
+                                  </p>
+                                </div>
+                                <DollarSign className="w-8 h-8 text-purple-600" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                          <Card className="bg-red-50 border-red-200">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-red-700">Total Due</p>
+                                  <p className="text-xl font-bold text-red-900">
+                                    {formatCurrency(supplierData.reduce((sum, s) => sum + s.dueAmount, 0))}
+                                  </p>
+                                </div>
+                                <AlertCircle className="w-8 h-8 text-red-600" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Supplier Table */}
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-gray-50">
+                                <TableHead className="font-semibold">Supplier Details</TableHead>
+                                <TableHead className="font-semibold text-center">Orders</TableHead>
+                                <TableHead className="font-semibold text-right">Total Amount</TableHead>
+                                <TableHead className="font-semibold text-right">Paid Amount</TableHead>
+                                <TableHead className="font-semibold text-right">Due Amount</TableHead>
+                                <TableHead className="font-semibold text-center">Payment Status</TableHead>
+                                <TableHead className="font-semibold text-center">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {supplierData.map((supplier: any) => (
+                                <TableRow key={supplier.id} className="hover:bg-gray-50">
+                                  <TableCell className="py-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <Building2 className="w-5 h-5 text-blue-600" />
+                                      </div>
+                                      <div>
+                                        <p className="font-medium text-gray-900">{supplier.name}</p>
+                                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                                          {supplier.phone && (
+                                            <div className="flex items-center gap-1">
+                                              <Phone className="w-3 h-3" />
+                                              {supplier.phone}
+                                            </div>
+                                          )}
+                                          {supplier.email && (
+                                            <div className="flex items-center gap-1">
+                                              <Mail className="w-3 h-3" />
+                                              {supplier.email}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {supplier.address && (
+                                          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                            <MapPin className="w-3 h-3" />
+                                            {supplier.address}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center py-4">
+                                    <div className="space-y-1">
+                                      <p className="text-lg font-semibold">{supplier.totalOrders}</p>
+                                      <div className="flex items-center justify-center gap-2 text-xs">
+                                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                                          {supplier.paidOrders} Paid
+                                        </Badge>
+                                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                                          {supplier.partialOrders} Partial
+                                        </Badge>
+                                        <Badge variant="outline" className="bg-red-50 text-red-700">
+                                          {supplier.pendingOrders} Due
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right py-4">
+                                    <p className="text-lg font-semibold">{formatCurrency(supplier.totalAmount)}</p>
+                                  </TableCell>
+                                  <TableCell className="text-right py-4">
+                                    <p className="text-lg font-semibold text-green-700">{formatCurrency(supplier.paidAmount)}</p>
+                                  </TableCell>
+                                  <TableCell className="text-right py-4">
+                                    <p className={`text-lg font-semibold ${supplier.dueAmount > 0 ? 'text-red-700' : 'text-gray-500'}`}>
+                                      {formatCurrency(supplier.dueAmount)}
+                                    </p>
+                                  </TableCell>
+                                  <TableCell className="text-center py-4">
+                                    {supplier.dueAmount > 0 ? (
+                                      <Badge variant="destructive" className="gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Payment Due
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="default" className="bg-green-100 text-green-800 gap-1">
+                                        <CheckCircle className="w-3 h-3" />
+                                        Fully Paid
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-center py-4">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedSupplierId(supplier.id);
+                                          setActiveTab("orders");
+                                          setSearchTerm(`supplier:${supplier.name}`);
+                                        }}
+                                      >
+                                        <Eye className="w-4 h-4 mr-1" />
+                                        View Orders
+                                      </Button>
+                                      {supplier.dueAmount > 0 && (
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => {
+                                            toast({
+                                              title: "Payment Recording",
+                                              description: `Feature coming soon for ${supplier.name}. Current due: ${formatCurrency(supplier.dueAmount)}`,
+                                            });
+                                          }}
+                                        >
+                                          <CreditCard className="w-4 h-4 mr-1" />
+                                          Record Payment
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

@@ -3235,6 +3235,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supplier order summary endpoint
+  app.get('/api/suppliers/order-summary', async (req, res) => {
+    try {
+      console.log('📊 Fetching supplier order summary...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          s.id,
+          s.name,
+          s.phone,
+          s.email,
+          s.contact_person,
+          s.address,
+          COALESCE(COUNT(p.id), 0) as total_orders,
+          COALESCE(SUM(p.total), 0) as total_amount,
+          COALESCE(SUM(p.paid_amount), 0) as paid_amount,
+          COALESCE(SUM(p.total - p.paid_amount), 0) as due_amount,
+          COALESCE(SUM(CASE WHEN p.payment_status = 'due' THEN 1 ELSE 0 END), 0) as pending_orders,
+          COALESCE(SUM(CASE WHEN p.payment_status = 'partial' THEN 1 ELSE 0 END), 0) as partial_orders,
+          COALESCE(SUM(CASE WHEN p.payment_status = 'paid' THEN 1 ELSE 0 END), 0) as paid_orders
+        FROM suppliers s 
+        LEFT JOIN purchases p ON s.id = p.supplier_id 
+        GROUP BY s.id, s.name, s.phone, s.email, s.contact_person, s.address
+        HAVING total_orders > 0 OR s.id IN (SELECT DISTINCT supplier_id FROM purchases WHERE supplier_id IS NOT NULL)
+        ORDER BY due_amount DESC, total_amount DESC
+      `);
+
+      const supplierSummary = result.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        email: row.email,
+        contactPerson: row.contact_person,
+        address: row.address,
+        totalOrders: parseInt(row.total_orders) || 0,
+        totalAmount: parseFloat(row.total_amount) || 0,
+        paidAmount: parseFloat(row.paid_amount) || 0,
+        dueAmount: parseFloat(row.due_amount) || 0,
+        pendingOrders: parseInt(row.pending_orders) || 0,
+        partialOrders: parseInt(row.partial_orders) || 0,
+        paidOrders: parseInt(row.paid_orders) || 0
+      }));
+
+      console.log('📊 Supplier summary data:', supplierSummary.length, 'suppliers found');
+      res.json(supplierSummary);
+    } catch (error) {
+      console.error('Error fetching supplier order summary:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/suppliers', isAuthenticated, async (req, res) => {
     try {
       console.log('Supplier creation request body:', req.body);
