@@ -1300,6 +1300,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     const paidAmount = parseFloat(purchase.paidAmount?.toString() || purchase.paid_amount?.toString() || "0");
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
+    // ALWAYS use the backend payment status as the primary source of truth
+    let paymentStatus = purchase.paymentStatus || purchase.payment_status;
+
     // Debug logging for payment calculation - especially for partial payments
     if (purchase.id && ((purchase.paymentStatus || purchase.payment_status) === 'partial' || remainingAmount > 0)) {
       console.log(`🔍 Payment Debug for Purchase ${purchase.id}:`, {
@@ -1313,9 +1316,6 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
         calculatedStatus: paymentStatus
       });
     }
-
-    // ALWAYS use the backend payment status as the primary source of truth
-    let paymentStatus = purchase.paymentStatus || purchase.payment_status;
     let paymentStatusColor = "red";
     let paymentStatusText = "Payment Due";
 
