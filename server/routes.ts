@@ -3224,27 +3224,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📊 Fetching supplier order summary...');
       
-      const result = await db.execute(sql`
-        SELECT 
-          s.id,
-          s.name,
-          s.phone,
-          s.email,
-          s.contact_person,
-          s.address,
-          COALESCE(COUNT(p.id), 0) as total_orders,
-          COALESCE(SUM(p.total), 0) as total_amount,
-          COALESCE(SUM(p.paid_amount), 0) as paid_amount,
-          COALESCE(SUM(p.total - p.paid_amount), 0) as due_amount,
-          COALESCE(SUM(CASE WHEN p.payment_status = 'due' THEN 1 ELSE 0 END), 0) as pending_orders,
-          COALESCE(SUM(CASE WHEN p.payment_status = 'partial' THEN 1 ELSE 0 END), 0) as partial_orders,
-          COALESCE(SUM(CASE WHEN p.payment_status = 'paid' THEN 1 ELSE 0 END), 0) as paid_orders
-        FROM suppliers s 
-        LEFT JOIN purchases p ON s.id = p.supplier_id 
-        GROUP BY s.id, s.name, s.phone, s.email, s.contact_person, s.address
-        HAVING total_orders > 0 OR s.id IN (SELECT DISTINCT supplier_id FROM purchases WHERE supplier_id IS NOT NULL)
-        ORDER BY due_amount DESC, total_amount DESC
-      `);
+      const result = await db.select({
+        id: suppliers.id,
+        name: suppliers.name,
+        phone: suppliers.phone,
+        email: suppliers.email,
+        contact_person: suppliers.contactPerson,
+        address: suppliers.address,
+        total_orders: sql<number>`COALESCE(COUNT(${purchases.id}), 0)`,
+        total_amount: sql<number>`COALESCE(SUM(${purchases.total}), 0)`,
+        paid_amount: sql<number>`COALESCE(SUM(${purchases.paidAmount}), 0)`,
+        due_amount: sql<number>`COALESCE(SUM(${purchases.total} - ${purchases.paidAmount}), 0)`,
+        pending_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'due' THEN 1 ELSE 0 END), 0)`,
+        partial_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'partial' THEN 1 ELSE 0 END), 0)`,
+        paid_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'paid' THEN 1 ELSE 0 END), 0)`
+      })
+      .from(suppliers)
+      .leftJoin(purchases, eq(suppliers.id, purchases.supplierId))
+      .groupBy(suppliers.id, suppliers.name, suppliers.phone, suppliers.email, suppliers.contactPerson, suppliers.address)
+      .orderBy(sql`due_amount DESC, total_amount DESC`);
 
       const supplierSummary = result.map((row: any) => ({
         id: row.id,

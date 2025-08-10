@@ -3167,10 +3167,13 @@ export const storage = {
   },
 
   async getExpensesByDateRange(startDate: Date, endDate: Date): Promise<(Expense & { categoryName?: string; supplierName?: string })[]> {
+    const startDateStr = startDate.toISOString();
+    const endDateStr = endDate.toISOString();
+    
     return await db.query.expenses.findMany({
       where: and(
-        gte(expenses.expenseDate, startDate),
-        lte(expenses.expenseDate, endDate)
+        gte(expenses.expenseDate, startDateStr),
+        lte(expenses.expenseDate, endDateStr)
       ),
       with: {
         category: true,
@@ -3202,9 +3205,9 @@ export const storage = {
     lastMonthTotal: number;
   }> {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
 
     const [totalResult] = await db.select({
       total: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`,
