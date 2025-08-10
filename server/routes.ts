@@ -3224,41 +3224,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('📊 Fetching supplier order summary...');
       
-      const result = await db.select({
-        id: suppliers.id,
-        name: suppliers.name,
-        phone: suppliers.phone,
-        email: suppliers.email,
-        contact_person: suppliers.contactPerson,
-        address: suppliers.address,
-        total_orders: sql<number>`COALESCE(COUNT(${purchases.id}), 0)`,
-        total_amount: sql<number>`COALESCE(SUM(${purchases.total}), 0)`,
-        paid_amount: sql<number>`COALESCE(SUM(${purchases.paidAmount}), 0)`,
-        due_amount: sql<number>`COALESCE(SUM(${purchases.total} - ${purchases.paidAmount}), 0)`,
-        pending_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'due' THEN 1 ELSE 0 END), 0)`,
-        partial_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'partial' THEN 1 ELSE 0 END), 0)`,
-        paid_orders: sql<number>`COALESCE(SUM(CASE WHEN ${purchases.paymentStatus} = 'paid' THEN 1 ELSE 0 END), 0)`
-      })
-      .from(suppliers)
-      .leftJoin(purchases, eq(suppliers.id, purchases.supplierId))
-      .groupBy(suppliers.id, suppliers.name, suppliers.phone, suppliers.email, suppliers.contactPerson, suppliers.address)
-      .orderBy(sql`due_amount DESC, total_amount DESC`);
+      // Get all suppliers first
+      const allSuppliers = await db.select().from(suppliers);
+      
+      // Get purchase summaries by supplier
+      const purchaseSummaries = await db
+        .select({
+          supplier_id: purchases.supplierId,
+          total_orders: sql<number>`COUNT(*)`,
+          total_amount: sql<number>`COALESCE(SUM(${purchases.total}), 0)`,
+          paid_amount: sql<number>`COALESCE(SUM(${purchases.paidAmount}), 0)`,
+          pending_orders: sql<number>`SUM(CASE WHEN ${purchases.paymentStatus} = 'due' THEN 1 ELSE 0 END)`,
+          partial_orders: sql<number>`SUM(CASE WHEN ${purchases.paymentStatus} = 'partial' THEN 1 ELSE 0 END)`,
+          paid_orders: sql<number>`SUM(CASE WHEN ${purchases.paymentStatus} = 'paid' THEN 1 ELSE 0 END)`
+        })
+        .from(purchases)
+        .groupBy(purchases.supplierId);
 
-      const supplierSummary = result.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        phone: row.phone,
-        email: row.email,
-        contactPerson: row.contact_person,
-        address: row.address,
-        totalOrders: parseInt(row.total_orders) || 0,
-        totalAmount: parseFloat(row.total_amount) || 0,
-        paidAmount: parseFloat(row.paid_amount) || 0,
-        dueAmount: parseFloat(row.due_amount) || 0,
-        pendingOrders: parseInt(row.pending_orders) || 0,
-        partialOrders: parseInt(row.partial_orders) || 0,
-        paidOrders: parseInt(row.paid_orders) || 0
-      }));
+      // Combine suppliers with their purchase data
+      const supplierSummary = allSuppliers.map(supplier => {
+        const purchaseData = purchaseSummaries.find(p => p.supplier_id === supplier.id);
+        const totalAmount = parseFloat(String(purchaseData?.total_amount || 0));
+        const paidAmount = parseFloat(String(purchaseData?.paid_amount || 0));
+        const dueAmount = totalAmount - paidAmount;
+
+        return {
+          id: supplier.id,
+          name: supplier.name,
+          phone: supplier.phone,
+          email: supplier.email,
+          contactPerson: supplier.contactPerson,
+          address: supplier.address,
+          totalOrders: parseInt(String(purchaseData?.total_orders || 0)),
+          totalAmount: totalAmount,
+          paidAmount: paidAmount,
+          dueAmount: dueAmount,
+          pendingOrders: parseInt(String(purchaseData?.pending_orders || 0)),
+          partialOrders: parseInt(String(purchaseData?.partial_orders || 0)),
+          paidOrders: parseInt(String(purchaseData?.paid_orders || 0))
+        };
+      }).filter(supplier => supplier.totalOrders > 0)
+        .sort((a, b) => b.dueAmount - a.dueAmount || b.totalAmount - a.totalAmount);
 
       console.log('📊 Supplier summary data:', supplierSummary.length, 'suppliers found');
       res.json(supplierSummary);

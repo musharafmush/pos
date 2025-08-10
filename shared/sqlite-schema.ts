@@ -529,6 +529,7 @@ export const expenses = sqliteTable('expenses', {
   description: text('description'),
   expenseDate: text('expense_date').notNull(),
   paymentMethod: text('payment_method').default('cash'),
+  status: text('status').default('pending'),
   reference: text('reference'),
   notes: text('notes'),
   attachments: text('attachments'),
