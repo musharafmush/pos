@@ -1,0 +1,41 @@
+ Executing purchases query
+✅ Found 3 purchases
+3:42:12 AM [express] GET /api/purchases 304 in 3ms :: [{"id":14,"orderNumber":"PO-1754661611035","su…
+📊 Fetching supplier order summary...
+Error fetching supplier order summary: TypeError: db.execute is not a function
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3227:31)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at strategy.pass (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:355:9)
+    at /home/runner/workspace/node_modules/passport/lib/strategies/session.js:120:12
+    at pass (/home/runner/workspace/node_modules/passport/lib/authenticator.js:352:31)
+    at deserialized (/home/runner/workspace/node_modules/passport/lib/authenticator.js:364:7)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:123:7)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9)
+📊 Purchases API endpoint accessed
+3:42:34 AM [express] GET /api/suppliers/order-summary 500 in 4ms :: {"message":"Internal server erro…
+📋 Available purchase columns: [
+  'id',              'supplier_id',
+  'user_id',         'purchase_number',
+  'order_number',    'po_no',
+  'order_date',      'po_date',
+  'expected_date',   'due_date',
+  'received_date',   'total',
+  'sub_total',       'freight_cost',
+  'freight',         'other_charges',
+  'discount_amount', 'status',
+  'notes',           'remarks',
+  'created_at',      'payment_status',
+  'paid_amount',     'payment_method',
+  'payment_date',    'payment_type'
+]
+🔍 Executing purchases query
+✅ Found 3 purchases
+3:42:34 AM [express] GET /api/purchases 200 in 6ms :: [{"id":14,"orderNumber":"PO-1754661611035","su…
+3:42:50 AM [express] GET /api/cash-register/active 304 in 2ms :: {"id":2,"registerId":"REG1752219071…
