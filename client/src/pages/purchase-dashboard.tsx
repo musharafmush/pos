@@ -2131,7 +2131,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                                       )}
                                       {paymentStatus === 'paid' && (
                                         <div className="text-xs text-green-600">
-                                          Fully paid on {purchase.paymentDate ? format(new Date(purchase.paymentDate), 'MMM dd') : 'N/A'}
+                                          Fully paid on {purchase.payment_date ? format(new Date(purchase.payment_date), 'MMM dd') : 'N/A'}
                                         </div>
                                       )}
                                     </div>
