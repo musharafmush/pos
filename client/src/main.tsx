@@ -126,7 +126,7 @@ try {
         Refresh Page
       </button>
       <pre style="margin-top: 20px; padding: 10px; background: #2a2a2a; border-radius: 4px; max-width: 600px; overflow: auto; font-size: 12px;">
-        ${error.toString()}
+        ${error instanceof Error ? error.toString() : String(error)}
       </pre>
     </div>
   `;
