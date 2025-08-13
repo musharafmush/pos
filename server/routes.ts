@@ -2964,7 +2964,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate the new paid amount with validation
       const currentPaidAmount = parseFloat(existingPurchase.paid_amount || '0');
       const newPaymentAmount = parseFloat(paymentAmount || '0');
-      const purchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
+      
+      // Calculate the actual total including taxes from purchase items
+      const purchaseItemsQuery = sqlite.prepare(`
+        SELECT COALESCE(SUM(net_amount), 0) as items_total 
+        FROM purchase_items 
+        WHERE purchase_id = ?
+      `);
+      const itemsResult = purchaseItemsQuery.get(id) as { items_total: number };
+      const itemsTotal = parseFloat(itemsResult?.items_total?.toString() || '0');
+      
+      // Use items total if available, otherwise fall back to purchase table total
+      const basePurchaseTotal = parseFloat(existingPurchase.total || existingPurchase.totalAmount || '0');
+      const purchaseTotal = itemsTotal > 0 ? itemsTotal : basePurchaseTotal;
+      
+      console.log('💰 Total calculation details:', {
+        basePurchaseTotal,
+        itemsTotal,
+        finalPurchaseTotal: purchaseTotal,
+        purchaseId: id
+      });
 
       // Use totalPaidAmount if provided, otherwise add newPaymentAmount to currentPaidAmount
       let finalPaidAmount = totalPaidAmount !== undefined ? 
