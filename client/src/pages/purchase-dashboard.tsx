@@ -452,7 +452,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   // Filter purchases based on search
   const filteredPurchases = purchases.filter((purchase: Purchase) =>
-    purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (purchase as any).supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.id?.toString().includes(searchTerm)
   );
@@ -461,9 +461,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   const totalPurchases = purchases.length;
   const pendingPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || 'pending';
-    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
-    const paymentStatus = p.paymentStatus;
+    const totalAmount = parseFloat((p as any).total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paid_amount?.toString() || "0");
+    const paymentStatus = (p as any).payment_status;
 
     // Consider as pending if status is pending/ordered/draft OR if not fully paid
     return (status === "pending" || status === "ordered" || status === "draft") || 
@@ -472,9 +472,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   const completedPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || '';
-    const totalAmount = parseFloat(p.totalAmount?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
-    const paymentStatus = p.paymentStatus;
+    const totalAmount = parseFloat((p as any).total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paid_amount?.toString() || "0");
+    const paymentStatus = (p as any).payment_status;
 
     // Consider as completed if status is completed/received/delivered OR if fully paid
     return (status === "completed" || status === "received" || status === "delivered") ||
@@ -2131,7 +2131,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                                       )}
                                       {paymentStatus === 'paid' && (
                                         <div className="text-xs text-green-600">
-                                          Fully paid on {purchase.payment_date ? format(new Date(purchase.payment_date), 'MMM dd') : 'N/A'}
+                                          Fully paid on {(purchase as any).payment_date ? format(new Date((purchase as any).payment_date), 'MMM dd') : format(new Date(), 'MMM dd')}
                                         </div>
                                       )}
                                     </div>

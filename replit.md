@@ -42,7 +42,7 @@ The system utilizes React with Shadcn/ui and Tailwind CSS for a modern, responsi
 
 ## Recent Changes
 
-### Replit Agent to Replit Migration Complete (August 4, 2025)
+### Replit Agent to Replit Migration Complete (August 13, 2025)
 - Successfully migrated comprehensive POS system from Replit Agent to standard Replit environment
 - Fixed import path issues in server/index.ts for proper database initialization
 - Database initialization working correctly with SQLite backend and proper table creation
@@ -53,6 +53,9 @@ The system utilizes React with Shadcn/ui and Tailwind CSS for a modern, responsi
 - **Fixed Print Order Functionality**: Implemented professional purchase order printing with GST-compliant template
 - Created Bill of Supply template matching Indian business standards with HSN codes, supplier details, and amount in words
 - Enhanced print layout with proper formatting for thermal and A4 printing
+- **Fixed Payment Date Display Issue (August 13, 2025)**: Resolved field mapping between database snake_case (`payment_date`) and frontend camelCase expectations
+- Payment status now correctly displays "Fully paid on Aug 13" instead of "N/A"
+- Improved TypeScript error handling with proper type casting for database field access
 - **Implemented Comprehensive HSN Management System (August 4, 2025)**: Built bidirectional HSN codes sync between Add Item → Tax Information and Settings → Tax Settings sections
 - Created HSNSelector component with autocomplete search and auto-assignment of GST rates
 - Integrated HSNManagement component in Settings with full CRUD operations for HSN codes
