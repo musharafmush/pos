@@ -1783,7 +1783,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                             <TableHead className="font-semibold">Order Number</TableHead>
                             <TableHead className="font-semibold">Supplier</TableHead>
                             <TableHead className="font-semibold">Status</TableHead>
-                            <TableHead className="font-semibold">Total Amount</TableHead>
+                            <TableHead className="font-semibold text-right">Total Amount</TableHead>
                             <TableHead className="font-semibold">Items</TableHead>
                             <TableHead className="font-semibold">Payment Status</TableHead>
                             <TableHead className="font-semibold">Expected Date</TableHead>
@@ -1880,49 +1880,15 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               <TableCell className="py-4">
                                 {getStatusBadge(purchase.status || "pending")}
                               </TableCell>
-                              <TableCell className="py-4">
-                                <div className="text-right">
-                                  <p className="font-semibold text-lg text-gray-900">
-                                    {(() => {
-                                      // ALWAYS use database total first to match payment calculations
-                                      const dbTotal = parseFloat(purchase.total?.toString() || "0");
-                                      const totalAmount = parseFloat(purchase.totalAmount?.toString() || "0");
-                                      
-                                      if (dbTotal > 0) {
-                                        return formatCurrency(dbTotal);
-                                      } else if (totalAmount > 0) {
-                                        return formatCurrency(totalAmount);
-                                      } else {
-                                        // Fallback calculation only if no database total exists
-                                        const items = purchase.purchaseItems || purchase.items || [];
-                                        let calculatedTotal = 0;
-                                        
-                                        if (items.length > 0) {
-                                          items.forEach(item => {
-                                            const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
-                                            const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
-                                            const itemTotal = qty * cost;
-                                            const discount = Number(item.discountAmount || item.discount_amount || 0);
-                                            const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
-                                            const taxAmount = (itemTotal - discount) * (taxPercent / 100);
-                                            
-                                            calculatedTotal += itemTotal - discount + taxAmount;
-                                          });
-                                          
-                                          // Add freight and other charges if available
-                                          const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
-                                          const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
-                                          calculatedTotal += freightCost + otherCharges;
-                                        }
-                                        
-                                        return formatCurrency(calculatedTotal);
-                                      }
-                                    })()}
-                                  </p>
-                                  {purchase.subTotal && (
-                                    <p className="text-sm text-gray-500">
+                              <TableCell className="py-4 text-right">
+                                <div className="flex flex-col items-end space-y-1">
+                                  <span className="font-semibold text-lg text-gray-900">
+                                    {formatCurrency(parseFloat(purchase.total?.toString() || "0"))}
+                                  </span>
+                                  {purchase.subTotal && parseFloat(purchase.subTotal.toString()) !== parseFloat(purchase.total?.toString() || "0") && (
+                                    <span className="text-sm text-gray-500">
                                       Subtotal: {formatCurrency(parseFloat(purchase.subTotal.toString()))}
-                                    </p>
+                                    </span>
                                   )}
                                 </div>
                               </TableCell>
