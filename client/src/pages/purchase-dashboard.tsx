@@ -1883,9 +1883,43 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                               <TableCell className="py-4 text-right">
                                 <div className="flex flex-col items-end space-y-1">
                                   <span className="font-semibold text-lg text-gray-900">
-                                    {formatCurrency(parseFloat(purchase.total?.toString() || "0"))}
+                                    {(() => {
+                                      // Calculate total from items if available
+                                      const items = purchase.purchaseItems || purchase.items || [];
+                                      if (items.length > 0) {
+                                        let calculatedTotal = 0;
+                                        items.forEach(item => {
+                                          // Use net_amount if available (includes tax and discounts)
+                                          const netAmount = parseFloat(item.netAmount || item.net_amount || "0");
+                                          if (netAmount > 0) {
+                                            calculatedTotal += netAmount;
+                                          } else {
+                                            // Fallback calculation if net_amount is not available
+                                            const qty = parseFloat(item.quantity?.toString() || "0");
+                                            const cost = parseFloat(item.unitCost || item.unit_cost || item.cost || "0");
+                                            const taxPercent = parseFloat(item.taxPercentage || item.tax_percentage || "0");
+                                            const discountAmount = parseFloat(item.discountAmount || item.discount_amount || "0");
+                                            
+                                            const itemSubtotal = qty * cost;
+                                            const afterDiscount = itemSubtotal - discountAmount;
+                                            const taxAmount = afterDiscount * (taxPercent / 100);
+                                            calculatedTotal += afterDiscount + taxAmount;
+                                          }
+                                        });
+                                        
+                                        // Add any additional charges
+                                        const freightCost = parseFloat(purchase.freightCost?.toString() || purchase.freight_cost?.toString() || "0");
+                                        const otherCharges = parseFloat(purchase.otherCharges?.toString() || purchase.other_charges?.toString() || "0");
+                                        calculatedTotal += freightCost + otherCharges;
+                                        
+                                        return formatCurrency(calculatedTotal);
+                                      }
+                                      
+                                      // Fallback to stored total
+                                      return formatCurrency(parseFloat(purchase.total?.toString() || "0"));
+                                    })()}
                                   </span>
-                                  {purchase.subTotal && parseFloat(purchase.subTotal.toString()) !== parseFloat(purchase.total?.toString() || "0") && (
+                                  {purchase.subTotal && (
                                     <span className="text-sm text-gray-500">
                                       Subtotal: {formatCurrency(parseFloat(purchase.subTotal.toString()))}
                                     </span>
