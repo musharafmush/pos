@@ -2807,7 +2807,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Purchase not found' });
       }
 
-      res.json(purchase);
+      // Ensure payment fields are properly mapped from snake_case to camelCase
+      const formattedPurchase = {
+        ...purchase,
+        paymentStatus: purchase.payment_status || purchase.paymentStatus,
+        paidAmount: purchase.paid_amount || purchase.paidAmount || 0,
+        paymentMethod: purchase.payment_method || purchase.paymentMethod,
+        paymentDate: purchase.payment_date || purchase.paymentDate,
+        paymentType: purchase.payment_type || purchase.paymentType
+      };
+
+      console.log('📦 Single purchase fetch - formatted data:', {
+        id,
+        originalPaymentStatus: purchase.payment_status,
+        originalPaidAmount: purchase.paid_amount,
+        formattedPaymentStatus: formattedPurchase.paymentStatus,
+        formattedPaidAmount: formattedPurchase.paidAmount
+      });
+
+      res.json(formattedPurchase);
     } catch (error) {
       console.error('Error fetching purchase:', error);
       res.status(500).json({ message: 'Internal server error' });
