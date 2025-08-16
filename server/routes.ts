@@ -2738,6 +2738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const formattedPurchases = purchases.map((purchase: any) => {
         // Get purchase items for this purchase
         let purchaseItems = [];
+        let actualTotal = 0;
         try {
           const itemsQuery = `
             SELECT 
@@ -2749,10 +2750,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             WHERE pi.purchase_id = ?
           `;
           purchaseItems = sqlite.prepare(itemsQuery).all(purchase.id);
+          
+          // Calculate actual total including taxes from purchase items
+          actualTotal = purchaseItems.reduce((sum, item) => {
+            return sum + parseFloat(item.net_amount || item.cost || '0');
+          }, 0);
+          
         } catch (itemsError) {
           console.log(`⚠️ Could not fetch items for purchase ${purchase.id}:`, itemsError.message);
           purchaseItems = [];
+          actualTotal = parseFloat(purchase.total || '0');
         }
+
+        // Calculate correct payment status based on actual total including taxes
+        const paidAmount = parseFloat(purchase.paid_amount || '0');
+        const finalTotal = actualTotal > 0 ? actualTotal : parseFloat(purchase.total || '0');
+        
+        let correctPaymentStatus;
+        if (paidAmount >= finalTotal) {
+          correctPaymentStatus = 'paid';
+        } else if (paidAmount > 0) {
+          correctPaymentStatus = 'partial';
+        } else {
+          correctPaymentStatus = 'due';
+        }
+
+        console.log(`💰 Payment status calculation for purchase ${purchase.id}:`, {
+          baseTotal: purchase.total,
+          actualTotal,
+          finalTotal,
+          paidAmount,
+          storedStatus: purchase.payment_status,
+          correctStatus: correctPaymentStatus
+        });
 
         return {
           id: purchase.id,
@@ -2761,12 +2791,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: purchase.user_id,
           total: purchase.total || '0',
           totalAmount: purchase.total || '0',
+          actualTotal: actualTotal, // Include actual total for frontend calculations
           status: purchase.status || 'pending',
           orderDate: purchase.order_date || purchase.created_at,
           createdAt: purchase.created_at,
           dueDate: purchase.due_date,
           receivedDate: purchase.received_date,
-          paymentStatus: purchase.payment_status || 'due',
+          paymentStatus: correctPaymentStatus, // Use corrected payment status
           paidAmount: purchase.paid_amount || '0',
           paymentMethod: purchase.payment_method || 'cash',
           itemCount: purchase.item_count || 0,
