@@ -536,21 +536,6 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     return paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
 
-  // Debug log payment statistics  
-  console.log('📊 Payment Statistics Debug:', {
-    totalPurchases: purchases.length,
-    paidPurchases,
-    duePurchases,
-    totalDueAmount: formatCurrency(totalDueAmount),
-    purchases: purchases.map(p => ({
-      id: p.id,
-      orderNumber: p.orderNumber,
-      total: parseFloat(p.total?.toString() || "0"),
-      paidAmount: parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0"),
-      paymentStatus: (p as any).paymentStatus || (p as any).payment_status
-    }))
-  });
-
   const duePurchases = purchases.filter((p: Purchase) => {
     const totalAmount = parseFloat(p.total?.toString() || "0");
     const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
@@ -585,6 +570,21 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
+
+  // Debug log payment statistics after all variables are calculated
+  console.log('📊 Payment Statistics Debug:', {
+    totalPurchases: purchases.length,
+    paidPurchases,
+    duePurchases,
+    totalDueAmount: formatCurrency(totalDueAmount),
+    purchases: purchases.map(p => ({
+      id: p.id,
+      orderNumber: p.orderNumber,
+      total: parseFloat(p.total?.toString() || "0"),
+      paidAmount: parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0"),
+      paymentStatus: (p as any).paymentStatus || (p as any).payment_status
+    }))
+  });
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
