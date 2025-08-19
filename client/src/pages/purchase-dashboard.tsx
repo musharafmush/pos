@@ -461,24 +461,20 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   const totalPurchases = purchases.length;
   const pendingPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || 'pending';
-    const totalAmount = parseFloat((p as any).total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paid_amount?.toString() || "0");
-    const paymentStatus = (p as any).payment_status;
+    const paymentStatus = (p as any).paymentStatus; // Use corrected camelCase field
 
     // Consider as pending if status is pending/ordered/draft OR if not fully paid
     return (status === "pending" || status === "ordered" || status === "draft") || 
-           (paymentStatus !== "paid" && paidAmount < totalAmount);
+           (paymentStatus === "partial" || paymentStatus === "due");
   }).length;
 
   const completedPurchases = purchases.filter((p: Purchase) => {
     const status = p.status?.toLowerCase() || '';
-    const totalAmount = parseFloat((p as any).total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paid_amount?.toString() || "0");
-    const paymentStatus = (p as any).payment_status;
+    const paymentStatus = (p as any).paymentStatus; // Use corrected camelCase field
 
     // Consider as completed if status is completed/received/delivered OR if fully paid
     return (status === "completed" || status === "received" || status === "delivered") ||
-           (paymentStatus === "paid" && totalAmount > 0 && paidAmount >= totalAmount);
+           (paymentStatus === "paid");
   }).length;
   const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
     // Calculate total from purchase items if available (same logic as table display)
@@ -575,20 +571,27 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
 
-  // Debug log payment statistics after all variables are calculated
-  console.log('📊 Payment Statistics Debug:', {
+  // Debug log all statistics after all variables are calculated
+  console.log('📊 Complete Purchase Statistics Debug:', {
     totalPurchases: purchases.length,
+    pendingPurchases,
+    completedPurchases,
     paidPurchases,
     duePurchases,
     totalDueAmount: formatCurrency(totalDueAmount),
     purchases: purchases.map(p => ({
       id: p.id,
       orderNumber: p.orderNumber,
+      status: p.status,
       total: parseFloat(p.total?.toString() || "0"),
       actualTotal: parseFloat((p as any).actualTotal?.toString() || "0"),
       paidAmount: parseFloat((p as any).paidAmount?.toString() || "0"),
       paymentStatus: (p as any).paymentStatus,
-      remainingAmount: Math.max(0, parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0") - parseFloat((p as any).paidAmount?.toString() || "0"))
+      remainingAmount: Math.max(0, parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0") - parseFloat((p as any).paidAmount?.toString() || "0")),
+      isPending: (p.status?.toLowerCase() === "pending" || p.status?.toLowerCase() === "ordered" || p.status?.toLowerCase() === "draft") || 
+                 ((p as any).paymentStatus === "partial" || (p as any).paymentStatus === "due"),
+      isCompleted: (p.status?.toLowerCase() === "completed" || p.status?.toLowerCase() === "received" || p.status?.toLowerCase() === "delivered") ||
+                   ((p as any).paymentStatus === "paid")
     }))
   });
 
