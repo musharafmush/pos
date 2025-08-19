@@ -530,38 +530,59 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   // Payment statistics with improved calculation
   const paidPurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
-    const paymentStatus = p.paymentStatus || p.payment_status;
+    const totalAmount = parseFloat(p.total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
+    const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
     return paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
 
-  const duePurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
-    const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
-    const paymentStatus = p.paymentStatus || p.payment_status;
+  // Debug log payment statistics  
+  console.log('📊 Payment Statistics Debug:', {
+    totalPurchases: purchases.length,
+    paidPurchases,
+    duePurchases,
+    totalDueAmount: formatCurrency(totalDueAmount),
+    purchases: purchases.map(p => ({
+      id: p.id,
+      orderNumber: p.orderNumber,
+      total: parseFloat(p.total?.toString() || "0"),
+      paidAmount: parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0"),
+      paymentStatus: (p as any).paymentStatus || (p as any).payment_status
+    }))
+  });
 
-    // Consider as due if explicitly marked as due, or if no payment status and unpaid
-    return paymentStatus === "due" || 
+  const duePurchases = purchases.filter((p: Purchase) => {
+    const totalAmount = parseFloat(p.total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
+    const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
+
+    // Consider as due if explicitly marked as due, partial, or if unpaid with amount
+    return totalAmount > 0 && (
+           paymentStatus === "due" || 
            paymentStatus === "overdue" || 
+           paymentStatus === "partial" ||
            (!paymentStatus && paidAmount < totalAmount) ||
-           (paymentStatus === "partial" && paidAmount < totalAmount);
+           (paymentStatus !== "paid" && paidAmount < totalAmount)
+    );
   }).length;
 
   const totalDueAmount = purchases
     .filter((p: Purchase) => {
-      const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
-      const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
-      const paymentStatus = p.paymentStatus || p.payment_status;
+      const totalAmount = parseFloat(p.total?.toString() || "0");
+      const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
+      const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
 
-      return paymentStatus === "due" || 
+      return totalAmount > 0 && (
+             paymentStatus === "due" || 
              paymentStatus === "overdue" || 
+             paymentStatus === "partial" ||
              (!paymentStatus && paidAmount < totalAmount) ||
-             (paymentStatus === "partial" && paidAmount < totalAmount);
+             (paymentStatus !== "paid" && paidAmount < totalAmount)
+      );
     })
     .reduce((sum: number, p: Purchase) => {
-      const totalAmount = parseFloat(p.totalAmount?.toString() || p.total?.toString() || "0");
-      const paidAmount = parseFloat(p.paidAmount?.toString() || p.paid_amount?.toString() || "0");
+      const totalAmount = parseFloat(p.total?.toString() || "0");
+      const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
 
