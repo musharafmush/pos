@@ -530,16 +530,18 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   // Payment statistics with improved calculation
   const paidPurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
-    const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
+    // Use the backend-corrected actualTotal when available, fallback to total
+    const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
+    const paymentStatus = (p as any).paymentStatus;
     return paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
 
   const duePurchases = purchases.filter((p: Purchase) => {
-    const totalAmount = parseFloat(p.total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
-    const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
+    // Use the backend-corrected actualTotal when available, fallback to total
+    const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
+    const paymentStatus = (p as any).paymentStatus;
 
     // Consider as due if explicitly marked as due, partial, or if unpaid with amount
     return totalAmount > 0 && (
@@ -553,9 +555,10 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
   const totalDueAmount = purchases
     .filter((p: Purchase) => {
-      const totalAmount = parseFloat(p.total?.toString() || "0");
-      const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
-      const paymentStatus = (p as any).paymentStatus || (p as any).payment_status;
+      // Use the backend-corrected actualTotal when available, fallback to total
+      const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
+      const paymentStatus = (p as any).paymentStatus;
 
       return totalAmount > 0 && (
              paymentStatus === "due" || 
@@ -566,8 +569,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       );
     })
     .reduce((sum: number, p: Purchase) => {
-      const totalAmount = parseFloat(p.total?.toString() || "0");
-      const paidAmount = parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0");
+      // Use the backend-corrected actualTotal when available, fallback to total
+      const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
 
@@ -581,8 +585,10 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       id: p.id,
       orderNumber: p.orderNumber,
       total: parseFloat(p.total?.toString() || "0"),
-      paidAmount: parseFloat((p as any).paidAmount?.toString() || (p as any).paid_amount?.toString() || "0"),
-      paymentStatus: (p as any).paymentStatus || (p as any).payment_status
+      actualTotal: parseFloat((p as any).actualTotal?.toString() || "0"),
+      paidAmount: parseFloat((p as any).paidAmount?.toString() || "0"),
+      paymentStatus: (p as any).paymentStatus,
+      remainingAmount: Math.max(0, parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0") - parseFloat((p as any).paidAmount?.toString() || "0"))
     }))
   });
 
