@@ -3828,21 +3828,24 @@ export default function PurchaseEntryProfessional() {
           <p className="text-sm text-green-600">Record and track payments for this purchase order</p>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
-          {/* Payment Summary */}
-          <div className="bg-white rounded-lg p-4 border border-green-200">
-            <h4 className="font-semibold text-green-900 mb-3">Payment Overview</h4>
+          {/* Payment Summary - Enhanced */}
+          <div className="bg-white rounded-lg p-4 border border-green-200 shadow-sm">
+            <h4 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Payment Overview
+            </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
-                <div className="text-blue-600 font-medium">Total Amount</div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg text-center border border-blue-200 shadow-sm">
+                <div className="text-blue-600 font-medium text-xs mb-1">Total Amount</div>
                 <div className="text-lg font-bold text-blue-800">
                   {formatCurrency(summary.grandTotal)}
                 </div>
+                <div className="text-xs text-blue-500 mt-1">Purchase Order Value</div>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                <div className="text-green-600 font-medium">Amount Paid</div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg text-center border border-green-200 shadow-sm">
+                <div className="text-green-600 font-medium text-xs mb-1">Amount Paid</div>
                 <div className="text-lg font-bold text-green-800">
                   {(() => {
-                    // Get current paid amount from the appropriate source
                     const currentPaidAmount = isEditMode && existingPurchase ? 
                       Number(existingPurchase.paid_amount || 0) : 
                       Number(form.getValues("paid_amount") || 0);
@@ -3857,9 +3860,18 @@ export default function PurchaseEntryProfessional() {
                     return formatCurrency(currentPaidAmount);
                   })()}
                 </div>
+                <div className="text-xs text-green-500 mt-1">
+                  {(() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const percentage = summary.grandTotal > 0 ? Math.round((currentPaidAmount / summary.grandTotal) * 100) : 0;
+                    return `${percentage}% of Total`;
+                  })()}
+                </div>
               </div>
-              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-200">
-                <div className="text-orange-600 font-medium">Balance Due</div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg text-center border border-orange-200 shadow-sm">
+                <div className="text-orange-600 font-medium text-xs mb-1">Balance Due</div>
                 <div className="text-lg font-bold text-orange-800">
                   {(() => {
                     const currentPaidAmount = isEditMode && existingPurchase ? 
@@ -3869,30 +3881,144 @@ export default function PurchaseEntryProfessional() {
                     return formatCurrency(Math.max(0, balanceDue));
                   })()}
                 </div>
+                <div className="text-xs text-orange-500 mt-1">Outstanding Amount</div>
               </div>
-              <div className="bg-purple-50 p-3 rounded-lg text-center border border-purple-200">
-                <div className="text-purple-600 font-medium">Payment Status</div>
-                <div className="text-sm font-bold text-purple-800">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg text-center border border-purple-200 shadow-sm">
+                <div className="text-purple-600 font-medium text-xs mb-1">Payment Status</div>
+                <div className="flex items-center justify-center gap-1 mt-1">
                   {(() => {
                     const currentPaidAmount = isEditMode && existingPurchase ? 
                       Number(existingPurchase.paid_amount || 0) : 
                       Number(form.getValues("paid_amount") || 0);
                     
-                    if (currentPaidAmount >= summary.grandTotal) return "Fully Paid";
-                    if (currentPaidAmount > 0) return "Partially Paid";
-                    return "Unpaid";
+                    if (currentPaidAmount >= summary.grandTotal) {
+                      return (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                            Fully Paid
+                          </Badge>
+                        </>
+                      );
+                    } else if (currentPaidAmount > 0) {
+                      return (
+                        <>
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">
+                            Partially Paid
+                          </Badge>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+                            Unpaid
+                          </Badge>
+                        </>
+                      );
+                    }
                   })()}
                 </div>
               </div>
             </div>
+
+            {/* Payment Progress Bar */}
+            <div className="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
+                style={{
+                  width: `${(() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const percentage = summary.grandTotal > 0 ? Math.min(100, (currentPaidAmount / summary.grandTotal) * 100) : 0;
+                    return percentage;
+                  })()}%`
+                }}
+              ></div>
+            </div>
+            <div className="mt-1 text-xs text-gray-500 text-center">
+              Payment Progress: {(() => {
+                const currentPaidAmount = isEditMode && existingPurchase ? 
+                  Number(existingPurchase.paid_amount || 0) : 
+                  Number(form.getValues("paid_amount") || 0);
+                const percentage = summary.grandTotal > 0 ? Math.min(100, (currentPaidAmount / summary.grandTotal) * 100) : 0;
+                return Math.round(percentage);
+              })()}%
+            </div>
           </div>
 
-          {/* Payment Form */}
-          <div className="bg-white rounded-lg p-4 border border-green-200">
+          {/* Payment Form - Enhanced */}
+          <div className="bg-white rounded-lg p-5 border border-green-200 shadow-sm">
             <h4 className="font-semibold text-green-900 mb-4 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <DollarSign className="h-5 w-5" />
               Record New Payment
             </h4>
+            
+            {/* Quick Payment Amount Buttons */}
+            <div className="mb-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+              <div className="text-xs font-medium text-gray-600 mb-2">Quick Payment Options</div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const balanceDue = Math.max(0, summary.grandTotal - currentPaidAmount);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: balanceDue
+                    });
+                  }}
+                  className="text-blue-600 hover:bg-blue-50 border-blue-300"
+                >
+                  Full Balance ({(() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const balanceDue = Math.max(0, summary.grandTotal - currentPaidAmount);
+                    return formatCurrency(balanceDue);
+                  })()})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const balanceDue = Math.max(0, summary.grandTotal - currentPaidAmount);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: Math.round(balanceDue / 2)
+                    });
+                  }}
+                  className="text-purple-600 hover:bg-purple-50 border-purple-300"
+                >
+                  Half Amount
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: 0
+                    });
+                  }}
+                  className="text-gray-600 hover:bg-gray-50 border-gray-300"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -4037,8 +4163,50 @@ export default function PurchaseEntryProfessional() {
               </div>
             )}
 
+            {/* Real-time Payment Validation */}
+            {paymentData.paymentAmount > 0 && (
+              <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="font-medium text-blue-900">Payment Preview:</span>
+                </div>
+                <div className="mt-2 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Payment Amount:</span>
+                    <span className="font-bold text-blue-900">{formatCurrency(paymentData.paymentAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">New Balance After Payment:</span>
+                    <span className="font-bold text-green-900">
+                      {formatCurrency(Math.max(0, summary.grandTotal - paymentData.paymentAmount))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Payment Status Will Be:</span>
+                    <Badge className={`text-xs ${
+                      paymentData.paymentAmount >= summary.grandTotal 
+                        ? 'bg-green-100 text-green-800 border-green-200' 
+                        : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    }`}>
+                      {paymentData.paymentAmount >= summary.grandTotal ? 'Fully Paid' : 'Partially Paid'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Record Payment Button */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                {paymentData.paymentAmount > 0 ? (
+                  <span className="flex items-center gap-1">
+                    <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                    Ready to record payment
+                  </span>
+                ) : (
+                  <span className="text-gray-400">Enter payment amount to continue</span>
+                )}
+              </div>
               <Button
                 onClick={async () => {
                   console.log('Record Payment clicked:', paymentData);
@@ -4124,8 +4292,8 @@ export default function PurchaseEntryProfessional() {
                     console.log('Payment recorded:', paymentRecord);
 
                     toast({
-                      title: "✅ Payment Recorded Successfully",
-                      description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
+                      title: "Payment Recorded Successfully",
+                      description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? '✅ Order is now fully paid!' : `💰 Remaining balance: ${formatCurrency(remainingBalance)}`}`,
                     });
 
                     // Reset payment form
@@ -4147,7 +4315,7 @@ export default function PurchaseEntryProfessional() {
                   }
                 }}
                 disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Record Payment
