@@ -427,6 +427,26 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
           width: 100% !important;
           display: block !important;
           position: static !important;
+          /* Force center for thermal printers */
+          padding: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          transform: none !important;
+        }
+      }
+
+      /* Thermal printer specific centering */
+      @media print and (width <= 80mm) {
+        .business-name-header {
+          text-align: center !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          display: block !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          /* Center text content specifically */
+          direction: ltr !important;
+          unicode-bidi: normal !important;
         }
       }
 
@@ -681,13 +701,13 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         </div>
       ` : ''}
       ${settings.showLogo && (!settings.logoUrl || settings.logoUrl.trim() === '') ? `
-        <div class="business-name-header" style="color: #d4af37; font-family: 'Impact', 'Arial Black', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+        <div class="business-name-header" style="color: #d4af37; font-family: 'Impact', 'Arial Black', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); text-align: center !important; width: 100%; margin: 0 auto; display: block;">
           🏆 ${settings.businessName || 'M MART'} 🏆
         </div>
       ` : ''}
 
       ${!settings.showLogo ? `
-        <div class="business-name-header">
+        <div class="business-name-header" style="text-align: center !important; width: 100%; margin: 0 auto; display: block;">
           ${settings.businessName || 'M MART'}
         </div>
       ` : ''}
