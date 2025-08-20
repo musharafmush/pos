@@ -4085,40 +4085,160 @@ export default function PurchaseEntryProfessional() {
               ></div>
             </div>
 
-            {/* Payment Status Record Payment Management Menu */}
-            <div className="flex gap-3 justify-center">
+            {/* Comprehensive Payment Transaction History */}
+            <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+              <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-green-600" />
+                Payment Transaction History & Summary
+              </h4>
+              
+              <div className="space-y-3">
+                {Number(existingPurchase.paid_amount || 0) > 0 ? (
+                  <>
+                    {/* Payment Received Record */}
+                    <div className="flex items-center justify-between p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div>
+                          <div className="font-semibold text-green-900 text-lg">
+                            Payment Received - {existingPurchase.payment_method || 'Cash'}
+                          </div>
+                          <div className="text-sm text-green-700">
+                            {existingPurchase.payment_date ? 
+                              new Date(existingPurchase.payment_date).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 
+                              'Payment recorded successfully'
+                            }
+                          </div>
+                          <div className="text-xs text-green-600 mt-1">
+                            Transaction Type: {existingPurchase.payment_type || 'Standard Payment'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-900 text-xl">
+                          {formatCurrency(Number(existingPurchase.paid_amount || 0))}
+                        </div>
+                        <div className="text-sm text-green-700">
+                          Amount Paid
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Outstanding Balance if any */}
+                    {Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)) > 0 && (
+                      <div className="flex items-center justify-between p-4 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                          <div>
+                            <div className="font-semibold text-orange-900 text-lg">
+                              Outstanding Balance
+                            </div>
+                            <div className="text-sm text-orange-700">
+                              Awaiting payment - Balance due
+                            </div>
+                            <div className="text-xs text-orange-600 mt-1">
+                              Status: Partially Paid
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-orange-900 text-xl">
+                            {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))}
+                          </div>
+                          <div className="text-sm text-orange-700">
+                            Remaining Due
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* No Payment Record */
+                  <div className="flex items-center justify-between p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                      <div>
+                        <div className="font-semibold text-red-900 text-lg">
+                          No Payment Recorded
+                        </div>
+                        <div className="text-sm text-red-700">
+                          Full payment pending for this purchase order
+                        </div>
+                        <div className="text-xs text-red-600 mt-1">
+                          Status: Payment Due
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-red-900 text-xl">
+                        {formatCurrency(summary.grandTotal)}
+                      </div>
+                      <div className="text-sm text-red-700">
+                        Total Due
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Enhanced Payment Action Buttons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
               <Button
-                variant="outline"
-                onClick={() => setShowPaymentManagementMenu(true)}
-                className="bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 text-purple-700 border-purple-300"
+                onClick={() => setShowRecordPaymentDialog(true)}
+                disabled={Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)) <= 0}
+                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50 h-12"
               >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Payment Management
+                <CreditCard className="w-5 h-5 mr-2" />
+                <div className="text-left">
+                  <div className="font-semibold">Record New Payment</div>
+                  <div className="text-xs opacity-90">
+                    {Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)) > 0 ? 
+                      `${formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))} remaining` : 
+                      'Fully paid'
+                    }
+                  </div>
+                </div>
               </Button>
               
               <Button
                 variant="outline"
                 onClick={() => setShowPaymentManagementMenu(true)}
-                className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 border-blue-300"
+                className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 border-blue-300 h-12"
               >
-                <DollarSign className="w-4 h-4 mr-2" />
-                Quick Record Payment
+                <FileText className="w-5 h-5 mr-2" />
+                <div className="text-left">
+                  <div className="font-semibold">Payment Management</div>
+                  <div className="text-xs opacity-75">View payment history</div>
+                </div>
               </Button>
               
               {Number(existingPurchase.paid_amount || 0) < summary.grandTotal && (
                 <Button
-                  onClick={async () => {
-                    const outstandingAmount = summary.grandTotal - Number(existingPurchase.paid_amount || 0);
-                    setPaymentData({
-                      ...paymentData,
-                      paymentAmount: outstandingAmount
+                  onClick={() => {
+                    const outstandingAmount = Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0));
+                    setPaymentFormData({
+                      ...paymentFormData,
+                      amount: outstandingAmount
                     });
-                    setShowPaymentManagementMenu(true);
+                    setShowRecordPaymentDialog(true);
                   }}
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                  variant="outline"
+                  className="bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 text-orange-700 border-orange-300 h-12"
                 >
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Pay Full Balance
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  <div className="text-left">
+                    <div className="font-semibold">Pay Full Balance</div>
+                    <div className="text-xs opacity-75">
+                      {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))}
+                    </div>
+                  </div>
                 </Button>
               )}
             </div>
