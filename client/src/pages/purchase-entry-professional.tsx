@@ -3838,7 +3838,19 @@ export default function PurchaseEntryProfessional() {
 
           {/* Financial Summary */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Financial Summary</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Financial Summary</h3>
+              {isEditMode && (
+                <Button
+                  onClick={() => setShowRecordPaymentDialog(true)}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Record Payment
+                </Button>
+              )}
+            </div>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Items:</span>

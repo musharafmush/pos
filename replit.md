@@ -62,6 +62,7 @@ The system utilizes React with Shadcn/ui and Tailwind CSS for a modern, responsi
 - Added quick payment options (Full Balance, 50% advance) with real-time outstanding balance calculations
 - Enhanced with payment method options (Cash, Bank Transfer, UPI, Cheque, Credit/Debit Card), reference numbers, and payment notes
 - Integrated with existing purchase order system for payment tracking and status synchronization
+- Added Record Payment button directly to Purchase Summary section for immediate access from Financial Summary area
 - **Fixed Purchase Dashboard Payment Status Issues (August 19, 2025)**: Resolved critical field mapping issues between backend API responses (camelCase) and frontend expectations
 - Corrected Payment Due and Pending Orders calculations using proper `paymentStatus` and `paidAmount` field names
 - Fixed purchase status filtering logic to properly identify partial payments and pending orders
