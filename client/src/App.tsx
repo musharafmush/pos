@@ -73,7 +73,6 @@ import ManufacturingDashboard from "@/pages/manufacturing-dashboard";
 import CreateProductFormula from "@/pages/create-product-formula";
 import RawMaterialsManagement from "@/pages/raw-materials-management";
 import PayrollDashboard from "@/pages/payroll-dashboard";
-import PaymentManagement from "@/pages/payment-management";
 
 function Router() {
   return (
@@ -151,7 +150,6 @@ function Router() {
       <ProtectedRoute path="/create-product-formula" component={CreateProductFormula} />
       <ProtectedRoute path="/raw-materials-management" component={RawMaterialsManagement} />
       <ProtectedRoute path="/payroll-dashboard" component={PayrollDashboard} />
-      <ProtectedRoute path="/payment-management" component={PaymentManagement} />
       <Route component={NotFound} />
     </Switch>
   );

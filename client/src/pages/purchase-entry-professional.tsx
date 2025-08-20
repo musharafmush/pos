@@ -4060,47 +4060,14 @@ export default function PurchaseEntryProfessional() {
 
       {/* Payment Status Record Payment Management Menu Dialog */}
       <Dialog open={showPaymentManagementMenu} onOpenChange={setShowPaymentManagementMenu}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-gray-800">
               <CreditCard className="h-5 w-5 text-purple-600" />
               Payment Status Record Payment Management
             </DialogTitle>
-            <p className="text-gray-600">Access comprehensive payment management for purchase orders</p>
+            <p className="text-gray-600">Comprehensive payment management system for purchase orders</p>
           </DialogHeader>
-          
-          <div className="py-4">
-            <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <CreditCard className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Comprehensive Payment Management Available
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Access the full Payment Status Record Management system for complete payment tracking,
-                recording, and analysis across all purchase orders.
-              </p>
-              <div className="flex justify-center gap-4">
-                <Button
-                  onClick={() => {
-                    window.open('/payment-management', '_blank');
-                  }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Open Payment Management
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    window.open('/purchase-dashboard', '_blank');
-                  }}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Purchase Dashboard
-                </Button>
-              </div>
-            </div>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
             {/* Quick Payment Actions */}
