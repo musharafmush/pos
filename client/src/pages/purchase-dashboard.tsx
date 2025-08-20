@@ -2992,20 +2992,178 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           </DialogContent>
         </Dialog>
 
-        {/* Payment Recording Dialog */}
+        {/* Enhanced Professional Payment Recording Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
-                Record Payment
+                Bill Payment Management
               </DialogTitle>
               <DialogDescription>
-                Record payment for purchase order
+                Professional payment recording system with comprehensive tracking
               </DialogDescription>
             </DialogHeader>
             {selectedPurchaseForPayment && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Payment Overview Section */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-xl text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium">Total Amount</p>
+                        <p className="text-2xl font-bold">
+                          {(() => {
+                            const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                            let calculatedTotal = 0;
+                            
+                            if (items.length > 0) {
+                              items.forEach(item => {
+                                const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                const itemTotal = qty * cost;
+                                const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                calculatedTotal += itemTotal - discount + taxAmount;
+                              });
+                              const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                              const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                              calculatedTotal += freightCost + otherCharges;
+                              return formatCurrency(calculatedTotal);
+                            } else {
+                              return formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0"));
+                            }
+                          })()}
+                        </p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-blue-200" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-xl text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100 text-sm font-medium">Already Paid</p>
+                        <p className="text-2xl font-bold">
+                          {(() => {
+                            const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                            const paidAmount = parseFloat(
+                              currentPurchase?.paidAmount?.toString() || 
+                              currentPurchase?.paid_amount?.toString() || 
+                              selectedPurchaseForPayment?.paidAmount?.toString() || 
+                              selectedPurchaseForPayment?.paid_amount?.toString() || 
+                              "0"
+                            );
+                            return formatCurrency(paidAmount);
+                          })()}
+                        </p>
+                      </div>
+                      <CheckCircle className="h-8 w-8 text-green-200" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 rounded-xl text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm font-medium">Outstanding</p>
+                        <p className="text-2xl font-bold">
+                          {(() => {
+                            const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                            let calculatedTotal = 0;
+                            
+                            if (items.length > 0) {
+                              items.forEach(item => {
+                                const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                const itemTotal = qty * cost;
+                                const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                calculatedTotal += itemTotal - discount + taxAmount;
+                              });
+                              const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                              const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                              calculatedTotal += freightCost + otherCharges;
+                            } else {
+                              calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                            }
+                            
+                            const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                            const paidAmount = parseFloat(
+                              currentPurchase?.paidAmount?.toString() || 
+                              currentPurchase?.paid_amount?.toString() || 
+                              selectedPurchaseForPayment?.paidAmount?.toString() || 
+                              selectedPurchaseForPayment?.paid_amount?.toString() || 
+                              "0"
+                            );
+                            const outstanding = Math.max(0, calculatedTotal - paidAmount);
+                            return formatCurrency(outstanding);
+                          })()}
+                        </p>
+                      </div>
+                      <AlertCircle className="h-8 w-8 text-orange-200" />
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-xl text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Payment Status</p>
+                        <p className="text-lg font-bold">
+                          {(() => {
+                            const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                            const paymentStatus = currentPurchase?.paymentStatus || selectedPurchaseForPayment?.paymentStatus || 'due';
+                            return paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1);
+                          })()}
+                        </p>
+                      </div>
+                      <CreditCard className="h-8 w-8 text-purple-200" />
+                    </div>
+                    <div className="mt-2">
+                      <div className="bg-white/20 rounded-full h-2">
+                        <div 
+                          className="bg-white rounded-full h-2 transition-all duration-300" 
+                          style={{
+                            width: `${(() => {
+                              const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                              let calculatedTotal = 0;
+                              
+                              if (items.length > 0) {
+                                items.forEach(item => {
+                                  const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                  const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                  const itemTotal = qty * cost;
+                                  const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                  const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                  const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                  calculatedTotal += itemTotal - discount + taxAmount;
+                                });
+                                const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                                const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                                calculatedTotal += freightCost + otherCharges;
+                              } else {
+                                calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                              }
+                              
+                              const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                              const paidAmount = parseFloat(
+                                currentPurchase?.paidAmount?.toString() || 
+                                currentPurchase?.paid_amount?.toString() || 
+                                selectedPurchaseForPayment?.paidAmount?.toString() || 
+                                selectedPurchaseForPayment?.paid_amount?.toString() || 
+                                "0"
+                              );
+                              return calculatedTotal > 0 ? Math.min(100, (paidAmount / calculatedTotal) * 100) : 0;
+                            })()}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Purchase Order Details */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
@@ -3284,6 +3442,114 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       <option value="neft">NEFT</option>
                       <option value="rtgs">RTGS</option>
                     </select>
+                  </div>
+
+                  {/* Quick Payment Options */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Quick Payment Options
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                        onClick={() => {
+                          const items = selectedPurchaseForPayment?.purchaseItems || selectedPurchaseForPayment?.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            const freightCost = parseFloat(selectedPurchaseForPayment?.freightCost?.toString() || selectedPurchaseForPayment?.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchaseForPayment?.otherCharges?.toString() || selectedPurchaseForPayment?.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                          } else {
+                            calculatedTotal = parseFloat(selectedPurchaseForPayment?.total?.toString() || "0");
+                          }
+                          
+                          const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                          const paidAmount = parseFloat(
+                            currentPurchase?.paidAmount?.toString() || 
+                            currentPurchase?.paid_amount?.toString() || 
+                            selectedPurchaseForPayment?.paidAmount?.toString() || 
+                            selectedPurchaseForPayment?.paid_amount?.toString() || 
+                            "0"
+                          );
+                          const outstanding = Math.max(0, calculatedTotal - paidAmount);
+                          setPaymentAmount(outstanding.toString());
+                        }}
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Full Balance
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300"
+                        onClick={() => {
+                          const items = selectedPurchaseForPayment?.purchaseItems || selectedPurchaseForPayment?.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            const freightCost = parseFloat(selectedPurchaseForPayment?.freightCost?.toString() || selectedPurchaseForPayment?.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchaseForPayment?.otherCharges?.toString() || selectedPurchaseForPayment?.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                          } else {
+                            calculatedTotal = parseFloat(selectedPurchaseForPayment?.total?.toString() || "0");
+                          }
+                          
+                          const currentPurchase = purchases.find(p => p.id === selectedPurchaseForPayment?.id);
+                          const paidAmount = parseFloat(
+                            currentPurchase?.paidAmount?.toString() || 
+                            currentPurchase?.paid_amount?.toString() || 
+                            selectedPurchaseForPayment?.paidAmount?.toString() || 
+                            selectedPurchaseForPayment?.paid_amount?.toString() || 
+                            "0"
+                          );
+                          const outstanding = Math.max(0, calculatedTotal - paidAmount);
+                          const halfAmount = outstanding / 2;
+                          setPaymentAmount(halfAmount.toString());
+                        }}
+                      >
+                        <ArrowDownRight className="h-4 w-4 mr-2" />
+                        Half Amount
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                        onClick={() => {
+                          setPaymentAmount("0");
+                          setPaymentNotes("");
+                        }}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Clear
+                      </Button>
+                    </div>
                   </div>
 
                   <div>
