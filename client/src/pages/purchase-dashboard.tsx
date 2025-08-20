@@ -386,8 +386,13 @@ export default function PurchaseDashboard() {
     onSuccess: async (data, variables) => {
       console.log('✅ Payment mutation successful:', data);
 
-      // Invalidate and refetch purchase data immediately
+      // Comprehensive cache invalidation for immediate UI updates
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      await queryClient.invalidateQueries({ queryKey: ["purchases"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/suppliers/order-summary"] });
+      
+      // Force immediate refetch to ensure fresh data
+      await queryClient.refetchQueries({ queryKey: ["/api/purchases"], type: 'all' });
 
       // Calculate payment details for display
       const orderTotal = selectedPurchaseForPayment ? 

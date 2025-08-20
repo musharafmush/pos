@@ -5367,7 +5367,8 @@ export default function PurchaseEntryProfessional() {
                             totalPaidAmount: totalPaidAmount, // Total amount paid after this payment
                             paymentMethod: paymentData.paymentMethod,
                             paymentStatus: totalPaidAmount >= summary.grandTotal ? 'paid' : 'partial',
-                            paymentDate: paymentData.paymentDate
+                            paymentDate: paymentData.paymentDate,
+                            notes: paymentData.paymentNotes || `Payment of ${formatCurrency(paymentData.paymentAmount)} via ${paymentData.paymentMethod}`
                           };
 
                           console.log('💰 Payment data being sent:', {
@@ -5398,13 +5399,21 @@ export default function PurchaseEntryProfessional() {
                           const result = await response.json();
                           console.log('💰 Payment recorded via API:', result);
                           
-                          // Invalidate the purchases query to refresh data with force refresh
+                          // Comprehensive cache invalidation and data refresh
                           console.log('🔄 Invalidating queries for purchase ID:', editId);
-                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases', editId], exact: false });
-                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases'], exact: false });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
+                          await queryClient.invalidateQueries({ queryKey: ['purchases'] });
+                          await queryClient.invalidateQueries({ queryKey: ['/api/suppliers/order-summary'] });
                           
-                          // Force refetch of all purchase-related queries
-                          await queryClient.refetchQueries({ queryKey: ['/api/purchases'], type: 'active' });
+                          // Force refetch of all purchase-related queries with fresh data
+                          await queryClient.refetchQueries({ queryKey: ['/api/purchases'], type: 'all' });
+                          
+                          // Wait a moment to ensure backend data is updated
+                          setTimeout(async () => {
+                            await queryClient.refetchQueries({ queryKey: ['/api/purchases'], type: 'all' });
+                            console.log('✅ Secondary data refresh complete');
+                          }, 500);
+                          
                           console.log('✅ Query invalidation and refetch complete');
                         } else {
                           // If new purchase, store payment data in form for saving later
