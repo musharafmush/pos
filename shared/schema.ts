@@ -507,14 +507,6 @@ export const wasteRecords = pgTable('waste_records', {
 // Type definitions for BOM
 export type BillOfMaterial = typeof billOfMaterials.$inferSelect;
 export type BillOfMaterialInsert = typeof billOfMaterials.$inferInsert;
-export type BomItem = typeof bomItems.$inferSelect;
-export type BomItemInsert = typeof bomItems.$inferInsert;
-export type ProductionOrder = typeof productionOrders.$inferSelect;
-export type ProductionOrderInsert = typeof productionOrders.$inferInsert;
-export type ProductionOrderItem = typeof productionOrderItems.$inferSelect;
-export type ProductionOrderItemInsert = typeof productionOrderItems.$inferInsert;
-export type WasteRecord = typeof wasteRecords.$inferSelect;
-export type WasteRecordInsert = typeof wasteRecords.$inferInsert;
 
 // Define relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -845,7 +837,6 @@ export const bomItemInsertSchema = createInsertSchema(bomItems, {
 });
 export type BomItemInsert = z.infer<typeof bomItemInsertSchema>;
 export const bomItemSelectSchema = createSelectSchema(bomItems);
-export type BomItem = z.infer<typeof bomItemSelectSchema>;
 
 export const productionOrderInsertSchema = createInsertSchema(productionOrders, {
   orderNumber: (schema) => schema.min(3, "Order number must be at least 3 characters"),
@@ -862,7 +853,6 @@ export const productionOrderInsertSchema = createInsertSchema(productionOrders, 
 });
 export type ProductionOrderInsert = z.infer<typeof productionOrderInsertSchema>;
 export const productionOrderSelectSchema = createSelectSchema(productionOrders);
-export type ProductionOrder = z.infer<typeof productionOrderSelectSchema>;
 
 export const productionOrderItemInsertSchema = createInsertSchema(productionOrderItems, {
   plannedQuantity: (schema) => z.union([z.string(), z.number()]).transform(val => val.toString()).refine(val => parseFloat(val) > 0, "Planned quantity must be greater than 0"),
@@ -875,7 +865,6 @@ export const productionOrderItemInsertSchema = createInsertSchema(productionOrde
 });
 export type ProductionOrderItemInsert = z.infer<typeof productionOrderItemInsertSchema>;
 export const productionOrderItemSelectSchema = createSelectSchema(productionOrderItems);
-export type ProductionOrderItem = z.infer<typeof productionOrderItemSelectSchema>;
 
 export const wasteRecordInsertSchema = createInsertSchema(wasteRecords, {
   wasteType: (schema) => schema.min(3, "Waste type must be at least 3 characters"),
@@ -888,7 +877,6 @@ export const wasteRecordInsertSchema = createInsertSchema(wasteRecords, {
 });
 export type WasteRecordInsert = z.infer<typeof wasteRecordInsertSchema>;
 export const wasteRecordSelectSchema = createSelectSchema(wasteRecords);
-export type WasteRecord = z.infer<typeof wasteRecordSelectSchema>;
 
 // Returns table
 export const returns = pgTable('returns', {

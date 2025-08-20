@@ -22,6 +22,7 @@ import Units from "@/pages/units";
 import Inventory from "@/pages/inventory";
 import Purchases from "@/pages/purchases";
 import PurchaseDashboard from "@/pages/purchase-dashboard";
+import PurchaseDashboardEnhanced from "@/pages/purchase-dashboard-enhanced";
 import PurchaseEntry from "@/pages/purchase-entry";
 import PurchaseEntryProfessional from "@/pages/purchase-entry-professional";
 import Reports from "./pages/reports";
@@ -109,6 +110,7 @@ function Router() {
       <ProtectedRoute path="/weight-based-items" component={WeightBasedItems} />
       <ProtectedRoute path="/purchases" component={Purchases} />
       <ProtectedRoute path="/purchase-dashboard" component={PurchaseDashboard} />
+      <ProtectedRoute path="/purchase-dashboard-enhanced" component={PurchaseDashboardEnhanced} />
       <ProtectedRoute path="/purchase-entry" component={PurchaseEntry} />
       <ProtectedRoute path="/purchase-entry-professional" component={PurchaseEntryProfessional} />
       <ProtectedRoute path="/reports" component={Reports} />
