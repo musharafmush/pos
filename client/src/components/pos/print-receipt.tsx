@@ -401,20 +401,33 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         text-align: center !important;
         font-size: ${paperWidth === 'thermal58' ? '18px' : paperWidth === 'thermal77' ? '20px' : '22px'} !important;
         letter-spacing: 1px !important;
-        margin-bottom: 2mm !important;
+        margin: 0 auto 2mm auto !important;
         line-height: 1.2 !important;
         width: 100% !important;
         display: block !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
         padding: 0 !important;
         border: 0 !important;
         outline: 0 !important;
         box-sizing: border-box !important;
-        transform: translateX(0) !important;
+        /* Enhanced centering for thermal printers */
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-align: center !important;
+        align-self: center !important;
+        justify-self: center !important;
         position: relative !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+      }
+      
+      /* Additional centering support for print media */
+      @media print {
+        .business-name-header {
+          text-align: center !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          width: 100% !important;
+          display: block !important;
+          position: static !important;
+        }
       }
 
       .thermal-line {
