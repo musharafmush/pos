@@ -8009,6 +8009,59 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Payment Records Management
+  app.get('/api/payment-records', async (req, res) => {
+    try {
+      console.log('📊 Fetching payment records...');
+      
+      // Query payment records from purchase payments - since we track payments within purchases
+      const paymentRecords = db.select({
+        id: purchases.id,
+        purchaseId: purchases.id,
+        amount: purchases.paidAmount,
+        method: purchases.paymentMethod,
+        date: purchases.paymentDate,
+        notes: purchases.notes,
+        createdAt: purchases.createdAt,
+        orderNumber: purchases.orderNumber,
+        supplierName: suppliers.name,
+      }).from(purchases)
+        .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+        .where(sql`${purchases.paidAmount} > 0`)
+        .orderBy(desc(purchases.paymentDate))
+        .limit(100);
+
+      const records = await paymentRecords;
+      
+      // Format the records for the frontend
+      const formattedRecords = records.map(record => ({
+        id: record.id,
+        purchaseId: record.purchaseId,
+        amount: parseFloat(record.amount?.toString() || '0'),
+        method: record.method || 'Cash',
+        date: record.date || record.createdAt,
+        notes: record.notes,
+        createdAt: record.createdAt,
+        purchase: {
+          id: record.purchaseId,
+          orderNumber: record.orderNumber,
+          supplier: {
+            name: record.supplierName
+          }
+        }
+      }));
+
+      console.log('✅ Payment records fetched:', formattedRecords.length);
+      res.json(formattedRecords);
+    } catch (error) {
+      console.error('❌ Error fetching payment records:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch payment records',
+        message: error.message 
+      });
+    }
+  });
+
   // Customer Loyalty API
   app.get('/api/loyalty/customer/:customerId', async (req, res) => {
     try {
