@@ -305,6 +305,15 @@ interface Product {
 export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Payment Data State
+  const [paymentData, setPaymentData] = useState({
+    paymentAmount: 0,
+    paymentMethod: "Cash",
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentReference: "",
+    paymentNotes: "",
+  });
   const [activeTab, setActiveTab] = useState("details");
 
   // Professional Record Payment Mutation for Bill Payment Management
@@ -396,13 +405,6 @@ export default function PurchaseEntryProfessional() {
 
   // Payment Management functionality  
   const [showPaymentManagementMenu, setShowPaymentManagementMenu] = useState(false);
-  const [paymentData, setPaymentData] = useState({
-    paymentAmount: 0,
-    paymentMethod: "Cash",
-    paymentDate: new Date().toISOString().split('T')[0],
-    paymentReference: "",
-    paymentNotes: "",
-  });
 
 
 
@@ -4395,7 +4397,7 @@ export default function PurchaseEntryProfessional() {
 
                       try {
                         // Record payment using the existing mutation
-                        await recordPaymentMutation.mutateAsync({
+                        await recordPayment.mutateAsync({
                           purchaseId: purchaseId,
                           amount: paymentData.paymentAmount,
                           method: paymentData.paymentMethod,
@@ -4417,10 +4419,10 @@ export default function PurchaseEntryProfessional() {
                         console.error('Error recording payment:', error);
                       }
                     }}
-                    disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || recordPaymentMutation.isPending}
+                    disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || recordPayment.isPending}
                     className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold px-6 py-2"
                   >
-                    {recordPaymentMutation.isPending ? (
+                    {recordPayment.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Recording...
