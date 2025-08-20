@@ -404,6 +404,16 @@ export default function PurchaseEntryProfessional() {
     paymentNotes: "",
   });
 
+  // Record Payment Dialog State
+  const [showRecordPaymentDialog, setShowRecordPaymentDialog] = useState(false);
+  const [paymentFormData, setPaymentFormData] = useState({
+    amount: 0,
+    method: "Cash",
+    date: new Date().toISOString().split('T')[0],
+    reference: "",
+    notes: ""
+  });
+
   // Modal state for Add Item
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
@@ -2273,11 +2283,11 @@ export default function PurchaseEntryProfessional() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowPaymentManagementMenu(true)}
+              onClick={() => setShowRecordPaymentDialog(true)}
               className="text-green-600 hover:text-green-700 hover:bg-green-50"
             >
               <CreditCard className="mr-2 h-4 w-4" />
-              Payment Menu
+              Record Payment
             </Button>
             <Button 
               variant="outline" 
@@ -4082,11 +4092,8 @@ export default function PurchaseEntryProfessional() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    toast({
-                      title: "Payment Feature Disabled",
-                      description: "The payment dialog was removed. Please use the Payment Management menu instead.",
-                      variant: "destructive"
-                    });
+                    setShowPaymentManagementMenu(false);
+                    setShowRecordPaymentDialog(true);
                   }}
                   className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-50"
                 >
@@ -4097,16 +4104,12 @@ export default function PurchaseEntryProfessional() {
                   variant="outline"
                   onClick={() => {
                     const outstandingAmount = summary.grandTotal - Number(existingPurchase?.paid_amount || 0);
-                    setPaymentData({
-                      ...paymentData,
-                      paymentAmount: outstandingAmount
-                    });
-                    toast({
-                      title: "Payment Feature Disabled",
-                      description: "The payment dialog was removed. Please use individual payment actions instead.",
-                      variant: "destructive"
+                    setPaymentFormData({
+                      ...paymentFormData,
+                      amount: outstandingAmount
                     });
                     setShowPaymentManagementMenu(false);
+                    setShowRecordPaymentDialog(true);
                   }}
                   className="w-full justify-start text-green-700 border-green-300 hover:bg-green-50"
                   disabled={Number(existingPurchase?.paid_amount || 0) >= summary.grandTotal}
@@ -4118,16 +4121,12 @@ export default function PurchaseEntryProfessional() {
                   variant="outline"
                   onClick={() => {
                     const partialAmount = Math.round((summary.grandTotal - Number(existingPurchase?.paid_amount || 0)) / 2);
-                    setPaymentData({
-                      ...paymentData,
-                      paymentAmount: partialAmount
-                    });
-                    toast({
-                      title: "Payment Feature Disabled",
-                      description: "The payment dialog was removed. Please use alternative payment methods instead.",
-                      variant: "destructive"
+                    setPaymentFormData({
+                      ...paymentFormData,
+                      amount: partialAmount
                     });
                     setShowPaymentManagementMenu(false);
+                    setShowRecordPaymentDialog(true);
                   }}
                   className="w-full justify-start text-purple-700 border-purple-300 hover:bg-purple-50"
                   disabled={Number(existingPurchase?.paid_amount || 0) >= summary.grandTotal}
@@ -4251,12 +4250,8 @@ export default function PurchaseEntryProfessional() {
             </Button>
             <Button
               onClick={() => {
-                toast({
-                  title: "Payment Feature Disabled",
-                  description: "The payment dialog was removed. The Payment Management menu provides status overview only.",
-                  variant: "destructive"
-                });
                 setShowPaymentManagementMenu(false);
+                setShowRecordPaymentDialog(true);
               }}
               className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
             >
@@ -4557,9 +4552,268 @@ export default function PurchaseEntryProfessional() {
           </DialogContent>
         </Dialog>
 
+        {/* Record Payment Dialog */}
+        <Dialog open={showRecordPaymentDialog} onOpenChange={setShowRecordPaymentDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-green-600" />
+                Record Payment
+              </DialogTitle>
+              <DialogDescription>
+                Record a payment for this purchase order
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
+                <div>
+                  <span className="text-gray-600">Order Total:</span>
+                  <span className="ml-2 font-bold">{formatCurrency(summary.grandTotal)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Already Paid:</span>
+                  <span className="ml-2 font-bold text-green-600">
+                    {formatCurrency(Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0))}
+                  </span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-600">Outstanding:</span>
+                  <span className="ml-2 font-bold text-orange-600">
+                    {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0)))}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-amount" className="text-sm font-medium">Payment Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                  <Input
+                    id="payment-amount"
+                    type="number"
+                    min="0"
+                    max={Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0))}
+                    step="0.01"
+                    value={paymentFormData.amount || ''}
+                    onChange={(e) => setPaymentFormData({
+                      ...paymentFormData,
+                      amount: parseFloat(e.target.value) || 0
+                    })}
+                    placeholder="0.00"
+                    className="pl-8"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentFormData({
+                      ...paymentFormData,
+                      amount: Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0))
+                    })}
+                    className="text-xs"
+                  >
+                    Full Balance
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentFormData({
+                      ...paymentFormData,
+                      amount: Math.round((Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0))) / 2)
+                    })}
+                    className="text-xs"
+                  >
+                    50%
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-method" className="text-sm font-medium">Payment Method</label>
+                <select
+                  id="payment-method"
+                  value={paymentFormData.method}
+                  onChange={(e) => setPaymentFormData({
+                    ...paymentFormData,
+                    method: e.target.value
+                  })}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Debit Card">Debit Card</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-date" className="text-sm font-medium">Payment Date</label>
+                <Input
+                  id="payment-date"
+                  type="date"
+                  value={paymentFormData.date}
+                  onChange={(e) => setPaymentFormData({
+                    ...paymentFormData,
+                    date: e.target.value
+                  })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-reference" className="text-sm font-medium">Reference Number (Optional)</label>
+                <Input
+                  id="payment-reference"
+                  value={paymentFormData.reference}
+                  onChange={(e) => setPaymentFormData({
+                    ...paymentFormData,
+                    reference: e.target.value
+                  })}
+                  placeholder="Transaction ID, Check number, etc."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="payment-notes" className="text-sm font-medium">Notes (Optional)</label>
+                <textarea
+                  id="payment-notes"
+                  value={paymentFormData.notes}
+                  onChange={(e) => setPaymentFormData({
+                    ...paymentFormData,
+                    notes: e.target.value
+                  })}
+                  placeholder="Additional payment notes..."
+                  className="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRecordPaymentDialog(false);
+                  setPaymentFormData({
+                    amount: 0,
+                    method: "Cash",
+                    date: new Date().toISOString().split('T')[0],
+                    reference: "",
+                    notes: ""
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    if (!paymentFormData.amount || paymentFormData.amount <= 0) {
+                      toast({
+                        variant: "destructive",
+                        title: "Invalid Amount",
+                        description: "Please enter a valid payment amount.",
+                      });
+                      return;
+                    }
+
+                    const purchaseId = isEditMode ? editId : null;
+                    if (!purchaseId) {
+                      toast({
+                        variant: "destructive",
+                        title: "No Purchase Order",
+                        description: "Please save the purchase order first before recording payments.",
+                      });
+                      return;
+                    }
+
+                    const outstandingAmount = Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0));
+                    if (paymentFormData.amount > outstandingAmount) {
+                      toast({
+                        variant: "destructive",
+                        title: "Amount Exceeds Balance",
+                        description: `Payment amount cannot exceed outstanding balance of ${formatCurrency(outstandingAmount)}.`,
+                      });
+                      return;
+                    }
+
+                    // Record payment via API
+                    const response = await fetch('/api/record-payment', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        purchaseId: purchaseId,
+                        amount: paymentFormData.amount,
+                        paymentMethod: paymentFormData.method,
+                        paymentDate: paymentFormData.date,
+                        paymentReference: paymentFormData.reference,
+                        paymentNotes: paymentFormData.notes,
+                      }),
+                    });
+
+                    if (!response.ok) {
+                      const errorText = await response.text();
+                      throw new Error(`Failed to record payment: ${response.status} ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Payment recorded successfully:', result);
+                    
+                    // Update local data and invalidate queries
+                    await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
+                    await queryClient.invalidateQueries({ queryKey: ['purchases'] });
+                    
+                    // Calculate new payment status
+                    const currentPaid = Number(existingPurchase?.paid_amount || form.getValues("paid_amount") || 0);
+                    const newTotalPaid = currentPaid + paymentFormData.amount;
+                    const newRemainingBalance = summary.grandTotal - newTotalPaid;
+                    const isFullyPaid = newRemainingBalance <= 0;
+
+                    toast({
+                      title: "Payment Recorded Successfully",
+                      description: `Payment of ${formatCurrency(paymentFormData.amount)} recorded via ${paymentFormData.method}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(newRemainingBalance)}.`}`,
+                      duration: 5000,
+                    });
+
+                    // Close dialog and reset form
+                    setShowRecordPaymentDialog(false);
+                    setPaymentFormData({
+                      amount: 0,
+                      method: "Cash",
+                      date: new Date().toISOString().split('T')[0],
+                      reference: "",
+                      notes: ""
+                    });
+
+                    // Refresh the page data
+                    window.location.reload();
+
+                  } catch (error) {
+                    console.error('Error recording payment:', error);
+                    toast({
+                      variant: "destructive",
+                      title: "Payment Recording Failed",
+                      description: "Failed to record payment. Please try again.",
+                    });
+                  }
+                }}
+                disabled={!paymentFormData.amount || paymentFormData.amount <= 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Record Payment
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </DashboardLayout>
   );
 };
-
-
