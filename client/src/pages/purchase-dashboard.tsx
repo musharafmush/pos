@@ -186,6 +186,7 @@ export default function PurchaseDashboard() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedPurchaseForStatus, setSelectedPurchaseForStatus] = useState<Purchase | null>(null);
   const [newStatus, setNewStatus] = useState("");
@@ -450,6 +451,73 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       toast({
         title: "Payment Failed",
         description: userMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Professional Record Payment Mutation for Bill Payment Management
+  const recordPayment = useMutation({
+    mutationFn: async (data: { purchaseId: number; amount: number; method: string; date: string }) => {
+      console.log('💰 Recording payment via professional interface:', data);
+      
+      // Use the existing payment endpoint that works with updatePaymentStatus
+      const paymentData = {
+        paymentAmount: data.amount,
+        paymentMethod: data.method,
+        paymentDate: data.date,
+        paymentType: 'payment'
+      };
+      
+      const response = await fetch(`/api/purchases/${data.purchaseId}/payment`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to record payment');
+      }
+      
+      return response.json();
+    },
+    onSuccess: async (data, variables) => {
+      console.log('✅ Professional payment recorded successfully:', data);
+      
+      // Comprehensive cache invalidation for dynamic updates
+      await queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
+      await queryClient.invalidateQueries({ queryKey: ["api/suppliers/order-summary"] });
+      
+      // Force immediate refetch for real-time UI updates
+      await refetch();
+      
+      // Update the current selected purchase with fresh data
+      if (selectedPurchaseForPayment) {
+        const freshPurchases = queryClient.getQueryData(["/api/purchases"]) as any[];
+        const updatedPurchase = freshPurchases?.find(p => p.id === selectedPurchaseForPayment.id);
+        if (updatedPurchase) {
+          setSelectedPurchaseForPayment(updatedPurchase);
+        }
+      }
+      
+      toast({
+        title: "Payment Recorded Successfully",
+        description: `Payment of ${formatCurrency(variables.amount)} has been recorded and synchronized across all interfaces.`,
+        variant: "default",
+      });
+      
+      // Keep dialog open for additional payments but clear form
+      setPaymentAmount("");
+      setPaymentMethod("cash");
+      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+    },
+    onError: (error) => {
+      console.error('❌ Professional payment recording failed:', error);
+      toast({
+        title: "Payment Failed",
+        description: "Failed to record payment. Please try again.",
         variant: "destructive",
       });
     },
@@ -3434,9 +3502,18 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 Cancel
               </Button>
               <Button 
-                onClick={confirmPayment}
+                onClick={() => {
+                  if (selectedPurchaseForPayment && paymentAmount && paymentMethod) {
+                    recordPayment.mutate({
+                      purchaseId: selectedPurchaseForPayment.id,
+                      amount: parseFloat(paymentAmount),
+                      method: paymentMethod,
+                      date: paymentDate
+                    });
+                  }
+                }}
                 disabled={
-                  updatePaymentStatus.isPending || 
+                  recordPayment.isPending || 
                   !paymentAmount || 
                   parseFloat(paymentAmount || "0") <= 0 ||
                   !paymentMethod ||
@@ -3444,7 +3521,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 }
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
               >
-                {updatePaymentStatus.isPending ? (
+                {recordPayment.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Recording Payment...
