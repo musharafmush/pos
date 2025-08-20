@@ -3908,7 +3908,7 @@ export default function PurchaseEntryProfessional() {
           <div className="mt-6 bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-green-600" />
-              Payment Status Management
+              Payment Records & Management
             </h3>
             
             {/* Current Payment Status Overview */}
@@ -3925,7 +3925,10 @@ export default function PurchaseEntryProfessional() {
                   {formatCurrency(Number(existingPurchase.paid_amount || 0))}
                 </div>
                 <div className="text-xs text-green-500">
-                  via {existingPurchase.payment_method || 'Various Methods'}
+                  {existingPurchase.payment_date ? 
+                    `Paid on ${new Date(existingPurchase.payment_date).toLocaleDateString()}` : 
+                    (existingPurchase.payment_method || 'No payments yet')
+                  }
                 </div>
               </div>
               
@@ -3935,6 +3938,102 @@ export default function PurchaseEntryProfessional() {
                   {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))}
                 </div>
                 <div className="text-xs text-orange-500">Balance Due</div>
+              </div>
+            </div>
+
+            {/* Payment Details Record */}
+            <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+              <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-600" />
+                Payment Record Details
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Payment Information */}
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Payment Status:</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const currentPaidAmount = Number(existingPurchase.paid_amount || 0);
+                        if (currentPaidAmount >= summary.grandTotal) {
+                          return <Badge className="bg-green-100 text-green-800 border-green-200">Fully Paid</Badge>;
+                        } else if (currentPaidAmount > 0) {
+                          return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Partially Paid</Badge>;
+                        } else {
+                          return <Badge className="bg-red-100 text-red-800 border-red-200">Payment Due</Badge>;
+                        }
+                      })()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Payment Method:</span>
+                    <span className="font-semibold text-gray-800">
+                      {existingPurchase.payment_method || 'Not specified'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Payment Date:</span>
+                    <span className="font-semibold text-gray-800">
+                      {existingPurchase.payment_date ? 
+                        new Date(existingPurchase.payment_date).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'short', 
+                          day: 'numeric'
+                        }) : 
+                        'Not recorded'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600 font-medium">Payment Type:</span>
+                    <span className="font-semibold text-gray-800">
+                      {existingPurchase.payment_type || 'Standard Payment'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Financial Breakdown */}
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Order Value:</span>
+                    <span className="font-bold text-blue-600">{formatCurrency(summary.grandTotal)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Paid Amount:</span>
+                    <span className="font-bold text-green-600">
+                      {formatCurrency(Number(existingPurchase.paid_amount || 0))}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Remaining Balance:</span>
+                    <span className="font-bold text-orange-600">
+                      {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between py-2">
+                    <span className="text-gray-600 font-medium">Payment Progress:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(100, (Number(existingPurchase.paid_amount || 0) / summary.grandTotal) * 100)}%`
+                          }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">
+                        {Math.round((Number(existingPurchase.paid_amount || 0) / summary.grandTotal) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
