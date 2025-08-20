@@ -3081,7 +3081,30 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                       <div>
                         <p className="text-blue-100 text-sm font-medium">Total Amount</p>
                         <p className="text-2xl font-bold">
-                          {formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0") * 1.56)}
+                          {(() => {
+                            const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                            let calculatedTotal = 0;
+                            
+                            if (items.length > 0) {
+                              items.forEach(item => {
+                                const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                const itemTotal = qty * cost;
+                                const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                calculatedTotal += itemTotal - discount + taxAmount;
+                              });
+                              
+                              const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                              const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                              calculatedTotal += freightCost + otherCharges;
+                              
+                              return formatCurrency(calculatedTotal);
+                            } else {
+                              return formatCurrency(parseFloat(selectedPurchaseForPayment.total?.toString() || "0"));
+                            }
+                          })()}
                         </p>
                       </div>
                       <DollarSign className="h-8 w-8 text-blue-200" />
@@ -3106,9 +3129,29 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                         <p className="text-orange-100 text-sm font-medium">Outstanding</p>
                         <p className="text-2xl font-bold">
                           {(() => {
-                            const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0") * 1.56;
+                            const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                            let calculatedTotal = 0;
+                            
+                            if (items.length > 0) {
+                              items.forEach(item => {
+                                const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                const itemTotal = qty * cost;
+                                const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                calculatedTotal += itemTotal - discount + taxAmount;
+                              });
+                              
+                              const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                              const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                              calculatedTotal += freightCost + otherCharges;
+                            } else {
+                              calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                            }
+                            
                             const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-                            const outstanding = Math.max(0, totalAmount - paidAmount);
+                            const outstanding = Math.max(0, calculatedTotal - paidAmount);
                             return formatCurrency(outstanding);
                           })()}
                         </p>
@@ -3133,9 +3176,29 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                           className="bg-white rounded-full h-2 transition-all duration-300" 
                           style={{
                             width: `${(() => {
-                              const totalAmount = parseFloat(selectedPurchaseForPayment.total?.toString() || "0") * 1.56;
+                              const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                              let calculatedTotal = 0;
+                              
+                              if (items.length > 0) {
+                                items.forEach(item => {
+                                  const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                                  const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                                  const itemTotal = qty * cost;
+                                  const discount = Number(item.discountAmount || item.discount_amount || 0);
+                                  const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                                  const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                                  calculatedTotal += itemTotal - discount + taxAmount;
+                                });
+                                
+                                const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                                const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                                calculatedTotal += freightCost + otherCharges;
+                              } else {
+                                calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                              }
+                              
                               const paidAmount = parseFloat(selectedPurchaseForPayment.paidAmount?.toString() || "0");
-                              return totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0;
+                              return calculatedTotal > 0 ? Math.min(100, (paidAmount / calculatedTotal) * 100) : 0;
                             })()}%`
                           }}
                         />
@@ -3279,15 +3342,18 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Payment Amount</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                      placeholder="Enter payment amount"
-                      className="mt-1"
-                    />
+                    <label className="text-sm font-medium text-gray-700">Payment Amount</label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        placeholder="Enter payment amount"
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
                     {(() => {
                       // Calculate total from purchase items if available
                       const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
@@ -3438,9 +3504,29 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                         size="sm"
                         className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                         onClick={() => {
-                          const totalAmount = parseFloat(selectedPurchaseForPayment?.total?.toString() || "0") * 1.56;
+                          const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            
+                            const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                          } else {
+                            calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                          }
+                          
                           const paidAmount = parseFloat(selectedPurchaseForPayment?.paidAmount?.toString() || "0");
-                          const outstanding = Math.max(0, totalAmount - paidAmount);
+                          const outstanding = Math.max(0, calculatedTotal - paidAmount);
                           setPaymentAmount(outstanding.toString());
                         }}
                       >
@@ -3454,9 +3540,29 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                         size="sm"
                         className="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300"
                         onClick={() => {
-                          const totalAmount = parseFloat(selectedPurchaseForPayment?.total?.toString() || "0") * 1.56;
+                          const items = selectedPurchaseForPayment.purchaseItems || selectedPurchaseForPayment.items || [];
+                          let calculatedTotal = 0;
+                          
+                          if (items.length > 0) {
+                            items.forEach(item => {
+                              const qty = Number(item.receivedQty || item.received_qty || item.quantity || 0);
+                              const cost = Number(item.unitCost || item.unit_cost || item.cost || 0);
+                              const itemTotal = qty * cost;
+                              const discount = Number(item.discountAmount || item.discount_amount || 0);
+                              const taxPercent = Number(item.taxPercentage || item.tax_percentage || 0);
+                              const taxAmount = (itemTotal - discount) * (taxPercent / 100);
+                              calculatedTotal += itemTotal - discount + taxAmount;
+                            });
+                            
+                            const freightCost = parseFloat(selectedPurchaseForPayment.freightCost?.toString() || selectedPurchaseForPayment.freight_cost?.toString() || "0");
+                            const otherCharges = parseFloat(selectedPurchaseForPayment.otherCharges?.toString() || selectedPurchaseForPayment.other_charges?.toString() || "0");
+                            calculatedTotal += freightCost + otherCharges;
+                          } else {
+                            calculatedTotal = parseFloat(selectedPurchaseForPayment.total?.toString() || "0");
+                          }
+                          
                           const paidAmount = parseFloat(selectedPurchaseForPayment?.paidAmount?.toString() || "0");
-                          const outstanding = Math.max(0, totalAmount - paidAmount);
+                          const outstanding = Math.max(0, calculatedTotal - paidAmount);
                           const halfAmount = outstanding / 2;
                           setPaymentAmount(halfAmount.toString());
                         }}
@@ -3502,18 +3608,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 Cancel
               </Button>
               <Button 
-                onClick={() => {
-                  if (selectedPurchaseForPayment && paymentAmount && paymentMethod) {
-                    recordPayment.mutate({
-                      purchaseId: selectedPurchaseForPayment.id,
-                      amount: parseFloat(paymentAmount),
-                      method: paymentMethod,
-                      date: paymentDate
-                    });
-                  }
-                }}
+                onClick={confirmPayment}
                 disabled={
-                  recordPayment.isPending || 
+                  updatePaymentStatus.isPending || 
                   !paymentAmount || 
                   parseFloat(paymentAmount || "0") <= 0 ||
                   !paymentMethod ||
@@ -3521,7 +3618,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 }
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
               >
-                {recordPayment.isPending ? (
+                {updatePaymentStatus.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Recording Payment...
