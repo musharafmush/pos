@@ -396,6 +396,7 @@ export default function PurchaseEntryProfessional() {
 
   // Bill Payment functionality
   const [showBillPayment, setShowBillPayment] = useState(false);
+  const [showPaymentManagementMenu, setShowPaymentManagementMenu] = useState(false);
   const [paymentData, setPaymentData] = useState({
     paymentAmount: 0,
     paymentMethod: "Cash",
@@ -3964,15 +3965,24 @@ export default function PurchaseEntryProfessional() {
               ></div>
             </div>
 
-            {/* Payment Action Buttons */}
+            {/* Payment Status Record Payment Management Menu */}
             <div className="flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setShowPaymentManagementMenu(true)}
+                className="bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 text-purple-700 border-purple-300"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Payment Management
+              </Button>
+              
               <Button
                 variant="outline"
                 onClick={() => setShowBillPayment(true)}
                 className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 border-blue-300"
               >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Add Payment Record
+                <DollarSign className="w-4 h-4 mr-2" />
+                Quick Record Payment
               </Button>
               
               {Number(existingPurchase.paid_amount || 0) < summary.grandTotal && (
@@ -4048,6 +4058,200 @@ export default function PurchaseEntryProfessional() {
           </div>
         )}
       </div>
+
+      {/* Payment Status Record Payment Management Menu Dialog */}
+      <Dialog open={showPaymentManagementMenu} onOpenChange={setShowPaymentManagementMenu}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-800">
+              <CreditCard className="h-5 w-5 text-purple-600" />
+              Payment Status Record Payment Management
+            </DialogTitle>
+            <p className="text-gray-600">Comprehensive payment management system for purchase orders</p>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-6">
+            {/* Quick Payment Actions */}
+            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-blue-800 flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Quick Payment Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowBillPayment(true);
+                    setShowPaymentManagementMenu(false);
+                  }}
+                  className="w-full justify-start text-blue-700 border-blue-300 hover:bg-blue-50"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Record New Payment
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const outstandingAmount = summary.grandTotal - Number(existingPurchase?.paid_amount || 0);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: outstandingAmount
+                    });
+                    setShowBillPayment(true);
+                    setShowPaymentManagementMenu(false);
+                  }}
+                  className="w-full justify-start text-green-700 border-green-300 hover:bg-green-50"
+                  disabled={Number(existingPurchase?.paid_amount || 0) >= summary.grandTotal}
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Pay Full Balance
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const partialAmount = Math.round((summary.grandTotal - Number(existingPurchase?.paid_amount || 0)) / 2);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: partialAmount
+                    });
+                    setShowBillPayment(true);
+                    setShowPaymentManagementMenu(false);
+                  }}
+                  className="w-full justify-start text-purple-700 border-purple-300 hover:bg-purple-50"
+                  disabled={Number(existingPurchase?.paid_amount || 0) >= summary.grandTotal}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Pay 50% Advance
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Payment Status Overview */}
+            <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-green-800 flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Payment Status Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Total Amount:</span>
+                    <span className="font-bold text-gray-800">{formatCurrency(summary.grandTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Paid Amount:</span>
+                    <span className="font-bold text-green-800">
+                      {formatCurrency(Number(existingPurchase?.paid_amount || 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Outstanding:</span>
+                    <span className="font-bold text-orange-800">
+                      {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0)))}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t border-green-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    {(() => {
+                      const currentPaidAmount = Number(existingPurchase?.paid_amount || 0);
+                      if (currentPaidAmount >= summary.grandTotal) {
+                        return (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            Fully Paid
+                          </Badge>
+                        );
+                      } else if (currentPaidAmount > 0) {
+                        return (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            Partially Paid
+                          </Badge>
+                        );
+                      } else {
+                        return (
+                          <Badge className="bg-red-100 text-red-800 border-red-200">
+                            Unpaid
+                          </Badge>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment History & Records */}
+            <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-orange-800 flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Payment Records
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Number(existingPurchase?.paid_amount || 0) > 0 ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
+                      <div className="text-lg font-bold text-orange-800">
+                        {formatCurrency(Number(existingPurchase?.paid_amount || 0))}
+                      </div>
+                      <div className="text-sm text-orange-600">
+                        via {existingPurchase?.payment_method || 'Cash'}
+                      </div>
+                      {existingPurchase?.payment_date && (
+                        <div className="text-xs text-gray-500">
+                          {new Date(existingPurchase.payment_date).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 text-center py-4">
+                    No payment records yet
+                  </div>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-orange-700 hover:bg-orange-50"
+                  onClick={() => {
+                    window.open('/purchase-dashboard', '_blank');
+                  }}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View in Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setShowPaymentManagementMenu(false)}
+            >
+              Close Menu
+            </Button>
+            <Button
+              onClick={() => {
+                setShowBillPayment(true);
+                setShowPaymentManagementMenu(false);
+              }}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+            >
+              <DollarSign className="w-4 h-4 mr-2" />
+              Record Payment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bill Payment Section */}
       <Card className="border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
