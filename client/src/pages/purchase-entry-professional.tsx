@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon, CreditCard, DollarSign } from "lucide-react";
+import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download, FileText, Archive, Search, X, QrCode as QrCodeIcon, CreditCard, DollarSign, Clock } from "lucide-react";
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
@@ -344,7 +344,7 @@ export default function PurchaseEntryProfessional() {
       form.setValue("paid_amount", newTotalPaid);
       form.setValue("payment_status", newTotalPaid >= summary.grandTotal ? 'paid' : 'partial');
       form.setValue("payment_date", variables.date);
-      form.setValue("payment_method", variables.method);
+      form.setValue("paymentMethod", variables.method);
       
       // Comprehensive cache invalidation for real-time updates
       await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
@@ -3880,6 +3880,173 @@ export default function PurchaseEntryProfessional() {
             </div>
           </div>
         </div>
+
+        {/* Enhanced Payment Status Record Management Section */}
+        {isEditMode && existingPurchase && (
+          <div className="mt-6 bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-green-600" />
+              Payment Status Management
+            </h3>
+            
+            {/* Current Payment Status Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <div className="text-sm text-blue-600 font-medium">Total Amount</div>
+                <div className="text-2xl font-bold text-blue-900">{formatCurrency(summary.grandTotal)}</div>
+                <div className="text-xs text-blue-500">Purchase Order Value</div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-green-200">
+                <div className="text-sm text-green-600 font-medium">Amount Paid</div>
+                <div className="text-2xl font-bold text-green-900">
+                  {formatCurrency(Number(existingPurchase.paid_amount || 0))}
+                </div>
+                <div className="text-xs text-green-500">
+                  via {existingPurchase.payment_method || 'Various Methods'}
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <div className="text-sm text-orange-600 font-medium">Outstanding</div>
+                <div className="text-2xl font-bold text-orange-900">
+                  {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase.paid_amount || 0)))}
+                </div>
+                <div className="text-xs text-orange-500">Balance Due</div>
+              </div>
+            </div>
+
+            {/* Payment Status Badge and Progress */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">Current Status:</span>
+                {(() => {
+                  const currentPaidAmount = Number(existingPurchase.paid_amount || 0);
+                  if (currentPaidAmount >= summary.grandTotal) {
+                    return (
+                      <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Fully Paid
+                      </Badge>
+                    );
+                  } else if (currentPaidAmount > 0) {
+                    return (
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                        Partially Paid
+                      </Badge>
+                    );
+                  } else {
+                    return (
+                      <Badge className="bg-red-100 text-red-800 border-red-200 flex items-center gap-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        Unpaid
+                      </Badge>
+                    );
+                  }
+                })()}
+              </div>
+              
+              {existingPurchase.payment_date && (
+                <div className="text-sm text-gray-600">
+                  Last payment: {new Date(existingPurchase.payment_date).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+
+            {/* Payment Progress Bar */}
+            <div className="bg-gray-200 rounded-full h-3 overflow-hidden mb-6">
+              <div 
+                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
+                style={{
+                  width: `${Math.min(100, (Number(existingPurchase.paid_amount || 0) / summary.grandTotal) * 100)}%`
+                }}
+              ></div>
+            </div>
+
+            {/* Payment Action Buttons */}
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setShowBillPayment(true)}
+                className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 border-blue-300"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                Add Payment Record
+              </Button>
+              
+              {Number(existingPurchase.paid_amount || 0) < summary.grandTotal && (
+                <Button
+                  onClick={async () => {
+                    const outstandingAmount = summary.grandTotal - Number(existingPurchase.paid_amount || 0);
+                    setPaymentData({
+                      ...paymentData,
+                      paymentAmount: outstandingAmount
+                    });
+                    setShowBillPayment(true);
+                  }}
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Pay Full Balance
+                </Button>
+              )}
+            </div>
+
+            {/* Professional Payment Record History */}
+            {Number(existingPurchase.paid_amount || 0) > 0 && (
+              <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  Payment Record History
+                </h4>
+                
+                <div className="space-y-3">
+                  {/* Current Payment Record */}
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <div className="font-medium text-green-800">
+                          Payment of {formatCurrency(Number(existingPurchase.paid_amount || 0))}
+                        </div>
+                        <div className="text-sm text-green-600">
+                          via {existingPurchase.payment_method || 'Cash'}
+                          {existingPurchase.payment_date && (
+                            <> • {new Date(existingPurchase.payment_date).toLocaleDateString()}</>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      Recorded
+                    </Badge>
+                  </div>
+
+                  {/* Outstanding Balance */}
+                  {Number(existingPurchase.paid_amount || 0) < summary.grandTotal && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div>
+                          <div className="font-medium text-orange-800">
+                            Outstanding Balance: {formatCurrency(summary.grandTotal - Number(existingPurchase.paid_amount || 0))}
+                          </div>
+                          <div className="text-sm text-orange-600">
+                            Pending payment
+                          </div>
+                        </div>
+                      </div>
+                      <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                        Pending
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bill Payment Section */}
