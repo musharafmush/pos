@@ -2272,20 +2272,7 @@ export default function PurchaseEntryProfessional() {
               <Archive className="mr-2 h-4 w-4" />
               Hold
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                toast({
-                  title: "Record Payment Functionality Disabled",
-                  description: "Please use the Purchase Dashboard to record payments.",
-                });
-              }}
-              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Record Payment
-            </Button>
+
             <Button 
               variant="outline" 
               size="sm"
