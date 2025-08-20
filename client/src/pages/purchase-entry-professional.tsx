@@ -5321,8 +5321,11 @@ export default function PurchaseEntryProfessional() {
                       }
 
                       try {
-                        // First save the purchase order if it's new
-                        if (!isEditMode) {
+                        // Handle purchase creation and payment recording
+                        let purchaseId = isEditMode ? editId : null;
+                        
+                        // If it's a new purchase, save it first to get an ID
+                        if (!isEditMode || !editId) {
                           const purchaseData = form.getValues();
 
                           // Validate required fields for saving
@@ -5350,13 +5353,16 @@ export default function PurchaseEntryProfessional() {
                             return;
                           }
 
-                          // Save the purchase first
-                          await savePurchaseMutation.mutateAsync(purchaseData);
+                          // Save the purchase first to get the ID
+                          console.log('📝 Saving new purchase before recording payment...');
+                          const savedPurchase = await savePurchaseMutation.mutateAsync(purchaseData);
+                          purchaseId = savedPurchase?.id || savedPurchase?.purchaseId;
+                          console.log('✅ New purchase saved with ID:', purchaseId);
                         }
 
-                        if (isEditMode && editId) {
-                          // If editing existing purchase, record payment via API
-                          console.log('💰 Recording payment for existing purchase ID:', editId);
+                        // Now record the payment for the purchase (either existing or newly created)
+                        if (purchaseId) {
+                          console.log('💰 Recording payment for purchase ID:', purchaseId);
                           
                           // Get current payment info from existing purchase
                           const currentPaidAmount = Number(existingPurchase?.paid_amount || 0);
@@ -5375,12 +5381,12 @@ export default function PurchaseEntryProfessional() {
                             ...paymentUpdateData,
                             currentPaidAmount,
                             grandTotal: summary.grandTotal,
-                            purchaseId: editId
+                            purchaseId: purchaseId
                           });
 
-                          console.log('🚀 Making payment API call to:', `/api/purchases/${editId}/payment`);
+                          console.log('🚀 Making payment API call to:', `/api/purchases/${purchaseId}/payment`);
 
-                          const response = await fetch(`/api/purchases/${editId}/payment`, {
+                          const response = await fetch(`/api/purchases/${purchaseId}/payment`, {
                             method: 'PUT',
                             headers: {
                               'Content-Type': 'application/json',
@@ -5400,7 +5406,7 @@ export default function PurchaseEntryProfessional() {
                           console.log('💰 Payment recorded via API:', result);
                           
                           // Comprehensive cache invalidation and data refresh
-                          console.log('🔄 Invalidating queries for purchase ID:', editId);
+                          console.log('🔄 Invalidating queries for purchase ID:', purchaseId);
                           await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
                           await queryClient.invalidateQueries({ queryKey: ['purchases'] });
                           await queryClient.invalidateQueries({ queryKey: ['/api/suppliers/order-summary'] });
@@ -5433,8 +5439,9 @@ export default function PurchaseEntryProfessional() {
                         const isFullyPaid = remainingBalance <= 0;
 
                         toast({
-                          title: "Payment Recorded Successfully",
-                          description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid!' : `Remaining balance: ${formatCurrency(remainingBalance)}`}`,
+                          title: "Payment Recorded Successfully ✅",
+                          description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded via ${paymentData.paymentMethod}. ${isFullyPaid ? 'Order fully paid! Dashboard updated.' : `Remaining balance: ${formatCurrency(remainingBalance)}. Dashboard synchronized.`}`,
+                          duration: 5000,
                         });
 
                         // Close the payment dialog
