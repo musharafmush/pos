@@ -4272,7 +4272,13 @@ export default function PurchaseEntryProfessional() {
                   />
                 </div>
                 <div className="text-xs text-gray-500">
-                  Outstanding: {formatCurrency(summary.grandTotal)}
+                  Outstanding: {(() => {
+                    const currentPaidAmount = isEditMode && existingPurchase ? 
+                      Number(existingPurchase.paid_amount || 0) : 
+                      Number(form.getValues("paid_amount") || 0);
+                    const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
+                    return formatCurrency(outstandingAmount);
+                  })()}
                 </div>
               </div>
 
@@ -4394,7 +4400,7 @@ export default function PurchaseEntryProfessional() {
               </div>
             )}
 
-            {/* Real-time Payment Validation */}
+            {/* Enhanced Real-time Payment Validation with Dashboard Sync Info */}
             {paymentData.paymentAmount > 0 && (
               <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-2 text-sm">
@@ -4407,20 +4413,55 @@ export default function PurchaseEntryProfessional() {
                     <span className="font-bold text-blue-900">{formatCurrency(paymentData.paymentAmount)}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-blue-700">Current Paid Amount:</span>
+                    <span className="font-bold text-gray-900">
+                      {(() => {
+                        const currentPaidAmount = isEditMode && existingPurchase ? 
+                          Number(existingPurchase.paid_amount || 0) : 
+                          Number(form.getValues("paid_amount") || 0);
+                        return formatCurrency(currentPaidAmount);
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-blue-700">New Balance After Payment:</span>
                     <span className="font-bold text-green-900">
-                      {formatCurrency(Math.max(0, summary.grandTotal - paymentData.paymentAmount))}
+                      {(() => {
+                        const currentPaidAmount = isEditMode && existingPurchase ? 
+                          Number(existingPurchase.paid_amount || 0) : 
+                          Number(form.getValues("paid_amount") || 0);
+                        const remainingBalance = Math.max(0, summary.grandTotal - currentPaidAmount - paymentData.paymentAmount);
+                        return formatCurrency(remainingBalance);
+                      })()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700">Payment Status Will Be:</span>
                     <Badge className={`text-xs ${
-                      paymentData.paymentAmount >= summary.grandTotal 
-                        ? 'bg-green-100 text-green-800 border-green-200' 
-                        : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                      (() => {
+                        const currentPaidAmount = isEditMode && existingPurchase ? 
+                          Number(existingPurchase.paid_amount || 0) : 
+                          Number(form.getValues("paid_amount") || 0);
+                        const totalAfterPayment = currentPaidAmount + paymentData.paymentAmount;
+                        return totalAfterPayment >= summary.grandTotal 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                      })()
                     }`}>
-                      {paymentData.paymentAmount >= summary.grandTotal ? 'Fully Paid' : 'Partially Paid'}
+                      {(() => {
+                        const currentPaidAmount = isEditMode && existingPurchase ? 
+                          Number(existingPurchase.paid_amount || 0) : 
+                          Number(form.getValues("paid_amount") || 0);
+                        const totalAfterPayment = currentPaidAmount + paymentData.paymentAmount;
+                        return totalAfterPayment >= summary.grandTotal ? 'Fully Paid' : 'Partially Paid';
+                      })()}
                     </Badge>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-blue-200">
+                    <div className="text-xs text-blue-600 flex items-center gap-1">
+                      <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                      This payment will sync to Purchase Dashboard automatically
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4457,6 +4498,16 @@ export default function PurchaseEntryProfessional() {
                     const currentPaidAmount = Number(existingPurchase?.paid_amount || 0);
                     const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
                     
+                    console.log('💰 Payment Recording - Bill Payment Management:', {
+                      purchaseId: editId,
+                      paymentAmount: paymentData.paymentAmount,
+                      currentPaidAmount,
+                      outstandingAmount,
+                      grandTotal: summary.grandTotal,
+                      paymentMethod: paymentData.paymentMethod,
+                      paymentDate: paymentData.paymentDate
+                    });
+                    
                     if (paymentData.paymentAmount > outstandingAmount) {
                       toast({
                         variant: "destructive",
@@ -4467,11 +4518,17 @@ export default function PurchaseEntryProfessional() {
                     }
                     
                     try {
+                      console.log('🚀 Recording payment via professional interface mutation...');
                       await recordPayment.mutateAsync({
                         purchaseId: Number(editId),
                         amount: paymentData.paymentAmount,
                         method: paymentData.paymentMethod,
                         date: paymentData.paymentDate
+                      });
+                      
+                      toast({
+                        title: "Payment Recorded Successfully! 💰",
+                        description: `Payment of ${formatCurrency(paymentData.paymentAmount)} recorded and will appear in Purchase Dashboard`,
                       });
                       
                       // Reset payment form after successful recording
@@ -4483,9 +4540,15 @@ export default function PurchaseEntryProfessional() {
                         paymentNotes: "",
                       });
                       
+                      console.log('✅ Payment recorded and data synced to Purchase Dashboard');
                       return;
                     } catch (error) {
                       console.error('💥 Payment recording via mutation failed:', error);
+                      toast({
+                        variant: "destructive",
+                        title: "Payment Recording Failed",
+                        description: "Payment could not be recorded. Please try again.",
+                      });
                       return;
                     }
                   }
