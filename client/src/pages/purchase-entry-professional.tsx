@@ -2275,7 +2275,12 @@ export default function PurchaseEntryProfessional() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setShowRecordPaymentDialog(true)}
+              onClick={() => {
+                toast({
+                  title: "Record Payment Functionality Disabled",
+                  description: "Please use the Purchase Dashboard to record payments.",
+                });
+              }}
               className="text-green-600 hover:text-green-700 hover:bg-green-50"
             >
               <CreditCard className="mr-2 h-4 w-4" />
