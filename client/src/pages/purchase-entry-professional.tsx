@@ -306,6 +306,70 @@ export default function PurchaseEntryProfessional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
+
+  // Professional Record Payment Mutation for Bill Payment Management
+  const recordPayment = useMutation({
+    mutationFn: async (data: { purchaseId: number; amount: number; method: string; date: string }) => {
+      console.log('💰 Recording payment via professional interface:', data);
+      
+      // Use the existing payment endpoint that works with updatePaymentStatus
+      const paymentData = {
+        paymentAmount: data.amount,
+        paymentMethod: data.method,
+        paymentDate: data.date,
+        paymentType: 'payment'
+      };
+      
+      const response = await fetch(`/api/purchases/${data.purchaseId}/payment`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to record payment');
+      }
+      
+      return response.json();
+    },
+    onSuccess: async (result, variables) => {
+      console.log('✅ Payment recorded successfully:', result);
+      
+      // Update form data immediately with new payment information
+      const currentPaidAmount = Number(form.getValues("paid_amount") || 0);
+      const newTotalPaid = currentPaidAmount + variables.amount;
+      
+      form.setValue("paid_amount", newTotalPaid);
+      form.setValue("payment_status", newTotalPaid >= summary.grandTotal ? 'paid' : 'partial');
+      form.setValue("payment_date", variables.date);
+      form.setValue("payment_method", variables.method);
+      
+      // Comprehensive cache invalidation for real-time updates
+      await queryClient.invalidateQueries({ queryKey: ['/api/purchases'] });
+      await queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/suppliers/order-summary'] });
+      
+      // Force refetch all purchase-related data
+      await queryClient.refetchQueries({ queryKey: ['/api/purchases'], type: 'all' });
+      
+      toast({
+        title: "Payment Recorded Successfully! 💰",
+        description: `Payment of ${formatCurrency(variables.amount)} recorded via ${variables.method}`,
+      });
+      
+      console.log('🔄 Cache invalidated and form updated with new payment data');
+    },
+    onError: (error: any) => {
+      console.error('❌ Payment recording failed:', error);
+      toast({
+        variant: "destructive",
+        title: "Payment Recording Failed",
+        description: error.message || "Failed to record payment. Please try again.",
+      });
+    }
+  });
   
   console.log('🚀 PurchaseEntryProfessional component loaded');
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -4209,7 +4273,8 @@ export default function PurchaseEntryProfessional() {
               </div>
               <Button
                 onClick={async () => {
-                  console.log('Record Payment clicked:', paymentData);
+                  console.log('💰 Record Payment clicked via Bill Payment Management:', paymentData);
+                  
                   // Validate payment amount
                   if (paymentData.paymentAmount <= 0) {
                     toast({
@@ -4220,6 +4285,45 @@ export default function PurchaseEntryProfessional() {
                     return;
                   }
 
+                  // For existing purchases in edit mode, use the new recordPayment mutation
+                  if (isEditMode && editId) {
+                    const currentPaidAmount = Number(existingPurchase?.paid_amount || 0);
+                    const outstandingAmount = Math.max(0, summary.grandTotal - currentPaidAmount);
+                    
+                    if (paymentData.paymentAmount > outstandingAmount) {
+                      toast({
+                        variant: "destructive",
+                        title: "Amount Too High",
+                        description: `Payment cannot exceed outstanding balance of ${formatCurrency(outstandingAmount)}`,
+                      });
+                      return;
+                    }
+                    
+                    try {
+                      await recordPayment.mutateAsync({
+                        purchaseId: Number(editId),
+                        amount: paymentData.paymentAmount,
+                        method: paymentData.paymentMethod,
+                        date: paymentData.paymentDate
+                      });
+                      
+                      // Reset payment form after successful recording
+                      setPaymentData({
+                        paymentAmount: 0,
+                        paymentMethod: "Cash",
+                        paymentDate: new Date().toISOString().split('T')[0],
+                        paymentReference: "",
+                        paymentNotes: "",
+                      });
+                      
+                      return;
+                    } catch (error) {
+                      console.error('💥 Payment recording via mutation failed:', error);
+                      return;
+                    }
+                  }
+
+                  // For new purchases, continue with existing logic
                   if (paymentData.paymentAmount > summary.grandTotal) {
                     toast({
                       variant: "destructive",
@@ -4314,11 +4418,20 @@ export default function PurchaseEntryProfessional() {
                     });
                   }
                 }}
-                disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal}
+                disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || paymentData.paymentAmount > summary.grandTotal || recordPayment.isPending}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                <CreditCard className="mr-2 h-4 w-4" />
-                Record Payment
+                {recordPayment.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Recording Payment...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Record Payment
+                  </>
+                )}
               </Button>
             </div>
           </div>
