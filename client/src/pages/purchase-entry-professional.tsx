@@ -4172,21 +4172,266 @@ export default function PurchaseEntryProfessional() {
               </div>
             </div>
 
-            {/* Payment Status Information */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-2">Payment Status</div>
-                <div className="font-semibold text-gray-800">
-                  {(() => {
-                    const currentPaidAmount = Number(existingPurchase.paid_amount || 0);
-                    if (currentPaidAmount >= summary.grandTotal) {
-                      return "Payment Complete - Fully Settled";
-                    } else if (currentPaidAmount > 0) {
-                      return `Partially Paid - ${formatCurrency(Math.max(0, summary.grandTotal - currentPaidAmount))} Outstanding`;
-                    } else {
-                      return `Payment Pending - ${formatCurrency(summary.grandTotal)} Due`;
-                    }
-                  })()}
+            {/* Professional Payment Recording Section */}
+            <div className="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+              <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                <CreditCard className="h-5 w-5 text-blue-700" />
+                Payment Recording System
+              </h4>
+
+              {/* Payment Status Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-700">
+                      {formatCurrency(summary.grandTotal)}
+                    </div>
+                    <div className="text-sm text-blue-600 font-semibold">Total Amount</div>
+                    <div className="text-xs text-gray-500 mt-1">Purchase Value</div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-green-200 shadow-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-700">
+                      {formatCurrency(Number(existingPurchase?.paid_amount || 0))}
+                    </div>
+                    <div className="text-sm text-green-600 font-semibold">Amount Paid</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {existingPurchase?.payment_method || 'No payments yet'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border border-orange-200 shadow-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-700">
+                      {formatCurrency(Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0)))}
+                    </div>
+                    <div className="text-sm text-orange-600 font-semibold">Outstanding</div>
+                    <div className="text-xs text-gray-500 mt-1">Balance Due</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Recording Form */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h5 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  Record New Payment
+                </h5>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Payment Amount */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Payment Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0))}
+                        step="0.01"
+                        value={paymentData.paymentAmount || ''}
+                        onChange={(e) => setPaymentData({
+                          ...paymentData,
+                          paymentAmount: parseFloat(e.target.value) || 0
+                        })}
+                        placeholder="Enter amount"
+                        className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Payment Method</label>
+                    <select
+                      value={paymentData.paymentMethod}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentMethod: e.target.value
+                      })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Debit Card">Debit Card</option>
+                    </select>
+                  </div>
+
+                  {/* Payment Date */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Payment Date</label>
+                    <input
+                      type="date"
+                      value={paymentData.paymentDate}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentDate: e.target.value
+                      })}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Reference Number */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Reference Number</label>
+                    <input
+                      type="text"
+                      value={paymentData.paymentReference}
+                      onChange={(e) => setPaymentData({
+                        ...paymentData,
+                        paymentReference: e.target.value
+                      })}
+                      placeholder="Transaction ID, Check number, etc."
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Payment Notes */}
+                <div className="mt-4 space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Payment Notes</label>
+                  <textarea
+                    value={paymentData.paymentNotes}
+                    onChange={(e) => setPaymentData({
+                      ...paymentData,
+                      paymentNotes: e.target.value
+                    })}
+                    placeholder="Additional payment notes..."
+                    rows={3}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                {/* Quick Payment Buttons */}
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0))
+                    })}
+                    className="text-xs bg-green-50 hover:bg-green-100 border-green-300 text-green-700"
+                  >
+                    Full Balance
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: Math.round((Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0))) / 2)
+                    })}
+                    className="text-xs bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
+                  >
+                    50%
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: Math.round((Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0))) / 4)
+                    })}
+                    className="text-xs bg-purple-50 hover:bg-purple-100 border-purple-300 text-purple-700"
+                  >
+                    25%
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPaymentData({
+                      ...paymentData,
+                      paymentAmount: 0
+                    })}
+                    className="text-xs bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700"
+                  >
+                    Clear
+                  </Button>
+                </div>
+
+                {/* Record Payment Button */}
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={async () => {
+                      if (!paymentData.paymentAmount || paymentData.paymentAmount <= 0) {
+                        toast({
+                          variant: "destructive",
+                          title: "Invalid Payment Amount",
+                          description: "Please enter a valid payment amount greater than ₹0.",
+                        });
+                        return;
+                      }
+
+                      const purchaseId = isEditMode ? editId : null;
+                      if (!purchaseId) {
+                        toast({
+                          variant: "destructive",
+                          title: "Purchase Order Required",
+                          description: "Please save the purchase order first before recording payments.",
+                        });
+                        return;
+                      }
+
+                      const outstandingAmount = Math.max(0, summary.grandTotal - Number(existingPurchase?.paid_amount || 0));
+                      if (paymentData.paymentAmount > outstandingAmount) {
+                        toast({
+                          variant: "destructive",
+                          title: "Amount Exceeds Outstanding Balance",
+                          description: `Payment amount of ${formatCurrency(paymentData.paymentAmount)} cannot exceed outstanding balance of ${formatCurrency(outstandingAmount)}.`,
+                        });
+                        return;
+                      }
+
+                      try {
+                        // Record payment using the existing mutation
+                        await recordPaymentMutation.mutateAsync({
+                          purchaseId: purchaseId,
+                          amount: paymentData.paymentAmount,
+                          method: paymentData.paymentMethod,
+                          date: paymentData.paymentDate,
+                          reference: paymentData.paymentReference,
+                          notes: paymentData.paymentNotes
+                        });
+
+                        // Reset form
+                        setPaymentData({
+                          paymentAmount: 0,
+                          paymentMethod: "Cash",
+                          paymentDate: new Date().toISOString().split('T')[0],
+                          paymentReference: "",
+                          paymentNotes: "",
+                        });
+
+                      } catch (error) {
+                        console.error('Error recording payment:', error);
+                      }
+                    }}
+                    disabled={!paymentData.paymentAmount || paymentData.paymentAmount <= 0 || recordPaymentMutation.isPending}
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold px-6 py-2"
+                  >
+                    {recordPaymentMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Recording...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Record Payment
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
