@@ -397,8 +397,8 @@ export default function UnifiedPrinterSettings() {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     
-    // Auto-save for certain critical settings like logo and GST toggles
-    if (key === 'logoUrl' || key === 'businessName' || key === 'showLogo' || key === 'showGST' || key === 'showGSTBreakdown') {
+    // Auto-save for certain critical settings like logo, business info, and GST toggles
+    if (key === 'logoUrl' || key === 'businessName' || key === 'businessAddress' || key === 'phoneNumber' || key === 'taxId' || key === 'showLogo' || key === 'showGST' || key === 'showGSTBreakdown') {
       // Save immediately with the new settings
       await saveSettingsWithData(newSettings);
     }
@@ -1008,9 +1008,13 @@ export default function UnifiedPrinterSettings() {
                       <Label htmlFor="businessAddress">Business Address</Label>
                       <Textarea
                         id="businessAddress"
-                        value={settings.businessAddress}
+                        value={settings.businessAddress || ''}
                         onChange={(e) => updateSetting('businessAddress', e.target.value)}
+                        placeholder="Enter your business address"
                         rows={3}
+                        disabled={false}
+                        readOnly={false}
+                        data-testid="textarea-businessAddress"
                       />
                     </div>
 
