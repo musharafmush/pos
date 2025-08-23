@@ -757,7 +757,7 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
       ` : ''}
 
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 1mm;">
-        123 Business Street, City, State
+        ${settings.businessAddress || '123 Business Street, City, State'}
       </div>
 
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 2mm;">
