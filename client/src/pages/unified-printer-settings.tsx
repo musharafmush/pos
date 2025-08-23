@@ -179,6 +179,8 @@ export default function UnifiedPrinterSettings() {
           showMRP: backendSettings.showMRP !== undefined ? backendSettings.showMRP : prev.showMRP,
           showSavings: backendSettings.showSavings !== undefined ? backendSettings.showSavings : prev.showSavings,
           showLoyaltyPoints: backendSettings.showLoyaltyPoints !== undefined ? backendSettings.showLoyaltyPoints : prev.showLoyaltyPoints,
+          showGST: backendSettings.showGST !== undefined ? backendSettings.showGST : prev.showGST,
+          showGSTBreakdown: backendSettings.showGSTBreakdown !== undefined ? backendSettings.showGSTBreakdown : prev.showGSTBreakdown,
           headerStyle: backendSettings.headerStyle || prev.headerStyle,
           boldTotals: backendSettings.boldTotals !== undefined ? backendSettings.boldTotals : prev.boldTotals,
           separatorStyle: backendSettings.separatorStyle || prev.separatorStyle,
