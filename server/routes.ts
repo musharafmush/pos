@@ -4566,30 +4566,7 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('🔧 Fetching receipt settings');
 
-      const { sqlite } = await import('../db/index.js');
-
-      // Ensure settings table exists with proper schema
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS settings (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          key TEXT NOT NULL UNIQUE,
-          value TEXT NOT NULL,
-          updated_at DATETIME
-        )
-      `).run();
-
-      // Check if updated_at column exists, add if missing
-      const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
-      const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
-
-      if (!hasUpdatedAt) {
-        // Add column without default, then update existing records
-        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME').run();
-        sqlite.prepare('UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
-        console.log('Added updated_at column to settings table');
-      }
-
-      // Get all receipt-related settings
+      // Get all receipt-related settings using Drizzle ORM
       const receiptKeys = [
         'businessName', 'businessAddress', 'phoneNumber', 'taxId', 'receiptFooter',
         'paperWidth', 'showLogo', 'logoUrl', 'autoPrint', 'showCustomerDetails', 'showItemSKU',
@@ -4597,19 +4574,18 @@ app.post("/api/customers", async (req, res) => {
         'thermalOptimized', 'fontSize', 'fontFamily'
       ];
 
-      const settings = {};
-      const getSettingQuery = sqlite.prepare('SELECT value FROM settings WHERE key = ?');
+      const settingsData = await db.select()
+        .from(schema.settings)
+        .where(inArray(schema.settings.key, receiptKeys));
 
-      receiptKeys.forEach(key => {
-        const result = getSettingQuery.get(key);
-        if (result) {
-          try {
-            // Try to parse as JSON first (for boolean/object values)
-            settings[key] = JSON.parse(result.value);
-          } catch {
-            // If not JSON, use as string
-            settings[key] = result.value;
-          }
+      const settingsMap = {};
+      settingsData.forEach(setting => {
+        try {
+          // Try to parse as JSON first (for boolean/object values)
+          settingsMap[setting.key] = JSON.parse(setting.value);
+        } catch {
+          // If not JSON, use as string
+          settingsMap[setting.key] = setting.value;
         }
       });
 
@@ -4636,7 +4612,7 @@ app.post("/api/customers", async (req, res) => {
         fontFamily: 'courier'
       };
 
-      const finalSettings = { ...defaultSettings, ...settings };
+      const finalSettings = { ...defaultSettings, ...settingsMap };
       console.log('📄 Receipt settings retrieved:', Object.keys(finalSettings));
 
       res.json(finalSettings);
@@ -4650,47 +4626,24 @@ app.post("/api/customers", async (req, res) => {
     try {
       console.log('💾 Saving receipt settings:', req.body);
 
-      const { sqlite } = await import('../db/index.js');
-
-      // Ensure settings table exists with proper schema
-      sqlite.prepare(`
-        CREATE TABLE IF NOT EXISTS settings (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          key TEXT NOT NULL UNIQUE,
-          value TEXT NOT NULL,
-          updated_at DATETIME
-        )
-      `).run();
-
-      // Check if updated_at column exists, add if missing
-      const tableInfo = sqlite.prepare("PRAGMA table_info(settings)").all();
-      const hasUpdatedAt = tableInfo.some((col: any) => col.name === 'updated_at');
-
-      if (!hasUpdatedAt) {
-        // Add column without default, then update existing records
-        sqlite.prepare('ALTER TABLE settings ADD COLUMN updated_at DATETIME').run();
-        sqlite.prepare('UPDATE settings SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
-        console.log('Added updated_at column to settings table');
+      // Save each setting using Drizzle ORM
+      for (const [key, value] of Object.entries(req.body)) {
+        const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
+        
+        await db.insert(schema.settings)
+          .values({
+            key,
+            value: serializedValue,
+            updatedAt: new Date()
+          })
+          .onConflictDoUpdate({
+            target: schema.settings.key,
+            set: {
+              value: serializedValue,
+              updatedAt: new Date()
+            }
+          });
       }
-
-      // Prepare upsert statement
-      const upsertSetting = sqlite.prepare(`
-        INSERT INTO settings (key, value, updated_at) 
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(key) DO UPDATE SET 
-          value = excluded.value,
-          updated_at = CURRENT_TIMESTAMP
-      `);
-
-      // Save each setting
-      const transaction = sqlite.transaction((settings) => {
-        Object.entries(settings).forEach(([key, value]) => {
-          const serializedValue = typeof value === 'object' ? JSON.stringify(value) : value.toString();
-          upsertSetting.run(key, serializedValue);
-        });
-      });
-
-      transaction(req.body);
 
       console.log('✅ Receipt settings saved successfully');
       res.json({ 
