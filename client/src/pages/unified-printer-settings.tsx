@@ -54,6 +54,8 @@ interface PrinterSettings {
   showMRP: boolean;
   showSavings: boolean;
   showLoyaltyPoints: boolean;
+  showGST: boolean;
+  showGSTBreakdown: boolean;
   headerStyle: string;
   boldTotals: boolean;
   separatorStyle: string;
@@ -106,6 +108,8 @@ export default function UnifiedPrinterSettings() {
     showMRP: true,
     showSavings: true,
     showLoyaltyPoints: true,
+    showGST: true,
+    showGSTBreakdown: true,
     headerStyle: 'centered',
     boldTotals: true,
     separatorStyle: 'solid',
@@ -362,6 +366,8 @@ export default function UnifiedPrinterSettings() {
       showMRP: true,
       showSavings: true,
       showLoyaltyPoints: true,
+      showGST: true,
+      showGSTBreakdown: true,
       headerStyle: 'centered',
       boldTotals: true,
       separatorStyle: 'solid',
@@ -935,6 +941,24 @@ export default function UnifiedPrinterSettings() {
                         id="showLoyaltyPoints"
                         checked={settings.showLoyaltyPoints}
                         onCheckedChange={(checked) => updateSetting('showLoyaltyPoints', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showGST">Show GST Information</Label>
+                      <Switch
+                        id="showGST"
+                        checked={settings.showGST}
+                        onCheckedChange={(checked) => updateSetting('showGST', checked)}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="showGSTBreakdown">Show GST Breakdown (CGST/SGST)</Label>
+                      <Switch
+                        id="showGSTBreakdown"
+                        checked={settings.showGSTBreakdown}
+                        onCheckedChange={(checked) => updateSetting('showGSTBreakdown', checked)}
                       />
                     </div>
                   </div>

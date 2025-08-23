@@ -4570,7 +4570,7 @@ app.post("/api/customers", async (req, res) => {
       const receiptKeys = [
         'businessName', 'businessAddress', 'phoneNumber', 'taxId', 'receiptFooter',
         'paperWidth', 'showLogo', 'logoUrl', 'autoPrint', 'showCustomerDetails', 'showItemSKU',
-        'showMRP', 'showSavings', 'headerStyle', 'boldTotals', 'separatorStyle',
+        'showMRP', 'showSavings', 'showLoyaltyPoints', 'showGST', 'showGSTBreakdown', 'headerStyle', 'boldTotals', 'separatorStyle',
         'thermalOptimized', 'fontSize', 'fontFamily'
       ];
 
@@ -4604,6 +4604,9 @@ app.post("/api/customers", async (req, res) => {
         showItemSKU: true,
         showMRP: true,
         showSavings: true,
+        showLoyaltyPoints: true,
+        showGST: true,
+        showGSTBreakdown: true,
         headerStyle: 'centered',
         boldTotals: true,
         separatorStyle: 'solid',
