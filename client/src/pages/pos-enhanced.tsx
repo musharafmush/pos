@@ -1834,8 +1834,8 @@ export default function POSEnhanced() {
       const receiptData = {
         billNumber: receiptBillNumber,
         orderNumber: receiptBillNumber,
-        billDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(), // Always current timestamp
+        billDate: `${billDetails.billDate}T${billDetails.billTime}:00.000Z`,
+        createdAt: `${billDetails.billDate}T${billDetails.billTime}:00.000Z`,
         customerDetails: {
           name: receiptCustomer?.name || selectedCustomer?.name || "Walk-in Customer",
           phone: receiptCustomer?.phone || selectedCustomer?.phone || "",
@@ -1934,16 +1934,16 @@ export default function POSEnhanced() {
         throw new Error("Invalid sale data for printing");
       }
 
-      // Prepare enhanced receipt data with all transaction details - Use current date
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
+      // Prepare enhanced receipt data with all transaction details - Use custom date/time
+      const customDate = new Date(`${billDetails.billDate}T${billDetails.billTime}:00`);
+      const day = String(customDate.getDate()).padStart(2, '0');
+      const month = String(customDate.getMonth() + 1).padStart(2, '0');
+      const year = customDate.getFullYear();
       const currentDate = `${day}/${month}/${year}`;
       
       const receiptData = {
         billNumber: saleData.billNumber,
-        billDate: currentDate,
+        billDate: `${billDetails.billDate}T${billDetails.billTime}:00.000Z`,
         orderNumber: saleData.orderNumber,
         customerDetails: { 
           name: saleData.customer?.name || saleData.customerName || selectedCustomer?.name || 'Walk-in Customer',
