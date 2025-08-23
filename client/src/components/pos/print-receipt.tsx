@@ -645,27 +645,41 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
     // Use custom date/time from sale data if available, otherwise use current date/time
     let receiptDate, receiptTime;
     
-    if (sale?.billDate || sale?.createdAt) {
-      // Use the custom date/time from sale data (from billDetails)
-      const saleDate = new Date(sale.billDate || sale.createdAt);
-      console.log('🕒 Using custom time for receipt:', saleDate.toISOString());
-      
-      // Format date as DD/MM/YYYY
-      const day = String(saleDate.getDate()).padStart(2, '0');
-      const month = String(saleDate.getMonth() + 1).padStart(2, '0');
-      const year = saleDate.getFullYear();
-      receiptDate = `${day}/${month}/${year}`;
+    try {
+      if (sale?.billDate || sale?.createdAt) {
+        // Use the custom date/time from sale data (from billDetails)
+        const dateString = sale.billDate || sale.createdAt;
+        console.log('🕒 Parsing date string:', dateString);
+        
+        const saleDate = new Date(dateString);
+        
+        // Check if the date is valid
+        if (isNaN(saleDate.getTime())) {
+          console.warn('Invalid date string:', dateString, '- using current date/time');
+          throw new Error('Invalid date');
+        }
+        
+        console.log('🕒 Using custom time for receipt:', saleDate.toISOString());
+        
+        // Format date as DD/MM/YYYY
+        const day = String(saleDate.getDate()).padStart(2, '0');
+        const month = String(saleDate.getMonth() + 1).padStart(2, '0');
+        const year = saleDate.getFullYear();
+        receiptDate = `${day}/${month}/${year}`;
 
-      // Format time as HH:MM AM/PM
-      const hours = saleDate.getHours();
-      const minutes = String(saleDate.getMinutes()).padStart(2, '0');
-      const ampm = hours >= 12 ? 'pm' : 'am';
-      const displayHours = hours % 12 || 12;
-      receiptTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
-    } else {
+        // Format time as HH:MM AM/PM
+        const hours = saleDate.getHours();
+        const minutes = String(saleDate.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'pm' : 'am';
+        const displayHours = hours % 12 || 12;
+        receiptTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+      } else {
+        throw new Error('No date provided');
+      }
+    } catch (error) {
       // Fallback to current date/time
       const now = new Date();
-      console.log('🕒 Using current time for receipt:', now.toISOString());
+      console.log('🕒 Using current time for receipt (fallback):', now.toISOString());
       
       const day = String(now.getDate()).padStart(2, '0');
       const month = String(now.getMonth() + 1).padStart(2, '0');
