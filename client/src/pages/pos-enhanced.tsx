@@ -218,6 +218,44 @@ export default function POSEnhanced() {
     billTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   });
 
+  // Date and time editing state
+  const [showDateTimeEditor, setShowDateTimeEditor] = useState(false);
+  const [editableDate, setEditableDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editableTime, setEditableTime] = useState(new Date().toTimeString().slice(0, 5));
+
+  // Date and time update functions
+  const updateDateTime = () => {
+    setBillDetails(prev => ({
+      ...prev,
+      billDate: editableDate,
+      billTime: editableTime
+    }));
+    setShowDateTimeEditor(false);
+    toast({
+      title: "Date & Time Updated",
+      description: `Set to ${editableDate} at ${editableTime}`,
+    });
+  };
+
+  const resetDateTime = () => {
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    setEditableDate(currentDate);
+    setEditableTime(currentTime);
+    setBillDetails(prev => ({
+      ...prev,
+      billDate: currentDate,
+      billTime: currentTime
+    }));
+    
+    toast({
+      title: "Date & Time Reset",
+      description: "Reset to current date and time",
+    });
+  };
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1724,11 +1762,9 @@ export default function POSEnhanced() {
     };
   }, [cart.length, discount]);
 
-  const currentDate = new Date().toLocaleDateString('en-IN');
-  const currentTime = new Date().toLocaleTimeString('en-IN', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
+  // Use billDetails for editable date and time
+  const currentDate = billDetails.billDate;
+  const currentTime = billDetails.billTime;
 
   // Enhanced receipt printing functionality
   const handlePrintReceipt = (saleData: any, options?: any) => {
@@ -2775,7 +2811,22 @@ export default function POSEnhanced() {
                   </div>
                   <div className="text-left">
                     <div className="text-xs text-gray-500">Date & Time</div>
-                    <div className="font-mono text-xs text-gray-700">{currentDate} • {currentTime}</div>
+                    <div className="flex items-center space-x-2">
+                      <div className="font-mono text-xs text-gray-700">{currentDate} • {currentTime}</div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditableDate(billDetails.billDate);
+                          setEditableTime(billDetails.billTime);
+                          setShowDateTimeEditor(true);
+                        }}
+                        className="h-5 w-5 p-0 hover:bg-gray-100"
+                        title="Edit Date & Time"
+                      >
+                        <Calendar className="h-3 w-3 text-gray-500" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 
@@ -5609,6 +5660,68 @@ export default function POSEnhanced() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Date & Time Editor Dialog */}
+        <Dialog open={showDateTimeEditor} onOpenChange={setShowDateTimeEditor}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <span>Edit Date & Time</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date" className="text-sm font-medium">Date</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={editableDate}
+                  onChange={(e) => setEditableDate(e.target.value)}
+                  className="font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time" className="text-sm font-medium">Time</Label>
+                <Input
+                  id="edit-time"
+                  type="time"
+                  value={editableTime}
+                  onChange={(e) => setEditableTime(e.target.value)}
+                  className="font-mono"
+                />
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                <Clock className="h-4 w-4" />
+                <span>Current: {new Date().toISOString().split('T')[0]} • {new Date().toTimeString().slice(0, 5)}</span>
+              </div>
+            </div>
+            <div className="flex justify-between space-x-3">
+              <Button
+                variant="outline"
+                onClick={resetDateTime}
+                className="flex items-center space-x-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span>Reset to Now</span>
+              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDateTimeEditor(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={updateDateTime}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Update
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
