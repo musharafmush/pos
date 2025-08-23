@@ -69,6 +69,10 @@ The system utilizes React with Shadcn/ui and Tailwind CSS for a modern, responsi
 - **Enhanced Purchase Summary Payment Records (August 20, 2025)**: Added comprehensive Payment Record Details section with payment information and financial breakdown
 - Implemented detailed payment status tracking with visual progress indicators and professional Indian date formatting
 - Complete integration of payment records display with existing Record Payment functionality for full payment lifecycle management
+- **Complete GST Display Controls Implementation (August 23, 2025)**: Successfully added professional GST display controls to printer settings
+- Created "Show GST Information" and "Show GST Breakdown (CGST/SGST)" toggles in Receipt Layout & Content section
+- Implemented full backend and frontend integration with PostgreSQL database persistence and auto-save functionality
+- GST toggles now provide complete control over tax information display on receipts for Indian business compliance
 - **Fixed Purchase Dashboard Payment Status Issues (August 19, 2025)**: Resolved critical field mapping issues between backend API responses (camelCase) and frontend expectations
 - Corrected Payment Due and Pending Orders calculations using proper `paymentStatus` and `paidAmount` field names
 - Fixed purchase status filtering logic to properly identify partial payments and pending orders

@@ -397,8 +397,8 @@ export default function UnifiedPrinterSettings() {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     
-    // Auto-save for certain critical settings like logo
-    if (key === 'logoUrl' || key === 'businessName' || key === 'showLogo') {
+    // Auto-save for certain critical settings like logo and GST toggles
+    if (key === 'logoUrl' || key === 'businessName' || key === 'showLogo' || key === 'showGST' || key === 'showGSTBreakdown') {
       // Save immediately with the new settings
       await saveSettingsWithData(newSettings);
     }
@@ -950,8 +950,9 @@ export default function UnifiedPrinterSettings() {
                       <Label htmlFor="showGST">Show GST Information</Label>
                       <Switch
                         id="showGST"
-                        checked={settings.showGST}
+                        checked={settings.showGST || false}
                         onCheckedChange={(checked) => updateSetting('showGST', checked)}
+                        data-testid="switch-showGST"
                       />
                     </div>
                     
@@ -959,8 +960,9 @@ export default function UnifiedPrinterSettings() {
                       <Label htmlFor="showGSTBreakdown">Show GST Breakdown (CGST/SGST)</Label>
                       <Switch
                         id="showGSTBreakdown"
-                        checked={settings.showGSTBreakdown}
+                        checked={settings.showGSTBreakdown || false}
                         onCheckedChange={(checked) => updateSetting('showGSTBreakdown', checked)}
+                        data-testid="switch-showGSTBreakdown"
                       />
                     </div>
                   </div>
