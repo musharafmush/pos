@@ -750,9 +750,11 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
         Professional Retail Solution
       </div>
 
+      ${settings.showGST ? `
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; font-weight: bold; margin-bottom: 1mm;">
         GST: ${settings.taxId || '33GSPDB3311F1ZZ'}
       </div>
+      ` : ''}
 
       <div style="text-align: center; font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; margin-bottom: 1mm;">
         123 Business Street, City, State
