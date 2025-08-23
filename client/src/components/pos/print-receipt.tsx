@@ -642,25 +642,45 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
 };
 
   const generateThermalReceiptHTML = (sale: any, settings: any) => {
-    // Always use current date and time for proper receipt display - FORCE CURRENT DATE
-    const now = new Date();
-    console.log('🕒 Current time for receipt:', now.toISOString());
+    // Use custom date/time from sale data if available, otherwise use current date/time
+    let receiptDate, receiptTime;
+    
+    if (sale?.billDate || sale?.createdAt) {
+      // Use the custom date/time from sale data (from billDetails)
+      const saleDate = new Date(sale.billDate || sale.createdAt);
+      console.log('🕒 Using custom time for receipt:', saleDate.toISOString());
+      
+      // Format date as DD/MM/YYYY
+      const day = String(saleDate.getDate()).padStart(2, '0');
+      const month = String(saleDate.getMonth() + 1).padStart(2, '0');
+      const year = saleDate.getFullYear();
+      receiptDate = `${day}/${month}/${year}`;
 
-    // Format date as DD/MM/YYYY - ALWAYS CURRENT
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    const formattedDate = `${day}/${month}/${year}`;
+      // Format time as HH:MM AM/PM
+      const hours = saleDate.getHours();
+      const minutes = String(saleDate.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const displayHours = hours % 12 || 12;
+      receiptTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+    } else {
+      // Fallback to current date/time
+      const now = new Date();
+      console.log('🕒 Using current time for receipt:', now.toISOString());
+      
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      receiptDate = `${day}/${month}/${year}`;
 
-    // Format time as HH:MM AM/PM
-    const hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    const displayHours = hours % 12 || 12;
-    const formattedTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+      const hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const displayHours = hours % 12 || 12;
+      receiptTime = `${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
+    }
 
-    console.log('📅 Formatted date for receipt:', formattedDate);
-    console.log('⏰ Formatted time for receipt:', formattedTime);
+    console.log('📅 Formatted date for receipt:', receiptDate);
+    console.log('⏰ Formatted time for receipt:', receiptTime);
 
     // Ensure sale has proper structure with defaults and safe property access
     const safeData = {
@@ -735,10 +755,10 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
           <span>Bill:</span><strong style="text-align: right;">${safeData.orderNumber}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Date:</span><span style="text-align: right; font-weight: bold;">${formattedDate}</span>
+          <span>Date:</span><span style="text-align: right; font-weight: bold;">${receiptDate}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span>Time:</span><span style="text-align: right; font-weight: bold;">${formattedTime}</span>
+          <span>Time:</span><span style="text-align: right; font-weight: bold;">${receiptTime}</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span>Cashier:</span><span style="text-align: right;">${safeData.user.name}</span>
@@ -747,94 +767,11 @@ export const printReceipt = async (data: ReceiptData, customization?: Partial<Re
 
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
+      ${settings.showCustomerDetails ? `
       <div style="font-size: ${settings.paperWidth === 'thermal58' ? '13px' : '14px'}; margin-bottom: 2mm;">
-        <div><strong>Customer:</strong> ${
-          // Enhanced customer name extraction with multiple fallbacks
-          safeData.customer?.name || 
-          safeData.customerName || 
-          safeData.customer_name ||
-          safeData.selectedCustomer?.name ||
-          sale?.customer?.name ||
-          sale?.customerName ||
-          sale?.customer_name ||
-          'Walk-in Customer'
-        }</div>
-        ${(() => {
-          // Enhanced phone number extraction with comprehensive fallback logic
-          const phoneNumber = 
-            // Primary sources from POS data
-            safeData.customerDetails?.phone || 
-            safeData.customer?.phone || 
-            safeData.customerPhone ||
-            // Secondary sources from selected customer
-            (safeData.selectedCustomer && safeData.selectedCustomer.phone) ||
-            // Direct property access fallbacks
-            safeData.phone ||
-            safeData.customer_phone ||
-            // Raw sale data phone fields
-            sale?.customer?.phone ||
-            sale?.customerPhone ||
-            sale?.customer_phone ||
-            sale?.phone ||
-            // Customer object nested access
-            (sale?.customer && sale.customer.phone) ||
-            (sale?.selectedCustomer && sale.selectedCustomer.phone) ||
-            // Receipt data customer details
-            (sale?.customerDetails && sale.customerDetails.phone);
-          
-          // Debug logging to console for troubleshooting
-          console.log('🔍 Receipt Phone Debug - All Data Sources:', {
-            'safeData.customerDetails': safeData.customerDetails,
-            'safeData.customer': safeData.customer,
-            'safeData.customerPhone': safeData.customerPhone,
-            'safeData.selectedCustomer': safeData.selectedCustomer,
-            'safeData.phone': safeData.phone,
-            'safeData.customer_phone': safeData.customer_phone,
-            'sale.customer': sale?.customer,
-            'sale.customerPhone': sale?.customerPhone,
-            'sale.customer_phone': sale?.customer_phone,
-            'sale.phone': sale?.phone,
-            'sale.selectedCustomer': sale?.selectedCustomer,
-            'sale.customerDetails': sale?.customerDetails,
-            'finalPhoneNumber': phoneNumber
-          });
-          
-          // Always show phone section with proper data
-          if (phoneNumber && phoneNumber.trim() !== '' && phoneNumber.trim() !== 'undefined' && phoneNumber.trim() !== 'null') {
-            return `
-            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm; font-weight: bold;">
-              📞 ${phoneNumber.trim()}
-            </div>
-            `;
-          } else {
-            // Only show placeholder if truly no phone data available
-            return `
-            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '11px' : '12px'}; color: #999; margin-top: 1mm; font-style: italic;">
-              📞 Phone: Contact store for details
-            </div>
-            `;
-          }
-        })()}
-        ${(() => {
-          // Enhanced email extraction from multiple possible sources
-          const emailAddress = safeData.customerDetails?.email || 
-                               safeData.customer?.email || 
-                               safeData.customerEmail ||
-                               (safeData.selectedCustomer && safeData.selectedCustomer.email) ||
-                               // Additional fallback sources
-                               safeData.email ||
-                               safeData.customer_email;
-          
-          if (emailAddress && emailAddress.trim() !== '') {
-            return `
-            <div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm;">
-              ✉️ ${emailAddress.trim()}
-            </div>
-            `;
-          }
-          return '';
-        })()}
-      </div>
+        <div><strong>Customer:</strong> ${safeData.customer?.name || sale?.customer?.name || sale?.customerName || 'Walk-in Customer'}</div>
+        ${sale?.customer?.phone || sale?.customerDetails?.phone ? `<div style="font-size: ${settings.paperWidth === 'thermal58' ? '12px' : '13px'}; color: #333; margin-top: 1mm;">📞 ${sale?.customer?.phone || sale?.customerDetails?.phone}</div>` : ''}
+      </div>` : ''}
 
       <div style="border-top: 1px dotted #666; margin: 2mm 0; height: 0;"></div>
 
