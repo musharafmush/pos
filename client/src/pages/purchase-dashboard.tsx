@@ -890,6 +890,15 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     const discount = parseFloat(purchase.discountAmount?.toString() || '0');
     const grandTotal = subtotal + freight + otherCharges - discount;
 
+    console.log('🖨️ Print Debug - Purchase Details:', {
+      purchaseId: purchase.id,
+      orderNumber: purchase.orderNumber,
+      supplierName: purchase.supplier?.name,
+      itemsCount: items.length,
+      items: items,
+      totals: { subtotal, freight, otherCharges, discount, grandTotal }
+    });
+
     return `
       <!DOCTYPE html>
       <html>
@@ -1152,12 +1161,12 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           <div class="customer-section">
             <div class="customer-left">
               <div class="customer-title">Buyer (Bill to)</div>
-              <strong>M.MART</strong><br>
-              NO 4/7142 THANDARAM PATTU MAIN ROAD,<br>
-              SATHITHIRAM, TIRUVANAMALAI - 606 603 TK<br>
-              PH 7603990567 9342449192<br>
-              GSTIN/UIN: 33QWPS9348FTZ2<br>
-              Place of Supply: Tamil Nadu
+              <strong>${purchase.supplier?.name || 'SUPPLIER NAME'}</strong><br>
+              ${purchase.supplier?.address || 'Supplier Address'}<br>
+              ${purchase.supplier?.city || 'City'}, ${purchase.supplier?.state || 'State'} - ${purchase.supplier?.pinCode || 'PIN'}<br>
+              PH ${purchase.supplier?.phone || 'Phone Number'}<br>
+              GSTIN/UIN: ${purchase.supplier?.taxId || 'N/A'}<br>
+              Place of Supply: ${purchase.supplier?.state || 'State'}
             </div>
             <div class="customer-right">
               <div class="customer-title">Consignee (Ship to)</div>
@@ -1188,72 +1197,38 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
               </tr>
             </thead>
             <tbody>
-              ${items.length > 0 ? items.map((item: any, index: number) => {
-                const qty = item.quantity || 0;
-                const rate = parseFloat(item.unitCost || item.unitPrice || item.price || '0');
-                const amount = parseFloat(item.subtotal || item.total || (qty * rate).toString() || '0');
+              ${items.map((item: any, index: number) => {
+                const qty = parseFloat(item.quantity || '0');
+                const rate = parseFloat(item.unitCost || item.unitPrice || item.price || item.cost || '0');
+                const amount = parseFloat(item.subtotal || item.total || item.totalAmount || (qty * rate).toString() || '0');
+                const productName = item.product?.name || item.productName || item.name || 'Product';
+                const hsnCode = item.product?.hsnCode || item.hsnCode || item.hsn || '10063010';
+                
                 return `
                 <tr>
                   <td class="text-center">${index + 1}</td>
-                  <td>${item.product?.name || item.productName || 'Product Name'}</td>
-                  <td class="text-center">${item.product?.hsnCode || item.hsnCode || '10063010'}</td>
-                  <td class="text-center">${qty} BAG<br>(${qty * 25} KG)</td>
-                  <td class="text-right">${rate.toFixed(2)}</td>
-                  <td class="text-right">${rate.toFixed(2)}</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">${amount.toFixed(2)}</td>
+                  <td>${productName}</td>
+                  <td class="text-center">${hsnCode}</td>
+                  <td class="text-center">${qty} ${item.unit || 'BAG'}<br>(${qty * 25} KG)</td>
+                  <td class="text-right">₹${rate.toFixed(2)}</td>
+                  <td class="text-right">₹${rate.toFixed(2)}</td>
+                  <td class="text-center">${item.unit || 'BAG'}</td>
+                  <td class="text-right">₹${amount.toFixed(2)}</td>
                 </tr>`;
-              }).join('') : `
+              }).join('')}
+              
+              ${items.length === 0 ? `
                 <tr>
                   <td class="text-center">1</td>
-                  <td>GUNDU RICE 25KG</td>
-                  <td class="text-center">10063010</td>
-                  <td class="text-center">10 BAG<br>(250 KG)</td>
-                  <td class="text-right">940.00</td>
-                  <td class="text-right">940.00</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">9,400.00</td>
+                  <td>No items found for this purchase order</td>
+                  <td class="text-center">-</td>
+                  <td class="text-center">0</td>
+                  <td class="text-right">₹0.00</td>
+                  <td class="text-right">₹0.00</td>
+                  <td class="text-center">-</td>
+                  <td class="text-right">₹0.00</td>
                 </tr>
-                <tr>
-                  <td class="text-center">2</td>
-                  <td>BOILED RICE 25 KG</td>
-                  <td class="text-center">10063010</td>
-                  <td class="text-center">40 BAG<br>(1,000 KG)</td>
-                  <td class="text-right">1,100.00</td>
-                  <td class="text-right">1,100.00</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">44,000.00</td>
-                </tr>
-                <tr>
-                  <td class="text-center">3</td>
-                  <td>RAW RICE 25 KG</td>
-                  <td class="text-center">10063010</td>
-                  <td class="text-center">2 BAG<br>(50 KG)</td>
-                  <td class="text-right">1,250.00</td>
-                  <td class="text-right">1,250.00</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">2,500.00</td>
-                </tr>
-                <tr>
-                  <td class="text-center">4</td>
-                  <td>RAW RICE ROYAL BULLET 25 KG</td>
-                  <td class="text-center">10063010</td>
-                  <td class="text-center">4 BAG<br>(100 KG)</td>
-                  <td class="text-right">1,860.00</td>
-                  <td class="text-right">1,860.00</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">7,440.00</td>
-                </tr>
-                <tr>
-                  <td class="text-center">5</td>
-                  <td>RAW RICE 30 KG</td>
-                  <td class="text-center">1006</td>
-                  <td class="text-center">5 BAG<br>(150 KG)</td>
-                  <td class="text-right">2,240.00</td>
-                  <td class="text-right">2,240.00</td>
-                  <td class="text-center">BAG</td>
-                  <td class="text-right">11,200.00</td>
-                </tr>`}
+              ` : ''}
 
               <!-- Empty rows for spacing -->
               ${Array(Math.max(0, 10 - Math.max(items.length, 5))).fill(0).map(() => `
@@ -1271,9 +1246,9 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
 
               <tr style="border-top: 2px solid #000;">
                 <td colspan="3" class="text-center"><strong>Total</strong></td>
-                <td class="text-center"><strong>61 BAG</strong></td>
+                <td class="text-center"><strong>${items.reduce((sum, item) => sum + parseFloat(item.quantity || '0'), 0)} ${items[0]?.unit || 'BAG'}</strong></td>
                 <td colspan="3"></td>
-                <td class="text-right"><strong>₹ ${items.length > 0 ? grandTotal.toFixed(2) : '74,540.00'}</strong></td>
+                <td class="text-right"><strong>₹ ${grandTotal.toFixed(2)}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -1281,7 +1256,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           <!-- Amount in Words -->
           <div class="amount-words">
             Amount Chargeable (in words): <strong>E. & O.E</strong><br>
-            <strong>INR ${items.length > 0 ? convertNumberToWords(grandTotal) : 'Seventy Four Thousand Five Hundred Forty'} Only</strong>
+            <strong>INR ${convertNumberToWords(grandTotal)} Only</strong>
           </div>
 
           <!-- Tax Section -->
@@ -1291,17 +1266,24 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 <td style="text-align: left; font-weight: bold;">HSN/SAC</td>
                 <td style="text-align: right; font-weight: bold;">Taxable Value</td>
               </tr>
-              <tr>
-                <td style="text-align: left;">10063010</td>
-                <td>63,340.00</td>
-              </tr>
-              <tr>
-                <td style="text-align: left;">1006</td>
-                <td>11,200.00</td>
-              </tr>
+              ${items.map(item => {
+                const hsnCode = item.product?.hsnCode || item.hsnCode || item.hsn || '10063010';
+                const amount = parseFloat(item.subtotal || item.total || item.totalAmount || '0');
+                return `
+                <tr>
+                  <td style="text-align: left;">${hsnCode}</td>
+                  <td>₹${amount.toFixed(2)}</td>
+                </tr>`;
+              }).join('')}
+              ${items.length === 0 ? `
+                <tr>
+                  <td style="text-align: left;">-</td>
+                  <td>₹0.00</td>
+                </tr>
+              ` : ''}
               <tr style="border-top: 1px solid #000;">
                 <td style="text-align: left; font-weight: bold;">Total</td>
-                <td style="font-weight: bold;">₹ ${items.length > 0 ? grandTotal.toFixed(2) : '74,540.00'}</td>
+                <td style="font-weight: bold;">₹ ${grandTotal.toFixed(2)}</td>
               </tr>
             </table>
           </div>
