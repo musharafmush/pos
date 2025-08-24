@@ -1201,18 +1201,29 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                 const qty = parseFloat(item.quantity || '0');
                 const rate = parseFloat(item.unitCost || item.unitPrice || item.price || item.cost || '0');
                 const amount = parseFloat(item.subtotal || item.total || item.totalAmount || (qty * rate).toString() || '0');
-                const productName = item.product?.name || item.productName || item.name || 'Product';
+                const productName = item.product?.name || item.productName || item.name || 'Product Item';
                 const hsnCode = item.product?.hsnCode || item.hsnCode || item.hsn || '10063010';
+                const unit = item.unit || 'PCS';
+                
+                console.log(`🖨️ Printing item ${index + 1}:`, {
+                  productName,
+                  qty,
+                  rate,
+                  amount,
+                  unit,
+                  hsnCode,
+                  rawItem: item
+                });
                 
                 return `
                 <tr>
                   <td class="text-center">${index + 1}</td>
                   <td>${productName}</td>
                   <td class="text-center">${hsnCode}</td>
-                  <td class="text-center">${qty} ${item.unit || 'BAG'}<br>(${qty * 25} KG)</td>
+                  <td class="text-center">${qty} ${unit}${unit === 'BAG' ? `<br>(${qty * 25} KG)` : ''}</td>
                   <td class="text-right">₹${rate.toFixed(2)}</td>
                   <td class="text-right">₹${rate.toFixed(2)}</td>
-                  <td class="text-center">${item.unit || 'BAG'}</td>
+                  <td class="text-center">${unit}</td>
                   <td class="text-right">₹${amount.toFixed(2)}</td>
                 </tr>`;
               }).join('')}
