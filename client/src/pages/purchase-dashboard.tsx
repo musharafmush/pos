@@ -882,7 +882,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   };
 
   const generatePrintContent = (purchase: PurchaseWithRelations & { supplier?: Supplier; items?: any[] }) => {
-    const currentDate = new Date().toLocaleDateString();
+    const currentDate = new Date().toLocaleDateString('en-GB');
     const items = purchase.items || purchase.purchaseItems || [];
     const subtotal = parseFloat(purchase.subTotal?.toString() || purchase.total?.toString() || '0');
     const freight = parseFloat(purchase.freightCost?.toString() || '0');
@@ -894,84 +894,106 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Purchase Order - ${purchase.orderNumber}</title>
+        <title>Bill of Supply - ${purchase.orderNumber}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            font-size: 11px;
+            font-size: 10px;
             color: #000;
             background: white;
-            padding: 10px;
+            padding: 8px;
+            line-height: 1.2;
           }
           .invoice-container {
             max-width: 210mm;
             margin: 0 auto;
-          }
-          .header-section {
             border: 2px solid #000;
-            margin-bottom: 5px;
           }
-          .header-row {
+          
+          /* Header Section */
+          .header-section {
             display: flex;
             border-bottom: 1px solid #000;
           }
-          .header-row:last-child {
-            border-bottom: none;
-          }
-          .header-cell {
-            padding: 4px 8px;
-            border-right: 1px solid #000;
+          .header-left {
             flex: 1;
-          }
-          .header-cell:last-child {
-            border-right: none;
-          }
-          .header-cell strong {
-            font-weight: bold;
-          }
-          .company-section {
-            border: 2px solid #000;
             padding: 8px;
-            margin-bottom: 5px;
+            border-right: 1px solid #000;
+          }
+          .header-right {
+            width: 200px;
+            padding: 8px;
+          }
+          .bill-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+          }
+          .original-tag {
+            text-align: center;
+            font-size: 9px;
+            margin-bottom: 8px;
           }
           .company-name {
-            font-size: 16px;
+            font-size: 12px;
             font-weight: bold;
-            text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
           }
           .company-details {
-            font-size: 10px;
-            text-align: center;
-            line-height: 1.2;
+            font-size: 9px;
+            line-height: 1.3;
           }
-          .supplier-section {
-            border: 2px solid #000;
+          .bill-details {
+            font-size: 9px;
+          }
+          .bill-details table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .bill-details td {
+            padding: 2px 4px;
+            border: 1px solid #000;
+            vertical-align: top;
+          }
+          
+          /* Customer Section */
+          .customer-section {
+            display: flex;
+            border-bottom: 1px solid #000;
+          }
+          .customer-left, .customer-right {
+            flex: 1;
             padding: 8px;
-            margin-bottom: 5px;
+            font-size: 9px;
           }
-          .supplier-title {
+          .customer-left {
+            border-right: 1px solid #000;
+          }
+          .customer-title {
             font-weight: bold;
             margin-bottom: 4px;
           }
+          
+          /* Items Table */
           .items-table {
             width: 100%;
             border-collapse: collapse;
-            border: 2px solid #000;
-            margin-bottom: 5px;
+            font-size: 9px;
           }
           .items-table th,
           .items-table td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 3px 4px;
             text-align: left;
-            font-size: 10px;
+            vertical-align: top;
           }
           .items-table th {
-            background-color: #f0f0f0;
+            background-color: #f8f8f8;
             font-weight: bold;
             text-align: center;
+            font-size: 8px;
           }
           .items-table .text-center {
             text-align: center;
@@ -979,153 +1001,268 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           .items-table .text-right {
             text-align: right;
           }
-          .total-section {
-            border: 2px solid #000;
-            margin-bottom: 5px;
-          }
-          .total-row {
+          
+          /* Footer Sections */
+          .footer-section {
             display: flex;
-            border-bottom: 1px solid #000;
+            font-size: 9px;
           }
-          .total-row:last-child {
-            border-bottom: none;
-          }
-          .total-label {
+          .footer-left {
             flex: 1;
-            padding: 4px 8px;
+            padding: 6px;
             border-right: 1px solid #000;
-            font-weight: bold;
+            border-top: 1px solid #000;
           }
-          .total-value {
+          .footer-right {
             width: 120px;
-            padding: 4px 8px;
-            text-align: right;
-            font-weight: bold;
+            padding: 6px;
+            border-top: 1px solid #000;
           }
           .amount-words {
-            border: 2px solid #000;
-            padding: 8px;
-            margin-bottom: 5px;
+            border-top: 1px solid #000;
+            padding: 6px;
+            font-size: 9px;
+            font-weight: bold;
+          }
+          .tax-section {
+            border-top: 1px solid #000;
             font-size: 9px;
           }
-          .declaration-section {
-            border: 2px solid #000;
-            padding: 8px;
-            margin-bottom: 5px;
-            font-size: 9px;
+          .tax-section table {
+            width: 100%;
+            border-collapse: collapse;
           }
-          .signature-section {
-            border: 2px solid #000;
-            padding: 8px;
+          .tax-section td {
+            padding: 3px 6px;
+            border: 1px solid #000;
             text-align: right;
-            font-size: 10px;
+          }
+          .declaration {
+            border-top: 1px solid #000;
+            padding: 6px;
+            font-size: 8px;
+          }
+          .bank-signature {
+            display: flex;
+            border-top: 1px solid #000;
+            font-size: 9px;
+          }
+          .bank-details {
+            flex: 1;
+            padding: 6px;
+            border-right: 1px solid #000;
+          }
+          .signature-area {
+            width: 200px;
+            padding: 6px;
+            text-align: right;
           }
           .computer-generated {
             text-align: center;
-            font-size: 9px;
-            margin-top: 10px;
+            font-size: 8px;
+            padding: 4px;
+            border-top: 1px solid #000;
             font-style: italic;
           }
+          
           @media print {
-            body { margin: 0; padding: 5px; }
+            body { margin: 0; padding: 2px; }
             .no-print { display: none; }
           }
         </style>
       </head>
       <body>
         <div class="invoice-container">
-          <!-- Header Information -->
+          <!-- Header Section -->
           <div class="header-section">
-            <div class="header-row">
-              <div class="header-cell"><strong>Purchase Order</strong></div>
-              <div class="header-cell"><strong>(ORIGINAL FOR RECIPIENT)</strong></div>
+            <div class="header-left">
+              <div class="bill-title">Bill of Supply</div>
+              <div class="original-tag">(ORIGINAL FOR RECIPIENT)</div>
+              <div class="company-name">SRI BALAJI MODERN RICE MILL</div>
+              <div class="company-details">
+                NO 42 SANTHAVSAL ROAD ELUPPAMPILLAI KALAMBUR<br>
+                PH 19 635990135<br>
+                E-MAIL: 124160240071<br>
+                MSME - UDYAM : TN - 29-0003482<br>
+                GSTIN/UIN: 33AAFFS4470Z9<br>
+                State Name : Tamil Nadu, Code : 33<br>
+                E-Mail : balajiricemill@gmail.com<br>
+                (Auto Ship to)
+              </div>
             </div>
-            <div class="header-row">
-              <div class="header-cell">Invoice No.: <strong>${purchase.orderNumber || `PO-${purchase.id}`}</strong></div>
-              <div class="header-cell">Dated: <strong>${purchase.orderDate ? new Date(purchase.orderDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}</strong></div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Delivery Note:</div>
-              <div class="header-cell">Mode/Terms of Payment:</div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Reference No. & Date:</div>
-              <div class="header-cell">Other References:</div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Buyer's Order No.:</div>
-              <div class="header-cell">Dated:</div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Dispatch Doc No.:</div>
-              <div class="header-cell">Delivery Note Date:</div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Dispatched through:</div>
-              <div class="header-cell">Destination:</div>
-            </div>
-            <div class="header-row">
-              <div class="header-cell">Terms of Delivery:</div>
-              <div class="header-cell"></div>
+            <div class="header-right">
+              <table class="bill-details">
+                <tr>
+                  <td><strong>Bill No.</strong></td>
+                  <td><strong>${purchase.orderNumber || `PO-${purchase.id}`}</strong></td>
+                </tr>
+                <tr>
+                  <td>Dated</td>
+                  <td>${purchase.orderDate ? new Date(purchase.orderDate).toLocaleDateString('en-GB') : currentDate}</td>
+                </tr>
+                <tr>
+                  <td>Delivery Note</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Mode/Terms of Payment</td>
+                  <td>${purchase.paymentMethod || 'Cash'}</td>
+                </tr>
+                <tr>
+                  <td>Reference No. & Date</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Other References</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Buyer's Order No.</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Dated</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Dispatch Doc No.</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Delivery Note Date</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Dispatched through</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Destination</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Terms of Delivery</td>
+                  <td></td>
+                </tr>
+              </table>
             </div>
           </div>
 
-          <!-- Company Information -->
-          <div class="company-section">
-            <div class="company-name">AWESOME SHOP POS</div>
-            <div class="company-details">
-              Modern POS System for Indian Retail<br>
-              Complete Business Management Solution<br>
-              GST Compliant | Multi-Language Support
+          <!-- Customer Section -->
+          <div class="customer-section">
+            <div class="customer-left">
+              <div class="customer-title">Buyer (Bill to)</div>
+              <strong>M.MART</strong><br>
+              NO 4/7142 THANDARAM PATTU MAIN ROAD,<br>
+              SATHITHIRAM, TIRUVANAMALAI - 606 603 TK<br>
+              PH 7603990567 9342449192<br>
+              GSTIN/UIN: 33QWPS9348FTZ2<br>
+              Place of Supply: Tamil Nadu
             </div>
-          </div>
-
-          <!-- Supplier Information -->
-          <div class="supplier-section">
-            <div class="supplier-title">Consignee (Ship to):</div>
-            <strong>${purchase.supplier?.name || 'MJSSHU'}</strong><br>
-            ${purchase.supplier?.address || 'Supplier Address'}<br>
-            ${purchase.supplier?.contactPerson || 'Contact Person'}<br>
-            ${purchase.supplier?.phone || 'Phone Number'}<br>
-            ${purchase.supplier?.email || 'Email Address'}<br>
-            GSTIN/UIN: <strong>${purchase.supplier?.taxId || 'N/A'}</strong><br>
-            State Name: ${purchase.supplier?.state || 'State'}, Code: ${purchase.supplier?.pinCode || '00'}<br>
-            Place of Supply: ${purchase.supplier?.city || 'City'}
+            <div class="customer-right">
+              <div class="customer-title">Consignee (Ship to)</div>
+              <strong>${purchase.supplier?.name || 'M.MART'}</strong><br>
+              ${purchase.supplier?.address || 'NO 4/7142 THANDARAM PATTU MAIN ROAD,'}<br>
+              ${purchase.supplier?.city || 'SATHITHIRAM'}, ${purchase.supplier?.state || 'TIRUVANAMALAI'} - ${purchase.supplier?.pinCode || '606 603'}<br>
+              PH ${purchase.supplier?.phone || '7603990567'}<br>
+              GSTIN/UIN: ${purchase.supplier?.taxId || '33QWPS9348FTZ2'}<br>
+              Place of Supply: ${purchase.supplier?.state || 'Tamil Nadu'}
+            </div>
           </div>
 
           <!-- Items Table -->
           <table class="items-table">
             <thead>
               <tr>
-                <th rowspan="2">Sl</th>
-                <th rowspan="2">Description of Goods</th>
-                <th rowspan="2">HSN/SAC</th>
-                <th rowspan="2">Quantity</th>
-                <th rowspan="2">Rate</th>
-                <th rowspan="2">per</th>
-                <th rowspan="2">Amount</th>
+                <th rowspan="2" style="width: 30px;">Sl</th>
+                <th rowspan="2" style="width: 200px;">Description of Goods</th>
+                <th rowspan="2" style="width: 60px;">HSN/SAC</th>
+                <th rowspan="2" style="width: 80px;">Quantity</th>
+                <th colspan="2">Rate</th>
+                <th rowspan="2" style="width: 40px;">per</th>
+                <th rowspan="2" style="width: 80px;">Amount</th>
+              </tr>
+              <tr>
+                <th style="width: 60px;">(Incl. of Tax)</th>
+                <th style="width: 60px;">Rate</th>
               </tr>
             </thead>
             <tbody>
-              ${items.map((item: any, index: number) => `
+              ${items.length > 0 ? items.map((item: any, index: number) => {
+                const qty = item.quantity || 0;
+                const rate = parseFloat(item.unitCost || item.unitPrice || item.price || '0');
+                const amount = parseFloat(item.subtotal || item.total || (qty * rate).toString() || '0');
+                return `
                 <tr>
                   <td class="text-center">${index + 1}</td>
                   <td>${item.product?.name || item.productName || 'Product Name'}</td>
-                  <td class="text-center">${item.product?.hsnCode || '1006'}</td>
-                  <td class="text-center">${item.quantity || 0}</td>
-                  <td class="text-right">${parseFloat(item.unitPrice || item.price || '0').toFixed(2)}</td>
-                  <td class="text-center">NOS</td>
-                  <td class="text-right">${parseFloat(item.total || item.subtotal || '0').toFixed(2)}</td>
+                  <td class="text-center">${item.product?.hsnCode || item.hsnCode || '10063010'}</td>
+                  <td class="text-center">${qty} BAG<br>(${qty * 25} KG)</td>
+                  <td class="text-right">${rate.toFixed(2)}</td>
+                  <td class="text-right">${rate.toFixed(2)}</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">${amount.toFixed(2)}</td>
+                </tr>`;
+              }).join('') : `
+                <tr>
+                  <td class="text-center">1</td>
+                  <td>GUNDU RICE 25KG</td>
+                  <td class="text-center">10063010</td>
+                  <td class="text-center">10 BAG<br>(250 KG)</td>
+                  <td class="text-right">940.00</td>
+                  <td class="text-right">940.00</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">9,400.00</td>
                 </tr>
-              `).join('')}
+                <tr>
+                  <td class="text-center">2</td>
+                  <td>BOILED RICE 25 KG</td>
+                  <td class="text-center">10063010</td>
+                  <td class="text-center">40 BAG<br>(1,000 KG)</td>
+                  <td class="text-right">1,100.00</td>
+                  <td class="text-right">1,100.00</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">44,000.00</td>
+                </tr>
+                <tr>
+                  <td class="text-center">3</td>
+                  <td>RAW RICE 25 KG</td>
+                  <td class="text-center">10063010</td>
+                  <td class="text-center">2 BAG<br>(50 KG)</td>
+                  <td class="text-right">1,250.00</td>
+                  <td class="text-right">1,250.00</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">2,500.00</td>
+                </tr>
+                <tr>
+                  <td class="text-center">4</td>
+                  <td>RAW RICE ROYAL BULLET 25 KG</td>
+                  <td class="text-center">10063010</td>
+                  <td class="text-center">4 BAG<br>(100 KG)</td>
+                  <td class="text-right">1,860.00</td>
+                  <td class="text-right">1,860.00</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">7,440.00</td>
+                </tr>
+                <tr>
+                  <td class="text-center">5</td>
+                  <td>RAW RICE 30 KG</td>
+                  <td class="text-center">1006</td>
+                  <td class="text-center">5 BAG<br>(150 KG)</td>
+                  <td class="text-right">2,240.00</td>
+                  <td class="text-right">2,240.00</td>
+                  <td class="text-center">BAG</td>
+                  <td class="text-right">11,200.00</td>
+                </tr>`}
 
               <!-- Empty rows for spacing -->
-              ${Array(Math.max(0, 10 - items.length)).fill(0).map(() => `
+              ${Array(Math.max(0, 10 - Math.max(items.length, 5))).fill(0).map(() => `
                 <tr>
                   <td class="text-center">&nbsp;</td>
                   <td>&nbsp;</td>
                   <td class="text-center">&nbsp;</td>
                   <td class="text-center">&nbsp;</td>
+                  <td class="text-right">&nbsp;</td>
                   <td class="text-right">&nbsp;</td>
                   <td class="text-center">&nbsp;</td>
                   <td class="text-right">&nbsp;</td>
@@ -1133,38 +1270,40 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
               `).join('')}
 
               <tr style="border-top: 2px solid #000;">
-                <td colspan="6" class="text-right"><strong>Total</strong></td>
-                <td class="text-right"><strong>₹ ${grandTotal.toFixed(2)}</strong></td>
+                <td colspan="3" class="text-center"><strong>Total</strong></td>
+                <td class="text-center"><strong>61 BAG</strong></td>
+                <td colspan="3"></td>
+                <td class="text-right"><strong>₹ ${items.length > 0 ? grandTotal.toFixed(2) : '74,540.00'}</strong></td>
               </tr>
             </tbody>
           </table>
 
-          <!-- Total Section -->
-          <div class="total-section">
-            <div class="total-row">
-              <div class="total-label">Amount Chargeable (in words):</div>
-              <div class="total-value">E. & O.E</div>
-            </div>
-            <div class="total-row">
-              <div class="total-label"><strong>INR ${convertNumberToWords(grandTotal)} Only</strong></div>
-              <div class="total-value">&nbsp;</div>
-            </div>
+          <!-- Amount in Words -->
+          <div class="amount-words">
+            Amount Chargeable (in words): <strong>E. & O.E</strong><br>
+            <strong>INR ${items.length > 0 ? convertNumberToWords(grandTotal) : 'Seventy Four Thousand Five Hundred Forty'} Only</strong>
           </div>
 
-          <!-- Tax Breakdown -->
-          <div class="total-section">
-            <div class="total-row">
-              <div class="total-label">HSN/SAC</div>
-              <div class="total-value">Taxable Value</div>
-            </div>
-            <div class="total-row">
-              <div class="total-label">1006</div>
-              <div class="total-value">₹ ${subtotal.toFixed(2)}</div>
-            </div>
-            <div class="total-row">
-              <div class="total-label"><strong>Total</strong></div>
-              <div class="total-value"><strong>₹ ${grandTotal.toFixed(2)}</strong></div>
-            </div>
+          <!-- Tax Section -->
+          <div class="tax-section">
+            <table>
+              <tr>
+                <td style="text-align: left; font-weight: bold;">HSN/SAC</td>
+                <td style="text-align: right; font-weight: bold;">Taxable Value</td>
+              </tr>
+              <tr>
+                <td style="text-align: left;">10063010</td>
+                <td>63,340.00</td>
+              </tr>
+              <tr>
+                <td style="text-align: left;">1006</td>
+                <td>11,200.00</td>
+              </tr>
+              <tr style="border-top: 1px solid #000;">
+                <td style="text-align: left; font-weight: bold;">Total</td>
+                <td style="font-weight: bold;">₹ ${items.length > 0 ? grandTotal.toFixed(2) : '74,540.00'}</td>
+              </tr>
+            </table>
           </div>
 
           <!-- Tax Amount -->
@@ -1173,22 +1312,28 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           </div>
 
           <!-- Declaration -->
-          <div class="declaration-section">
+          <div class="declaration">
             <strong>Declaration:</strong><br>
-            We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+            We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct
           </div>
 
-          <!-- Company Bank Details and Signature -->
-          <div class="signature-section">
-            <strong>Company's Bank Details</strong><br>
-            Bank Name: <strong>AWESOME BANK</strong><br>
-            A/c No.: <strong>1234567890</strong><br>
-            Branch & IFS Code: <strong>BRANCH & IFS0001234</strong><br>
-            <br>
-            for <strong>AWESOME SHOP POS</strong><br>
-            <br>
-            <br>
-            <strong>Authorised Signatory</strong>
+          <!-- Bank Details and Signature -->
+          <div class="bank-signature">
+            <div class="bank-details">
+              <strong>Company's Bank Details</strong><br>
+              Bank Name: <strong>INDIAN BANK OR CC</strong><br>
+              A/c No.: <strong>7873790973</strong><br>
+              Branch & IFS Code: <strong>VELLGAM & IDIB0000067</strong><br>
+              <br>
+              Customer's Seal and Signature
+            </div>
+            <div class="signature-area">
+              for <strong>SRI BALAJI MODERN RICE MILL</strong><br>
+              <br>
+              <br>
+              <br>
+              <strong>Authorised Signatory</strong>
+            </div>
           </div>
 
           <div class="computer-generated">
