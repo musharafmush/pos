@@ -84,7 +84,20 @@ import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
-import type { Purchase } from "@shared/schema";
+import type { Purchase, PurchaseItem, Supplier, Product } from "@shared/schema";
+
+// Extended Purchase type with relational data for dashboard
+type PurchaseWithRelations = Purchase & {
+  supplier?: Supplier;
+  items?: (PurchaseItem & { product?: Product })[];
+  purchaseItems?: (PurchaseItem & { product?: Product })[];
+  actualTotal?: number;
+  totalAmount?: number;
+  subTotal?: number;
+  freightCost?: number;
+  otherCharges?: number;
+  discountAmount?: number;
+};
 
 // Free Qty Edit Cell Component
 function FreeQtyEditCell({ item, onUpdate }: { item: any; onUpdate: (newFreeQty: number) => void }) {
@@ -176,19 +189,19 @@ function FreeQtyEditCell({ item, onUpdate }: { item: any; onUpdate: (newFreeQty:
 
 export default function PurchaseDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [selectedPurchase, setSelectedPurchase] = useState<PurchaseWithRelations | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<PurchaseWithRelations | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState<Purchase | null>(null);
+  const [selectedPurchaseForPayment, setSelectedPurchaseForPayment] = useState<PurchaseWithRelations | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
   const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [selectedPurchaseForStatus, setSelectedPurchaseForStatus] = useState<Purchase | null>(null);
+  const [selectedPurchaseForStatus, setSelectedPurchaseForStatus] = useState<PurchaseWithRelations | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [viewMode, setViewMode] = useState<"orders" | "suppliers">("orders");
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
@@ -197,7 +210,7 @@ export default function PurchaseDashboard() {
   const [, setLocation] = useLocation();
 
   // Fetch purchases with more aggressive cache settings
-  const { data: purchases = [], isLoading, error, refetch } = useQuery<Purchase[]>({
+  const { data: purchases = [], isLoading, error, refetch } = useQuery<PurchaseWithRelations[]>({
     queryKey: ["/api/purchases"],
     staleTime: 0, // Consider data stale immediately
     gcTime: 0, // Don't cache in memory
@@ -524,32 +537,32 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   });
 
   // Filter purchases based on search
-  const filteredPurchases = purchases.filter((purchase: Purchase) =>
-    (purchase as any).supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredPurchases = purchases.filter((purchase: PurchaseWithRelations) =>
+    purchase.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.id?.toString().includes(searchTerm)
   );
 
   // Calculate statistics with better data handling
   const totalPurchases = purchases.length;
-  const pendingPurchases = purchases.filter((p: Purchase) => {
+  const pendingPurchases = purchases.filter((p: PurchaseWithRelations) => {
     const status = p.status?.toLowerCase() || 'pending';
-    const paymentStatus = (p as any).paymentStatus; // Use corrected camelCase field
+    const paymentStatus = p.paymentStatus;
 
     // Consider as pending if status is pending/ordered/draft OR if not fully paid
     return (status === "pending" || status === "ordered" || status === "draft") || 
            (paymentStatus === "partial" || paymentStatus === "due");
   }).length;
 
-  const completedPurchases = purchases.filter((p: Purchase) => {
+  const completedPurchases = purchases.filter((p: PurchaseWithRelations) => {
     const status = p.status?.toLowerCase() || '';
-    const paymentStatus = (p as any).paymentStatus; // Use corrected camelCase field
+    const paymentStatus = p.paymentStatus;
 
     // Consider as completed if status is completed/received/delivered OR if fully paid
     return (status === "completed" || status === "received" || status === "delivered") ||
            (paymentStatus === "paid");
   }).length;
-  const totalAmount = purchases.reduce((sum: number, p: Purchase) => {
+  const totalAmount = purchases.reduce((sum: number, p: PurchaseWithRelations) => {
     // Calculate total from purchase items if available (same logic as table display)
     const items = p.purchaseItems || p.items || [];
     let calculatedTotal = 0;
@@ -598,19 +611,19 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   }, 0);
 
   // Payment statistics with improved calculation
-  const paidPurchases = purchases.filter((p: Purchase) => {
+  const paidPurchases = purchases.filter((p: PurchaseWithRelations) => {
     // Use the backend-corrected actualTotal when available, fallback to total
-    const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
-    const paymentStatus = (p as any).paymentStatus;
+    const totalAmount = parseFloat(p.actualTotal?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    const paymentStatus = p.paymentStatus;
     return paymentStatus === "paid" || (totalAmount > 0 && paidAmount >= totalAmount);
   }).length;
 
-  const duePurchases = purchases.filter((p: Purchase) => {
+  const duePurchases = purchases.filter((p: PurchaseWithRelations) => {
     // Use the backend-corrected actualTotal when available, fallback to total
-    const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
-    const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
-    const paymentStatus = (p as any).paymentStatus;
+    const totalAmount = parseFloat(p.actualTotal?.toString() || p.total?.toString() || "0");
+    const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+    const paymentStatus = p.paymentStatus;
 
     // Consider as due if explicitly marked as due, partial, or if unpaid with amount
     return totalAmount > 0 && (
@@ -623,11 +636,11 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
   }).length;
 
   const totalDueAmount = purchases
-    .filter((p: Purchase) => {
+    .filter((p: PurchaseWithRelations) => {
       // Use the backend-corrected actualTotal when available, fallback to total
-      const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
-      const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
-      const paymentStatus = (p as any).paymentStatus;
+      const totalAmount = parseFloat(p.actualTotal?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
+      const paymentStatus = p.paymentStatus;
 
       return totalAmount > 0 && (
              paymentStatus === "due" || 
@@ -637,10 +650,10 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
              (paymentStatus !== "paid" && paidAmount < totalAmount)
       );
     })
-    .reduce((sum: number, p: Purchase) => {
+    .reduce((sum: number, p: PurchaseWithRelations) => {
       // Use the backend-corrected actualTotal when available, fallback to total
-      const totalAmount = parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0");
-      const paidAmount = parseFloat((p as any).paidAmount?.toString() || "0");
+      const totalAmount = parseFloat(p.actualTotal?.toString() || p.total?.toString() || "0");
+      const paidAmount = parseFloat(p.paidAmount?.toString() || "0");
       return sum + Math.max(0, totalAmount - paidAmount);
     }, 0);
 
@@ -658,8 +671,8 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
       status: p.status,
       total: parseFloat(p.total?.toString() || "0"),
       actualTotal: parseFloat((p as any).actualTotal?.toString() || "0"),
-      paidAmount: parseFloat((p as any).paidAmount?.toString() || "0"),
-      paymentStatus: (p as any).paymentStatus,
+      paidAmount: parseFloat(p.paidAmount?.toString() || "0"),
+      paymentStatus: p.paymentStatus,
       remainingAmount: Math.max(0, parseFloat((p as any).actualTotal?.toString() || p.total?.toString() || "0") - parseFloat((p as any).paidAmount?.toString() || "0")),
       isPending: (p.status?.toLowerCase() === "pending" || p.status?.toLowerCase() === "ordered" || p.status?.toLowerCase() === "draft") || 
                  ((p as any).paymentStatus === "partial" || (p as any).paymentStatus === "due"),
@@ -802,7 +815,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     });
   };
 
-  const handleRecordPayment = async (purchase: Purchase) => {
+  const handleRecordPayment = async (purchase: PurchaseWithRelations) => {
     console.log('💳 Opening payment modal for purchase:', purchase.id);
     
     // Force refresh the purchases data to get the latest payment information
@@ -824,13 +837,13 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     setPaymentDialogOpen(true);
   };
 
-  const handleStatusUpdate = (purchase: Purchase) => {
+  const handleStatusUpdate = (purchase: PurchaseWithRelations) => {
     setSelectedPurchaseForStatus(purchase);
     setNewStatus(purchase.status || "pending");
     setStatusDialogOpen(true);
   };
 
-  const handlePrint = async (purchase: Purchase) => {
+  const handlePrint = async (purchase: PurchaseWithRelations) => {
     try {
       // Fetch complete purchase details including items for printing
       const response = await fetch(`/api/purchases/${purchase.id}`);
@@ -868,13 +881,13 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
     }
   };
 
-  const generatePrintContent = (purchase: any) => {
+  const generatePrintContent = (purchase: PurchaseWithRelations & { supplier?: Supplier; items?: any[] }) => {
     const currentDate = new Date().toLocaleDateString();
-    const items = purchase.items || purchase.purchaseItems || purchase.purchase_items || [];
-    const subtotal = parseFloat(purchase.subTotal || purchase.total || '0');
-    const freight = parseFloat(purchase.freight || '0');
-    const otherCharges = parseFloat(purchase.otherCharges || '0');
-    const discount = parseFloat(purchase.discount || '0');
+    const items = purchase.items || purchase.purchaseItems || [];
+    const subtotal = parseFloat(purchase.subTotal?.toString() || purchase.total?.toString() || '0');
+    const freight = parseFloat(purchase.freightCost?.toString() || '0');
+    const otherCharges = parseFloat(purchase.otherCharges?.toString() || '0');
+    const discount = parseFloat(purchase.discountAmount?.toString() || '0');
     const grandTotal = subtotal + freight + otherCharges - discount;
 
     return `
@@ -1070,12 +1083,13 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
           <!-- Supplier Information -->
           <div class="supplier-section">
             <div class="supplier-title">Consignee (Ship to):</div>
-            <strong>${purchase.supplier?.name || 'SUPPLIER NAME'}</strong><br>
+            <strong>${purchase.supplier?.name || 'MJSSHU'}</strong><br>
             ${purchase.supplier?.address || 'Supplier Address'}<br>
+            ${purchase.supplier?.contactPerson || 'Contact Person'}<br>
             ${purchase.supplier?.phone || 'Phone Number'}<br>
             ${purchase.supplier?.email || 'Email Address'}<br>
-            GSTIN/UIN: <strong>${purchase.supplier?.gstin || 'N/A'}</strong><br>
-            State Name: ${purchase.supplier?.state || 'State'}, Code: ${purchase.supplier?.stateCode || '00'}<br>
+            GSTIN/UIN: <strong>${purchase.supplier?.taxId || 'N/A'}</strong><br>
+            State Name: ${purchase.supplier?.state || 'State'}, Code: ${purchase.supplier?.pinCode || '00'}<br>
             Place of Supply: ${purchase.supplier?.city || 'City'}
           </div>
 
