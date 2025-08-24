@@ -2838,10 +2838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Purchase not found' });
       }
 
-      // Fetch purchase items for this specific purchase
-      console.log(`🛒 Fetching items for purchase ${id}`);
-      const purchaseItems = await storage.getPurchaseItemsByPurchaseId(id);
-      console.log(`📦 Found ${purchaseItems.length} items for purchase ${id}:`, purchaseItems);
+      console.log(`🛒 Fetched purchase ${id} with items`);
+      console.log(`📦 Purchase data includes ${purchase.items?.length || 0} items`);
 
       // Ensure payment fields are properly mapped from snake_case to camelCase
       const formattedPurchase = {
@@ -2851,8 +2849,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: purchase.payment_method || purchase.paymentMethod,
         paymentDate: purchase.payment_date || purchase.paymentDate,
         paymentType: purchase.payment_type || purchase.paymentType,
-        items: purchaseItems, // Include actual purchase items
-        purchaseItems: purchaseItems // Alternative property name for compatibility
+        items: purchase.items || [], // Items already included from getPurchaseById
+        purchaseItems: purchase.items || [] // Alternative property name for compatibility
       };
 
       console.log('📦 Single purchase fetch - formatted data:', {
@@ -2861,7 +2859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalPaidAmount: purchase.paid_amount,
         formattedPaymentStatus: formattedPurchase.paymentStatus,
         formattedPaidAmount: formattedPurchase.paidAmount,
-        itemsCount: purchaseItems.length
+        itemsCount: purchase.items?.length || 0
       });
 
       res.json(formattedPurchase);
