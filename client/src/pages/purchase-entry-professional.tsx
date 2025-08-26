@@ -22,6 +22,185 @@ import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download,
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
+// Purchase Amount Calculator Component - Based on Screenshot Reference
+const PurchaseAmountCalculator = ({ 
+  onCalculate, 
+  initialPrice = 0,
+  className = ""
+}: {
+  onCalculate: (result: { 
+    purchasePrice: number; 
+    discountPercent: number; 
+    taxPercent: number; 
+    cessPercent: number; 
+    finalAmount: number; 
+  }) => void;
+  initialPrice?: number;
+  className?: string;
+}) => {
+  const [purchasePrice, setPurchasePrice] = useState(initialPrice);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [taxPercent, setTaxPercent] = useState(0);
+  const [cessPercent, setCessPercent] = useState(0);
+  const [calculatedAmount, setCalculatedAmount] = useState(initialPrice);
+
+  // Calculate final amount whenever inputs change
+  useEffect(() => {
+    const basePrice = Number(purchasePrice) || 0;
+    const discount = Number(discountPercent) || 0;
+    const tax = Number(taxPercent) || 0;
+    const cess = Number(cessPercent) || 0;
+
+    // Calculate step by step as per standard purchase calculations
+    const afterDiscount = basePrice - (basePrice * discount / 100);
+    const afterTax = afterDiscount + (afterDiscount * tax / 100);
+    const finalAmount = afterTax + (afterTax * cess / 100);
+
+    setCalculatedAmount(Math.round(finalAmount * 100) / 100);
+
+    // Call parent callback with calculated values
+    onCalculate({
+      purchasePrice: basePrice,
+      discountPercent: discount,
+      taxPercent: tax,
+      cessPercent: cess,
+      finalAmount: Math.round(finalAmount * 100) / 100
+    });
+  }, [purchasePrice, discountPercent, taxPercent, cessPercent, onCalculate]);
+
+  // Predefined discount options
+  const discountOptions = [0, 2, 5, 10, 15, 20, 25, 30];
+  
+  // Predefined tax options (GST rates)
+  const taxOptions = [0, 5, 12, 18, 28];
+  
+  // Predefined cess options
+  const cessOptions = [0, 1, 2, 3, 5];
+
+  return (
+    <Card className={`bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 ${className}`}>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-bold text-blue-800 flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          Purchase Amount Calculator
+        </CardTitle>
+        <p className="text-sm text-blue-600">Calculate purchase amounts with discount, tax, and cess</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Purchase Price Row */}
+        <div className="grid grid-cols-5 gap-3 items-center p-3 bg-white rounded-lg border border-blue-200">
+          <div className="text-sm font-semibold text-gray-700">Purchase Price *</div>
+          <div className="text-sm font-semibold text-gray-700">Disc. (%)</div>
+          <div className="text-sm font-semibold text-gray-700">Tax (%)</div>
+          <div className="text-sm font-semibold text-gray-700">Cess (%)</div>
+          <div className="text-sm font-semibold text-gray-700">Amount *</div>
+        </div>
+
+        {/* Input Row */}
+        <div className="grid grid-cols-5 gap-3 items-center p-3 bg-white rounded-lg border border-blue-200 shadow-sm">
+          {/* Purchase Price Input */}
+          <div className="relative">
+            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">₹</span>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(Number(e.target.value) || 0)}
+              className="pl-6 text-sm font-semibold border-blue-300 focus:border-blue-500"
+              placeholder="158.69"
+              data-testid="input-purchase-price"
+            />
+          </div>
+
+          {/* Discount Percentage Select */}
+          <div>
+            <Select onValueChange={(value) => setDiscountPercent(Number(value))} value={discountPercent.toString()}>
+              <SelectTrigger className="text-sm border-blue-300 focus:border-blue-500" data-testid="select-discount-percent">
+                <SelectValue placeholder="0" />
+              </SelectTrigger>
+              <SelectContent>
+                {discountOptions.map((rate) => (
+                  <SelectItem key={rate} value={rate.toString()}>
+                    {rate}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tax Percentage Select */}
+          <div>
+            <Select onValueChange={(value) => setTaxPercent(Number(value))} value={taxPercent.toString()}>
+              <SelectTrigger className="text-sm border-blue-300 focus:border-blue-500" data-testid="select-tax-percent">
+                <SelectValue placeholder="5" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxOptions.map((rate) => (
+                  <SelectItem key={rate} value={rate.toString()}>
+                    {rate}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Cess Percentage Select */}
+          <div>
+            <Select onValueChange={(value) => setCessPercent(Number(value))} value={cessPercent.toString()}>
+              <SelectTrigger className="text-sm border-blue-300 focus:border-blue-500" data-testid="select-cess-percent">
+                <SelectValue placeholder="0" />
+              </SelectTrigger>
+              <SelectContent>
+                {cessOptions.map((rate) => (
+                  <SelectItem key={rate} value={rate.toString()}>
+                    {rate}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Calculated Amount Display */}
+          <div className="relative">
+            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">₹</span>
+            <Input
+              type="text"
+              value={calculatedAmount.toFixed(2)}
+              readOnly
+              className="pl-6 text-sm font-bold bg-green-50 border-green-300 text-green-800 cursor-not-allowed"
+              data-testid="text-calculated-amount"
+            />
+          </div>
+        </div>
+
+        {/* Calculation Breakdown */}
+        <div className="bg-white p-3 rounded-lg border border-blue-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2">Calculation Breakdown</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div className="bg-gray-50 p-2 rounded">
+              <div className="text-gray-600">Base Amount</div>
+              <div className="font-semibold">₹{purchasePrice.toFixed(2)}</div>
+            </div>
+            <div className="bg-red-50 p-2 rounded">
+              <div className="text-red-600">Discount ({discountPercent}%)</div>
+              <div className="font-semibold text-red-800">-₹{((purchasePrice * discountPercent) / 100).toFixed(2)}</div>
+            </div>
+            <div className="bg-blue-50 p-2 rounded">
+              <div className="text-blue-600">Tax ({taxPercent}%)</div>
+              <div className="font-semibold text-blue-800">+₹{((purchasePrice - (purchasePrice * discountPercent / 100)) * taxPercent / 100).toFixed(2)}</div>
+            </div>
+            <div className="bg-purple-50 p-2 rounded">
+              <div className="text-purple-600">Cess ({cessPercent}%)</div>
+              <div className="font-semibold text-purple-800">+₹{(((purchasePrice - (purchasePrice * discountPercent / 100)) * (1 + taxPercent / 100)) * cessPercent / 100).toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 // Product Search with Suggestions Component
 const ProductSearchWithSuggestions = ({ 
   products, 
@@ -315,6 +494,15 @@ export default function PurchaseEntryProfessional() {
     paymentNotes: "",
   });
   const [activeTab, setActiveTab] = useState("details");
+  
+  // Calculator state
+  const [calculatorResult, setCalculatorResult] = useState({
+    purchasePrice: 0,
+    discountPercent: 0,
+    taxPercent: 0,
+    cessPercent: 0,
+    finalAmount: 0
+  });
 
   // Professional Record Payment Mutation for Bill Payment Management
   const recordPayment = useMutation({
@@ -2309,8 +2497,9 @@ export default function PurchaseEntryProfessional() {
         {/* Main Content */}
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Purchase Details</TabsTrigger>
+              <TabsTrigger value="calculator">Amount Calculator</TabsTrigger>
               <TabsTrigger value="items">Line Items</TabsTrigger>
               <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
@@ -2737,6 +2926,156 @@ export default function PurchaseEntryProfessional() {
       </div>
     </CardContent>
   </Card>
+</TabsContent>
+
+{/* Purchase Amount Calculator Tab */}
+<TabsContent value="calculator" className="space-y-4">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* Main Calculator */}
+    <div>
+      <PurchaseAmountCalculator
+        onCalculate={setCalculatorResult}
+        initialPrice={158.69}
+        className="h-fit"
+      />
+    </div>
+
+    {/* Usage Guide & Quick Actions */}
+    <div className="space-y-4">
+      <Card className="border-amber-200 bg-amber-50">
+        <CardHeader>
+          <CardTitle className="text-amber-800 flex items-center gap-2">
+            <Edit2 className="h-5 w-5" />
+            How to Use This Calculator
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-amber-700">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-amber-800">1.</span>
+            <div>Enter the <strong>Purchase Price</strong> - the base cost before any adjustments</div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-amber-800">2.</span>
+            <div>Select <strong>Discount %</strong> - trade discount or supplier discount</div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-amber-800">3.</span>
+            <div>Choose <strong>Tax %</strong> - GST rate (5%, 12%, 18%, 28%)</div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-amber-800">4.</span>
+            <div>Set <strong>Cess %</strong> - additional cess if applicable</div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-amber-800">5.</span>
+            <div>View the calculated <strong>Final Amount</strong> including all adjustments</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Example Calculations */}
+      <Card className="border-green-200 bg-green-50">
+        <CardHeader>
+          <CardTitle className="text-green-800 flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Example Scenarios
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="bg-white p-3 rounded-lg border border-green-200">
+            <div className="font-semibold text-green-800 mb-1">Scenario 1: Electronics Item</div>
+            <div className="text-green-700">Price: ₹1000, Discount: 10%, GST: 18% = ₹1062</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg border border-green-200">
+            <div className="font-semibold text-green-800 mb-1">Scenario 2: Food Item</div>
+            <div className="text-green-700">Price: ₹500, Discount: 5%, GST: 5% = ₹497.50</div>
+          </div>
+          <div className="bg-white p-3 rounded-lg border border-green-200">
+            <div className="font-semibold text-green-800 mb-1">Scenario 3: Luxury Item with Cess</div>
+            <div className="text-green-700">Price: ₹2000, Discount: 0%, GST: 28%, Cess: 3% = ₹2633.60</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Current Calculation Summary */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-blue-800 flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Current Calculation Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-blue-700">Purchase Price:</span>
+            <span className="font-semibold">₹{calculatorResult.purchasePrice.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-blue-700">Discount Applied:</span>
+            <span className="font-semibold">{calculatorResult.discountPercent}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-blue-700">Tax Applied:</span>
+            <span className="font-semibold">{calculatorResult.taxPercent}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-blue-700">Cess Applied:</span>
+            <span className="font-semibold">{calculatorResult.cessPercent}%</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between text-lg">
+            <span className="text-blue-800 font-bold">Final Amount:</span>
+            <span className="font-bold text-green-600">₹{calculatorResult.finalAmount.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Action Buttons */}
+      <Card className="border-purple-200 bg-purple-50">
+        <CardHeader>
+          <CardTitle className="text-purple-800 flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Quick Actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button 
+            onClick={() => {
+              // Apply calculated values to the next line item
+              toast({
+                title: "Calculator Values Ready",
+                description: `Amount ₹${calculatorResult.finalAmount.toFixed(2)} calculated with ${calculatorResult.discountPercent}% discount and ${calculatorResult.taxPercent}% tax`
+              });
+              setActiveTab("items");
+            }}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Use in Line Items
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setCalculatorResult({
+                purchasePrice: 0,
+                discountPercent: 0,
+                taxPercent: 0,
+                cessPercent: 0,
+                finalAmount: 0
+              });
+              toast({
+                title: "Calculator Reset",
+                description: "All values have been cleared"
+              });
+            }}
+            className="w-full"
+          >
+            Reset Calculator
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  </div>
 </TabsContent>
 
 {/* Line Items Tab */}
