@@ -2818,7 +2818,7 @@ Remaining balance: ${formatCurrency(remainingAmount)}`;
                         <div>
                           <label className="text-sm font-medium text-gray-600">Address</label>
                           <div className="text-base mt-1 space-y-1">
-                            <p>Linking Street</p>
+                            <p></p>
                             <p>Phoenix, Arizona, USA</p>
                           </div>
                         </div>
