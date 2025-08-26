@@ -22,6 +22,123 @@ import { Plus, Save, Printer, ArrowLeft, Trash2, Package, Edit2, List, Download,
 import { Link } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 
+// Enhanced Cost Price Display Component with Recent Purchase History
+const EnhancedCostPriceDisplay = ({ 
+  index, 
+  form, 
+  products 
+}: {
+  index: number;
+  form: any;
+  products: Product[];
+}) => {
+  const [recentPurchases, setRecentPurchases] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  const currentCost = form.watch(`items.${index}.unitCost`) || 0;
+  const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
+
+  // Fetch recent purchase data when product is selected
+  useEffect(() => {
+    if (selectedProduct && selectedProduct.id) {
+      const fetchRecentPurchases = async () => {
+        try {
+          const response = await fetch(`/api/products/${selectedProduct.id}/recent-purchases`);
+          if (response.ok) {
+            const data = await response.json();
+            setRecentPurchases(data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch recent purchases:', error);
+        }
+      };
+      fetchRecentPurchases();
+    }
+  }, [selectedProduct?.id]);
+
+  if (!selectedProduct || currentCost <= 0) {
+    return null;
+  }
+
+  const originalCost = parseFloat(selectedProduct.cost || "0");
+  const sellingPrice = parseFloat(selectedProduct.price || "0");
+  const costDifference = Math.abs(currentCost - originalCost);
+
+  // Get the most recent purchase cost for comparison
+  const lastPurchaseCost = recentPurchases.length > 0 ? parseFloat(recentPurchases[0].cost || "0") : 0;
+  const hasRecentPurchases = recentPurchases.length > 0;
+
+  return (
+    <div className="relative">
+      {/* Main Cost Indicator */}
+      <div className="text-xs text-center">
+        {originalCost > 0 && costDifference < 0.01 ? (
+          <div className="text-green-600">Original cost</div>
+        ) : originalCost === 0 && sellingPrice > 0 ? (
+          <div className="text-blue-600">New cost entry</div>
+        ) : originalCost > 0 && costDifference > 0.01 ? (
+          <div className={`${
+            currentCost > originalCost ? 'text-orange-600' : 'text-green-600'
+          }`}>
+            {((currentCost - originalCost) / originalCost * 100).toFixed(1)}% vs original
+          </div>
+        ) : (
+          <div className="text-gray-500">Cost price</div>
+        )}
+      </div>
+
+      {/* Recent Purchase History Indicator */}
+      {hasRecentPurchases && (
+        <div 
+          className="text-xs text-center mt-1 cursor-pointer hover:bg-blue-50 rounded px-1 py-0.5 transition-colors border border-blue-200 bg-blue-25"
+          onClick={() => setShowHistory(!showHistory)}
+        >
+          <div className="text-blue-700 font-semibold">
+            Last: ₹{lastPurchaseCost.toFixed(2)}
+          </div>
+          <div className="text-blue-600 text-xs">
+            {recentPurchases.length} recent • Click to view ↓
+          </div>
+        </div>
+      )}
+
+      {/* Show if no recent purchases available */}
+      {!hasRecentPurchases && selectedProduct && (
+        <div className="text-xs text-center mt-1 text-gray-400">
+          No recent purchase data
+        </div>
+      )}
+
+      {/* Recent Purchase History Dropdown */}
+      {showHistory && hasRecentPurchases && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-32 overflow-y-auto">
+          <div className="p-2">
+            <div className="text-xs font-semibold text-gray-700 mb-2">Recent Purchase Costs</div>
+            {recentPurchases.map((purchase, idx) => (
+              <div 
+                key={idx}
+                className="flex justify-between items-center py-1 hover:bg-gray-50 rounded cursor-pointer"
+                onClick={() => {
+                  form.setValue(`items.${index}.unitCost`, parseFloat(purchase.cost));
+                  setShowHistory(false);
+                }}
+              >
+                <div className="text-xs">
+                  <div className="font-medium">₹{parseFloat(purchase.cost).toFixed(2)}</div>
+                  <div className="text-gray-500">{purchase.supplier || 'Unknown'}</div>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {new Date(purchase.date).toLocaleDateString('en-IN')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Product Search with Suggestions Component
 const ProductSearchWithSuggestions = ({ 
   products, 
@@ -3172,7 +3289,7 @@ export default function PurchaseEntryProfessional() {
                     <TableCell className="border-r px-3 py-3">
                       <div className="space-y-1">
                         <div className="relative">
-                          <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                          <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs font-semibold">₹</span>
                           <Input
                             type="number"
                             min="0"
@@ -3238,41 +3355,12 @@ export default function PurchaseEntryProfessional() {
                           />
                         </div>
 
-                        {/* Cost Price Indicator */}
-                        {(() => {
-                          const currentCost = form.watch(`items.${index}.unitCost`) || 0;
-                          const selectedProduct = products.find(p => p.id === form.watch(`items.${index}.productId`));
-
-                          if (selectedProduct && currentCost > 0) {
-                            const originalCost = parseFloat(selectedProduct.cost || "0");
-                            const sellingPrice = parseFloat(selectedProduct.price || "0");
-                            const costDifference = Math.abs(currentCost - originalCost);
-
-                            if (originalCost > 0 && costDifference < 0.01) {
-                              return (
-                                <div className="text-xs text-green-600 text-center">
-                                  Original cost
-                                </div>
-                              );
-                            } else if (originalCost === 0 && sellingPrice > 0) {
-                              return (
-                                <div className="text-xs text-blue-600 text-center">
-                                  Estimated cost
-                                </div>
-                              );
-                            } else if (originalCost > 0 && costDifference > 0.01) {
-                              const difference = ((currentCost - originalCost) / originalCost) * 100;
-                              return (
-                                <div className={`text-xs text-center ${
-                                  difference > 0 ? 'text-orange-600' : 'text-green-600'
-                                }`}>
-                                  {difference > 0 ? '+' : ''}{difference.toFixed(1)}% - Will update product
-                                </div>
-                              );
-                            }
-                          }
-                          return null;
-                        })()}
+                        {/* Enhanced Cost Price Display with Recent Purchase History */}
+                        <EnhancedCostPriceDisplay 
+                          index={index}
+                          form={form}
+                          products={products}
+                        />
                       </div>
                     </TableCell>
 

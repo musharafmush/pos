@@ -6559,6 +6559,35 @@ app.post("/api/customers", async (req, res) => {
     }
   });
 
+  // Recent purchase prices endpoint for cost comparison
+  app.get("/api/products/:id/recent-purchases", isAuthenticated, async (req, res) => {
+    try {
+      const { sqlite } = await import('../db/index.js');
+      const productId = parseInt(req.params.id);
+      
+      const recentPurchasesQuery = `
+        SELECT 
+          pi.unit_cost as cost,
+          pi.created_at as date,
+          p.order_number as orderNumber,
+          s.name as supplier
+        FROM purchase_items pi
+        LEFT JOIN purchases p ON pi.purchase_id = p.id
+        LEFT JOIN suppliers s ON p.supplier_id = s.id
+        WHERE pi.product_id = ?
+        ORDER BY pi.created_at DESC
+        LIMIT 5
+      `;
+      
+      const recentPurchases = sqlite.prepare(recentPurchasesQuery).all(productId);
+      
+      res.json(recentPurchases);
+    } catch (error) {
+      console.error('Error fetching recent purchases:', error);
+      res.status(500).json({ error: 'Failed to fetch recent purchases' });
+    }
+  });
+
   // Product history endpoint
   app.get("/api/products/history/:id", isAuthenticated, async (req, res) => {
     try {
