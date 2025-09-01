@@ -96,7 +96,8 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Create HSN code mutation
   const createHSNMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest(`/api/tax/hsn-codes`, 'POST', data);
+      const response = await apiRequest('POST', '/api/tax/hsn-codes', data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -127,7 +128,8 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Update HSN code mutation
   const updateHSNMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      return await apiRequest(`/api/tax/hsn-codes/${id}`, 'PUT', data);
+      const response = await apiRequest('PUT', `/api/tax/hsn-codes/${id}`, data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -149,7 +151,8 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Delete HSN code mutation
   const deleteHSNMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/tax/hsn-codes/${id}`, 'DELETE');
+      const response = await apiRequest('DELETE', `/api/tax/hsn-codes/${id}`);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -170,7 +173,8 @@ export function HSNManagement({ mode = 'settings', onHSNSelect, selectedHSN }: H
   // Create tax category mutation
   const createCategoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/tax/categories', 'POST', data);
+      const response = await apiRequest('POST', '/api/tax/categories', data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
